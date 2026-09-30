@@ -1,0 +1,7 @@
+.git
+scheduler-frontend
+**/node_modules
+scheduler-backend/vendor
+**/.env
+scheduler-backend/bootstrap/cache/*.php
+scheduler-backend/storage/logs/*

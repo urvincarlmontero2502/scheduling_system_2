@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Public Sans', system-ui, sans-serif;
+}
+
+::selection {
+  background-color: #1F6F5C33;
+}
+
+:focus-visible {
+  outline: 2px solid #1F6F5C;
+  outline-offset: 2px;
+}
