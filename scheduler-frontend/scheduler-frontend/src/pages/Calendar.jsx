@@ -69,13 +69,12 @@ function getWeekDays(date) {
   return days;
 }
 
-// Size of a booking block in the week view (adjusted offset for 1 AM start: 1 AM is 60 mins from midnight)
+// Size of a booking block in the week view
 function blockBox(b) {
   const startMins = timeToMinutes(
     formatTimeTo12Hour(b.start_time || b.time || "07:00"),
   );
   const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
-  // 56px per hour slot. 1 AM is base (0 mins offset from start of grid).
   const top = Math.max(0, (startMins / 60) * 56);
   const height = Math.max(65, Math.max(0.5, (endMins - startMins) / 60) * 56);
   return { top, height };
@@ -214,12 +213,11 @@ export default function CalendarView() {
     };
   }, []);
 
-  // Automatically scroll to 7:00 AM on initial load / view change
+  // Automatically scroll directly to 7:00 AM on initial load / view change
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {
-      // 7 AM is index 6 (1:00 AM, 2:00 AM, 3:00 AM, 4:00 AM, 5:00 AM, 6:00 AM, 7:00 AM -> 6 slots down * 28px or 56px height)
-      // Each slot is 28px height (h-7 is 28px in Tailwind)
-      scrollContainerRef.current.scrollTop = 6 * 28;
+      // 7:00 AM is at index 12 (12 slots down * 28px height per slot)
+      scrollContainerRef.current.scrollTop = 12 * 28;
     }
   }, [isYearView, currentDate]);
 
@@ -267,7 +265,7 @@ export default function CalendarView() {
     setCurrentDate(new Date());
   };
 
-  // Expanded time slots starting from 1:00 AM to 12:00 AM
+  // Time slots starting from 1:00 AM to 12:00 AM
   const timeSlots = [
     "1:00 AM",
     "1:30 AM",
