@@ -318,11 +318,6 @@ export default function CalendarView() {
                   <ChevronLeft size={15} />
                 </button>
                 <button
-                  onClick={handleToday}
-                  className="px-2.5 py-1 text-[12px] font-medium text-ink hover:bg-line/50 transition border-x border-line">
-                  This Year
-                </button>
-                <button
                   onClick={handleNextYear}
                   className="p-1.5 hover:bg-line/50 text-steel transition"
                   title="Next Year">
@@ -338,11 +333,6 @@ export default function CalendarView() {
                   <ChevronLeft size={15} />
                 </button>
                 <button
-                  onClick={handleToday}
-                  className="px-2.5 py-1 text-[12px] font-medium text-ink hover:bg-line/50 transition border-x border-line">
-                  Today
-                </button>
-                <button
                   onClick={handleNextWeek}
                   className="p-1.5 hover:bg-line/50 text-steel transition"
                   title="Next Week">
@@ -353,6 +343,11 @@ export default function CalendarView() {
           </div>
 
           <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={handleToday}
+              className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
+              {isYearView ? "This Year" : "Today"}
+            </button>
             <button
               onClick={() => setIsYearView(!isYearView)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
