@@ -69,6 +69,57 @@ function getWeekDays(date) {
   return days;
 }
 
+// Size of a booking block in the week view
+function blockBox(b) {
+  const startMins = timeToMinutes(
+    formatTimeTo12Hour(b.start_time || b.time || "02:00"),
+  );
+  const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
+  const top = Math.max(0, ((startMins - 60) / 60) * 64);
+  const height = Math.max(75, Math.max(0.5, (endMins - startMins) / 60) * 64);
+  return { top, height };
+}
+
+// Put overlapping bookings side by side instead of stacking them
+function layoutOverlaps(items) {
+  const sorted = [...items].sort(
+    (a, c) => a.top - c.top || c.height - a.height,
+  );
+  const result = [];
+  let cluster = [];
+  let clusterEnd = -1;
+
+  const flush = () => {
+    if (!cluster.length) return;
+    const ends = [];
+    cluster.forEach((it) => {
+      let col = ends.findIndex((end) => end <= it.top);
+      if (col === -1) {
+        col = ends.length;
+        ends.push(0);
+      }
+      ends[col] = it.top + it.height;
+      it.col = col;
+    });
+    cluster.forEach((it) => {
+      it.cols = ends.length;
+      result.push(it);
+    });
+    cluster = [];
+  };
+
+  sorted.forEach((it) => {
+    if (cluster.length && it.top >= clusterEnd) {
+      flush();
+      clusterEnd = -1;
+    }
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.top + it.height);
+  });
+  flush();
+  return result;
+}
+
 function getMonthDays(date) {
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -469,6 +520,10 @@ export default function CalendarView() {
                     return bDate.includes(day.fullDateStr);
                   });
 
+                  const laidOut = layoutOverlaps(
+                    colBookings.map((b) => ({ b, ...blockBox(b) })),
+                  );
+
                   return (
                     <div
                       key={colIdx}
@@ -480,7 +535,7 @@ export default function CalendarView() {
                         />
                       ))}
 
-                      {colBookings.map((b) => {
+                      {laidOut.map(({ b, top, height, col, cols }) => {
                         const status = (b.status || "").toLowerCase();
                         const isApproved = status.includes("approv");
                         const isPending =
@@ -520,14 +575,17 @@ export default function CalendarView() {
                         return (
                           <div
                             key={b.id || b.booking_id}
-                            className={`absolute left-1 right-1 p-2 rounded-lg shadow-sm text-xs flex flex-col justify-between overflow-hidden transition-all hover:shadow-md cursor-pointer ${
+                            title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
+                            className={`absolute ${cols > 1 ? "p-1" : "p-2"} hover:z-10 rounded-lg shadow-sm text-xs flex flex-col justify-between overflow-hidden transition-all hover:shadow-md cursor-pointer ${
                               isApproved
                                 ? "bg-emerald-500 text-white border border-emerald-600"
                                 : "bg-amber-50 border-2 border-dashed border-amber-400 text-amber-900"
                             }`}
                             style={{
-                              top: `${Math.max(0, topOffset)}px`,
-                              height: `${Math.max(75, blockHeight)}px`,
+                              top: `${top}px`,
+                              height: `${height}px`,
+                              left: `calc(${(col / cols) * 100}% + 2px)`,
+                              width: `calc(${100 / cols}% - 4px)`,
                             }}>
                             <div className="space-y-1">
                               <div className="flex flex-wrap items-center justify-between gap-1">
