@@ -176,7 +176,8 @@ function getMonthDays(date) {
 
 export default function CalendarView() {
   const [bookings, setBookings] = useState([]);
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 22));
+  // Updated to use actual current date instead of hardcoded September
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isYearView, setIsYearView] = useState(false);
 
@@ -253,7 +254,7 @@ export default function CalendarView() {
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date(2026, 8, 22));
+    setCurrentDate(new Date());
   };
 
   const timeSlots = [
