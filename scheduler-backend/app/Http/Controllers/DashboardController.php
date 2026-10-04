@@ -11,16 +11,8 @@ class DashboardController extends Controller
     public function stats()
     {
         return response()->json([
-            'pending' => BookingRequest::where('status', 'pending')
-                ->where('purpose', 'not like', '%Festival%')
-                ->where('purpose', 'not like', '%Alumni%')
-                ->where('purpose', 'not like', '%Habongan%')
-                ->count(),
-            'approved' => BookingRequest::where('status', 'approved')
-                ->where('purpose', 'not like', '%Festival%')
-                ->where('purpose', 'not like', '%Alumni%')
-                ->where('purpose', 'not like', '%Habongan%')
-                ->count(),
+            'pending' => BookingRequest::where('status', 'pending')->count(),
+            'approved' => BookingRequest::where('status', 'approved')->count(),
             'resources' => Resource::count(),
         ]);
     }
