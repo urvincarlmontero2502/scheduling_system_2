@@ -70,14 +70,15 @@ function getWeekDays(date) {
   return days;
 }
 
-// Size of a booking block in the week view
+// Size of a booking block matching the 28px per 30 mins grid
 function blockBox(b) {
   const startMins = timeToMinutes(
     formatTimeTo12Hour(b.start_time || b.time || "07:00"),
   );
   const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
+  // 28px per 30 mins = 56px per hour
   const top = Math.max(0, (startMins / 60) * 56);
-  const height = Math.max(65, Math.max(0.5, (endMins - startMins) / 60) * 56);
+  const height = Math.max(56, Math.max(0.5, (endMins - startMins) / 60) * 56);
   return { top, height };
 }
 
@@ -560,11 +561,11 @@ export default function CalendarView() {
                   style={{
                     gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                   }}>
-                  <div className="border-r border-line bg-paper/25 sticky left-0 z-10">
+                  <div className="border-r border-line bg-paper/25 sticky left-0 z-10 flex flex-col">
                     {timeSlots.map((time, idx) => (
                       <div
                         key={idx}
-                        className="h-7 border-b border-line px-0.5 text-right text-[8px] sm:text-[9px] font-mono text-steel pt-1 bg-white">
+                        className="h-[28px] border-b border-line px-0.5 text-right text-[8px] sm:text-[9px] font-mono text-steel pt-1 bg-white box-border">
                         {time}
                       </div>
                     ))}
@@ -592,12 +593,12 @@ export default function CalendarView() {
                     return (
                       <div
                         key={colIdx}
-                        className="border-r border-line last:border-r-0 relative"
+                        className="border-r border-line last:border-r-0 relative flex flex-col"
                         style={{ minHeight: `${timeSlots.length * 28}px` }}>
                         {timeSlots.map((_, tIdx) => (
                           <div
                             key={tIdx}
-                            className="h-7 border-b border-line w-full"
+                            className="h-[28px] border-b border-line w-full box-border"
                           />
                         ))}
 
