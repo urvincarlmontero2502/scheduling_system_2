@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -180,6 +180,14 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 22));
   const [loading, setLoading] = useState(true);
   const [isYearView, setIsYearView] = useState(false);
+  const weekScrollRef = useRef(null);
+
+  // Open the week view at 7 AM instead of the top of the day
+  useEffect(() => {
+    if (!isYearView && weekScrollRef.current) {
+      weekScrollRef.current.scrollTop = 6 * 64;
+    }
+  }, [isYearView, loading]);
 
   useEffect(() => {
     const loadBookings = () => {
@@ -473,11 +481,13 @@ export default function CalendarView() {
           </div>
         ) : (
           /* Scrollable Container */
-          <div className="overflow-x-auto w-full">
+          <div
+            ref={weekScrollRef}
+            className="w-full min-h-[420px] max-h-[calc(100vh-10rem)] overflow-auto overscroll-contain">
             <div className="min-w-[800px] flex flex-col">
               {/* Days Header Row */}
               <div
-                className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-10"
+                className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-20"
                 style={{
                   gridTemplateColumns: "75px repeat(7, minmax(0, 1fr))",
                 }}>
