@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -69,13 +69,14 @@ function getWeekDays(date) {
   return days;
 }
 
-// Size of a booking block in the week view
+// Size of a booking block in the week view (adjusted offset for 1 AM start: 1 AM is 60 mins from midnight)
 function blockBox(b) {
   const startMins = timeToMinutes(
-    formatTimeTo12Hour(b.start_time || b.time || "02:00"),
+    formatTimeTo12Hour(b.start_time || b.time || "07:00"),
   );
   const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
-  const top = Math.max(0, ((startMins - 60) / 60) * 56);
+  // 56px per hour slot. 1 AM is base (0 mins offset from start of grid).
+  const top = Math.max(0, (startMins / 60) * 56);
   const height = Math.max(65, Math.max(0.5, (endMins - startMins) / 60) * 56);
   return { top, height };
 }
@@ -176,10 +177,10 @@ function getMonthDays(date) {
 
 export default function CalendarView() {
   const [bookings, setBookings] = useState([]);
-  // Updated to use actual current date instead of hardcoded September
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isYearView, setIsYearView] = useState(false);
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     const loadBookings = () => {
@@ -212,6 +213,15 @@ export default function CalendarView() {
       window.removeEventListener("bookingChanged", loadBookings);
     };
   }, []);
+
+  // Automatically scroll to 7:00 AM on initial load / view change
+  useEffect(() => {
+    if (!isYearView && scrollContainerRef.current) {
+      // 7 AM is index 6 (1:00 AM, 2:00 AM, 3:00 AM, 4:00 AM, 5:00 AM, 6:00 AM, 7:00 AM -> 6 slots down * 28px or 56px height)
+      // Each slot is 28px height (h-7 is 28px in Tailwind)
+      scrollContainerRef.current.scrollTop = 6 * 28;
+    }
+  }, [isYearView, currentDate]);
 
   const weekDays = getWeekDays(currentDate);
   const monthDays = getMonthDays(currentDate);
@@ -257,7 +267,20 @@ export default function CalendarView() {
     setCurrentDate(new Date());
   };
 
+  // Expanded time slots starting from 1:00 AM to 12:00 AM
   const timeSlots = [
+    "1:00 AM",
+    "1:30 AM",
+    "2:00 AM",
+    "2:30 AM",
+    "3:00 AM",
+    "3:30 AM",
+    "4:00 AM",
+    "4:30 AM",
+    "5:00 AM",
+    "5:30 AM",
+    "6:00 AM",
+    "6:30 AM",
     "7:00 AM",
     "7:30 AM",
     "8:00 AM",
@@ -463,7 +486,7 @@ export default function CalendarView() {
             </div>
           </div>
         ) : (
-          /* Compressed Calendar Grid (No Horizontal Scroll Required on Mobile) */
+          /* Compressed Calendar Grid */
           <div className="bg-white w-full relative overflow-hidden">
             <div className="w-full flex flex-col">
               {/* Days Header Row */}
@@ -490,8 +513,9 @@ export default function CalendarView() {
                 ))}
               </div>
 
-              {/* Time Grid Content */}
+              {/* Time Grid Content (Scrollable from 1:00 AM to 12:00 AM, defaults scrolled to 7:00 AM) */}
               <div
+                ref={scrollContainerRef}
                 className="grid relative max-h-[480px] overflow-y-auto"
                 style={{
                   gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
@@ -530,7 +554,8 @@ export default function CalendarView() {
                   return (
                     <div
                       key={colIdx}
-                      className="border-r border-line last:border-r-0 relative min-h-[980px]">
+                      className="border-r border-line last:border-r-0 relative"
+                      style={{ minHeight: `${timeSlots.length * 28}px` }}>
                       {timeSlots.map((_, tIdx) => (
                         <div
                           key={tIdx}
@@ -553,7 +578,6 @@ export default function CalendarView() {
                           b.name ||
                           b.user_name ||
                           "Representative";
-                        const barangayName = b.barangay || b.address || "";
 
                         const rawStart = b.start_time || b.time || "07:00";
                         const rawEnd = b.end_time || "17:00";
