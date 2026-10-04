@@ -2,76 +2,95 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use DatePeriod;
-use DateTime;
-use DateInterval;
 
+/**
+ * Yearly special events that block resources on the same dates every year.
+ * Safe to run many times: rows that already exist are skipped.
+ * It fills the current year plus the next YEARS_AHEAD years.
+ */
 class SpecialEventsSeeder extends Seeder
 {
-    public function run()
+    private const YEARS_AHEAD = 2;
+    private const START_TIME = '07:00:00';
+    private const END_TIME = '17:00:00';
+    private const PURPOSE = 'Annual Community Festival / Official Event';
+
+    public function run(): void
     {
-        // Define the base special events (month and day ranges)
+        // Month-day ranges. "2 Dumptruck (6-Wheel)" means 2 units with that name.
         $events = [
             [
                 'title' => 'Sumayajaw Festival',
                 'start_month_day' => '08-11',
                 'end_month_day' => '08-15',
-                'resources' => ['gymnasium', 'Cargo Truck', 'Mini-Bus', 'Man Lift', '2 Dumptruck (6-Wheel)']
+                'resources' => ['gymnasium', 'Cargo Truck', 'Mini-Bus', 'Man Lift', '2 Dumptruck (6-Wheel)'],
             ],
             [
                 'title' => 'Elementary Alumni',
                 'start_month_day' => '08-16',
                 'end_month_day' => '08-16',
-                'resources' => ['gymnasium', 'Mini-Bus']
+                'resources' => ['gymnasium', 'Mini-Bus'],
             ],
             [
                 'title' => 'Araw ng Habongan',
                 'start_month_day' => '07-01',
                 'end_month_day' => '07-01',
-                'resources' => ['gymnasium', 'Mini-Bus']
+                'resources' => ['gymnasium', 'Mini-Bus'],
             ],
             [
                 'title' => 'High School Alumni',
                 'start_month_day' => '10-31',
                 'end_month_day' => '10-31',
-                'resources' => ['gymnasium', 'Cargo Truck', 'Mini-Bus']
+                'resources' => ['gymnasium', 'Cargo Truck', 'Mini-Bus'],
             ],
         ];
 
-        $systemUserId = DB::table('users')->where('role', 'admin')->value('user_id') ?? 1;
+        $systemUserId = DB::table('users')->where('email', 'mayors.office@system.local')->value('user_id')
+            ?? DB::table('users')->where('role', 'admin')->orderBy('user_id')->value('user_id');
 
-        // Loop across multiple years (e.g., 2026 to 2030) so annual events repeat every year
-        $years = range(2026, 2030);
+        if (!$systemUserId) {
+            return; // users not created yet - it will run again on the next start
+        }
 
-        foreach ($years as $year) {
+        $thisYear = (int) Carbon::now()->year;
+
+        foreach (range($thisYear, $thisYear + self::YEARS_AHEAD) as $year) {
             foreach ($events as $event) {
-                $startDateStr = "{$year}-{$event['start_month_day']}";
-                $endDateStr = "{$year}-{$event['end_month_day']}";
-
-                $period = new DatePeriod(
-                    new DateTime($startDateStr),
-                    new DateInterval('P1D'),
-                    (new DateTime($endDateStr))->modify('+1 day')
+                $period = CarbonPeriod::create(
+                    "{$year}-{$event['start_month_day']}",
+                    "{$year}-{$event['end_month_day']}"
                 );
 
-                foreach ($period as $date) {
-                    $currentDate = $date->format('Y-m-d');
+                foreach ($event['resources'] as $spec) {
+                    $resourceIds = $this->resourceIds($spec);
 
-                    foreach ($event['resources'] as $resourceName) {
-                        $resource = DB::table('resources')->where('name', 'ILIKE', "%{$resourceName}%")->first();
+                    foreach ($resourceIds as $resourceId) {
+                        foreach ($period as $date) {
+                            $day = $date->toDateString();
 
-                        if ($resource) {
+                            $exists = DB::table('booking_request')
+                                ->where('resource_id', $resourceId)
+                                ->where('start_date', $day)
+                                ->where('full_name', $event['title'])
+                                ->exists();
+
+                            if ($exists) {
+                                continue;
+                            }
+
                             DB::table('booking_request')->insert([
                                 'user_id' => $systemUserId,
-                                'resource_id' => $resource->resource_id,
+                                'resource_id' => $resourceId,
                                 'full_name' => $event['title'],
-                                'purpose' => 'Annual Community Festival / Official Event',
-                                'start_date' => $currentDate,
-                                'end_date' => $currentDate,
-                                'start_time' => '07:00:00',
-                                'end_time' => '17:00:00',
+                                'purpose' => self::PURPOSE,
+                                'start_date' => $day,
+                                'end_date' => $day,
+                                'start_time' => self::START_TIME,
+                                'end_time' => self::END_TIME,
                                 'status' => 'approved',
                                 'created_at' => now(),
                             ]);
@@ -80,5 +99,52 @@ class SpecialEventsSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /** Turns "Mini-Bus" or "2 Dumptruck (6-Wheel)" into a list of resource ids. */
+    private function resourceIds(string $spec): array
+    {
+        $count = 1;
+        $name = trim($spec);
+
+        if (preg_match('/^(\d+)\s+(.+)$/', $name, $m)) {
+            $count = (int) $m[1];
+            $name = trim($m[2]);
+        }
+
+        // Exact name first, then a "contains" match (e.g. "gymnasium")
+        $ids = DB::table('resources')
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->orderBy('resource_id')
+            ->limit($count)
+            ->pluck('resource_id')
+            ->all();
+
+        if (!$ids) {
+            $ids = DB::table('resources')
+                ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($name) . '%'])
+                ->orderBy('resource_id')
+                ->limit($count)
+                ->pluck('resource_id')
+                ->all();
+        }
+
+        if (!$ids && strtolower($name) === 'gymnasium') {
+            $id = DB::table('resources')->insertGetId([
+                'name' => 'Gymnasium',
+                'type' => 'facility',
+                'status' => 'available',
+                'description' => 'Large indoor venue for community events and sports.',
+            ], 'resource_id');
+
+            DB::table('facility_details')->insert([
+                'resource_id' => $id,
+                'amenities' => 'Standard facility amenities',
+            ]);
+
+            $ids = [$id];
+        }
+
+        return array_map('intval', $ids);
     }
 }
