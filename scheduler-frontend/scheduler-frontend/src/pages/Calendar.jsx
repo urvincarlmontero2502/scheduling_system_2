@@ -75,8 +75,8 @@ function blockBox(b) {
     formatTimeTo12Hour(b.start_time || b.time || "02:00"),
   );
   const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
-  const top = Math.max(0, ((startMins - 60) / 60) * 64);
-  const height = Math.max(75, Math.max(0.5, (endMins - startMins) / 60) * 64);
+  const top = Math.max(0, ((startMins - 60) / 60) * 56);
+  const height = Math.max(65, Math.max(0.5, (endMins - startMins) / 60) * 56);
   return { top, height };
 }
 
@@ -459,27 +459,27 @@ export default function CalendarView() {
             </div>
           </div>
         ) : (
-          /* Calendar Grid Container with Horizontal Scroll for Small Screens */
-          <div className="bg-white overflow-x-auto w-full relative">
-            <div className="min-w-[750px] flex flex-col">
+          /* Compressed Calendar Grid (No Horizontal Scroll Required on Mobile) */
+          <div className="bg-white w-full relative overflow-hidden">
+            <div className="w-full flex flex-col">
               {/* Days Header Row */}
               <div
                 className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-20"
                 style={{
-                  gridTemplateColumns: "70px repeat(7, minmax(0, 1fr))",
+                  gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                 }}>
-                <div className="py-2.5 text-[11px] font-medium text-steel border-r border-line bg-paper sticky left-0 z-30">
-                  GMT+08
+                <div className="py-2 text-[9px] sm:text-[10px] font-medium text-steel border-r border-line bg-paper sticky left-0 z-30 flex items-center justify-center">
+                  GMT
                 </div>
                 {weekDays.map((day, idx) => (
                   <div
                     key={idx}
-                    className="py-2.5 border-r border-line last:border-r-0 flex flex-col items-center bg-paper">
-                    <span className="text-[10px] font-semibold text-steel tracking-wider">
+                    className="py-1.5 sm:py-2 border-r border-line last:border-r-0 flex flex-col items-center bg-paper">
+                    <span className="text-[8px] sm:text-[9px] font-semibold text-steel tracking-tight">
                       {day.name}
                     </span>
                     <span
-                      className={`text-[14px] font-bold mt-0.5 h-6 w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
+                      className={`text-[11px] sm:text-[13px] font-bold mt-0.5 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
                       {day.dateNum}
                     </span>
                   </div>
@@ -488,16 +488,16 @@ export default function CalendarView() {
 
               {/* Time Grid Content */}
               <div
-                className="grid relative max-h-[500px] overflow-y-scroll"
+                className="grid relative max-h-[480px] overflow-y-auto"
                 style={{
-                  gridTemplateColumns: "70px repeat(7, minmax(0, 1fr))",
+                  gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                 }}>
                 {/* Time Column */}
                 <div className="border-r border-line bg-paper/25 sticky left-0 z-10">
                   {timeSlots.map((time, idx) => (
                     <div
                       key={idx}
-                      className="h-8 border-b border-line px-1 text-right text-[10px] font-mono text-steel pt-1 bg-white">
+                      className="h-7 border-b border-line px-0.5 text-right text-[8px] sm:text-[9px] font-mono text-steel pt-1 bg-white">
                       {time}
                     </div>
                   ))}
@@ -526,11 +526,11 @@ export default function CalendarView() {
                   return (
                     <div
                       key={colIdx}
-                      className="border-r border-line last:border-r-0 relative min-h-[1120px]">
+                      className="border-r border-line last:border-r-0 relative min-h-[980px]">
                       {timeSlots.map((_, tIdx) => (
                         <div
                           key={tIdx}
-                          className="h-8 border-b border-line w-full"
+                          className="h-7 border-b border-line w-full"
                         />
                       ))}
 
@@ -561,49 +561,29 @@ export default function CalendarView() {
                           <div
                             key={b.id || b.booking_id}
                             title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
-                            className={`absolute ${cols > 1 ? "p-1" : "p-1.5"} hover:z-10 rounded-lg shadow-sm text-xs flex flex-col justify-between overflow-hidden transition-all hover:shadow-md cursor-pointer ${
+                            className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
                               isApproved
                                 ? "bg-emerald-500 text-white border border-emerald-600"
-                                : "bg-amber-50 border-2 border-dashed border-amber-400 text-amber-900"
+                                : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
                             }`}
                             style={{
                               top: `${top}px`,
                               height: `${height}px`,
-                              left: `calc(${(col / cols) * 100}% + 2px)`,
-                              width: `calc(${100 / cols}% - 4px)`,
+                              left: `calc(${(col / cols) * 100}% + 1px)`,
+                              width: `calc(${100 / cols}% - 2px)`,
                             }}>
                             <div className="space-y-0.5">
-                              <div className="flex flex-wrap items-center justify-between gap-1">
-                                <span className="font-bold text-[11px] leading-tight break-all">
+                              <div className="flex items-center justify-between gap-0.5">
+                                <span className="font-bold text-[9px] leading-tight truncate">
                                   {resourceName}
                                 </span>
-                                <span
-                                  className={`text-[8px] px-1 py-0.2 rounded font-bold uppercase ${
-                                    isApproved
-                                      ? "bg-emerald-700/80 text-white"
-                                      : "bg-amber-200 text-amber-800"
-                                  }`}>
-                                  {b.status ||
-                                    (isApproved ? "Approved" : "Pending")}
-                                </span>
                               </div>
-
-                              <div className="text-[10px] opacity-95 flex items-center gap-1 font-medium">
-                                <Clock size={9} className="shrink-0" />
-                                <span>
-                                  {startTime} - {endTime}
-                                </span>
+                              <div className="text-[8px] opacity-90 truncate">
+                                {startTime}
                               </div>
                             </div>
-
-                            <div
-                              className={`text-[9.5px] font-medium opacity-95 pt-0.5 mt-0.5 border-t leading-tight break-words ${
-                                isApproved
-                                  ? "border-emerald-400/40"
-                                  : "border-amber-300/60"
-                              }`}>
-                              👤 {requesterName}{" "}
-                              {barangayName ? `• ${barangayName}` : ""}
+                            <div className="text-[7.5px] opacity-90 truncate">
+                              {requesterName}
                             </div>
                           </div>
                         );
