@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isSpecialEvent } from "../utils/specialEvents";
 import {
   Check,
   X,
@@ -188,8 +189,11 @@ export default function Bookings() {
     }
   }
 
+  // Real requests only: special events are never counted, listed or bulk-deleted
+  const requests = bookings.filter((b) => !isSpecialEvent(b));
+
   async function handleDeleteAllApproved() {
-    const approvedBookings = bookings.filter(
+    const approvedBookings = requests.filter(
       (b) => (b.status || "").toLowerCase() === "approved",
     );
 
@@ -235,18 +239,18 @@ export default function Bookings() {
   }
 
   // Count metrics for tabs
-  const pendingCount = bookings.filter(
+  const pendingCount = requests.filter(
     (b) => (b.status || "").toLowerCase() === "pending",
   ).length;
-  const approvedCount = bookings.filter(
+  const approvedCount = requests.filter(
     (b) => (b.status || "").toLowerCase() === "approved",
   ).length;
-  const rejectedCount = bookings.filter(
+  const rejectedCount = requests.filter(
     (b) => (b.status || "").toLowerCase() === "rejected",
   ).length;
 
   // Filter bookings based on selected tab
-  const filteredBookings = bookings.filter((b) => {
+  const filteredBookings = requests.filter((b) => {
     const status = (b.status || "").toLowerCase();
     if (activeTab === "all") return true;
     return status === activeTab;
@@ -339,7 +343,7 @@ export default function Bookings() {
                   ? "bg-gray-800 text-white shadow-sm"
                   : "bg-gray-100 text-steel hover:bg-gray-200 hover:text-gray-900"
               }`}>
-              All ({bookings.length})
+              All ({requests.length})
             </button>
           </div>
 

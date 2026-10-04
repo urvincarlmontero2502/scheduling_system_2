@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
 import { Building2, Car, Image as ImageIcon } from "lucide-react";
 import * as api from "../api/endpoints";
@@ -47,11 +48,14 @@ export default function Overview() {
             ? bookingsRes
             : [];
 
-        const pendingCount = bookings.filter(
+        // Yearly special events are not requests
+        const requests = bookings.filter((b) => !isSpecialEvent(b));
+
+        const pendingCount = requests.filter(
           (b) => b?.status?.toLowerCase() === "pending",
         ).length;
 
-        const approvedCount = bookings.filter(
+        const approvedCount = requests.filter(
           (b) => b?.status?.toLowerCase() === "approved",
         ).length;
 
