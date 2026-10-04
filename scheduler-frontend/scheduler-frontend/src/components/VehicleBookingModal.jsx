@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import * as api from "../api/endpoints";
 import {
   X,
   Calendar as CalendarIcon,
@@ -30,8 +31,60 @@ export default function VehicleBookingModal({
   });
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [submitting, setSubmitting] = useState(false);
+  const [bookings, setBookings] = useState([]);
+
+  // Load bookings so the calendar can show pending / approved days
+  useEffect(() => {
+    if (!isOpen) return;
+    const load = () =>
+      api
+        .fetchBookings?.()
+        .then((res) =>
+          setBookings(
+            Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [],
+          ),
+        )
+        .catch(() => setBookings([]));
+    load();
+    window.addEventListener("bookingUpdated", load);
+    window.addEventListener("bookingChanged", load);
+    return () => {
+      window.removeEventListener("bookingUpdated", load);
+      window.removeEventListener("bookingChanged", load);
+    };
+  }, [isOpen]);
 
   if (!isOpen || !selectedVehicle) return null;
+
+  // Days of this resource that have approved / pending bookings
+  const dayStatus = {};
+  const resourceId = selectedVehicle.resource_id || selectedVehicle.id;
+  bookings.forEach((b) => {
+    const s = (b.status || "").toLowerCase();
+    const isApproved = s.includes("approv");
+    const isPending =
+      s.includes("pend") || s.includes("request") || s.includes("tentative");
+    if (!isApproved && !isPending) return;
+    const sameResource =
+      b.resource_id != null
+        ? String(b.resource_id) === String(resourceId)
+        : b.resource === selectedVehicle.name;
+    if (!sameResource) return;
+    const [sy, sm, sd] = (b.start_date || "").split("-").map(Number);
+    const [ey, em, ed] = (b.end_date || b.start_date || "")
+      .split("-")
+      .map(Number);
+    if (!sy || !ey) return;
+    const cur = new Date(sy, sm - 1, sd);
+    const last = new Date(ey, em - 1, ed);
+    for (let i = 0; cur <= last && i < 366; i++) {
+      const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+      dayStatus[key] = dayStatus[key] || {};
+      if (isApproved) dayStatus[key].approved = true;
+      if (isPending) dayStatus[key].pending = true;
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
 
   const update = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -110,7 +163,7 @@ export default function VehicleBookingModal({
         dateString < formData.end_date;
 
       let cellStyles =
-        "h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-medium transition cursor-pointer ";
+        "relative h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-medium transition cursor-pointer ";
       if (isStart || isEnd) {
         cellStyles += "bg-brand text-white font-bold shadow-sm";
       } else if (isInRange) {
@@ -119,6 +172,8 @@ export default function VehicleBookingModal({
         cellStyles += "text-ink hover:bg-paper";
       }
 
+      const st = dayStatus[dateString];
+
       days.push(
         <button
           key={dateString}
@@ -126,6 +181,16 @@ export default function VehicleBookingModal({
           onClick={() => handleDateClick(dateString)}
           className={cellStyles}>
           {day}
+          {st && (
+            <span className="absolute bottom-[1px] left-1/2 flex -translate-x-1/2 items-center gap-0.5">
+              {st.approved && (
+                <span className="h-1 w-1 rounded-full bg-emerald-500 ring-1 ring-white" />
+              )}
+              {st.pending && (
+                <span className="h-1 w-1 rounded-full bg-amber-500 ring-1 ring-white" />
+              )}
+            </span>
+          )}
         </button>,
       );
     }
@@ -162,6 +227,16 @@ export default function VehicleBookingModal({
 
         <div className="grid grid-cols-7 justify-items-center gap-y-0.5">
           {days}
+        </div>
+
+        <div className="mt-2 flex items-center justify-center gap-4 border-t border-line pt-2 text-[10.5px] text-steel">
+          <span className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{" "}
+            Approved
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Pending
+          </span>
         </div>
       </div>
     );
