@@ -98,7 +98,9 @@ export default function Overview() {
       })
       .catch((err) => {
         console.error("Failed to submit booking request", err);
-        alert("Failed to submit booking request.");
+        alert(
+          err?.response?.data?.message || "Failed to submit booking request.",
+        );
       });
   };
 

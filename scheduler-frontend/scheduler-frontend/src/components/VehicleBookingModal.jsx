@@ -86,6 +86,39 @@ export default function VehicleBookingModal({
     }
   });
 
+  // Approved bookings of this resource that overlap the chosen dates and times
+  const toMins = (t) => {
+    const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!m) return null;
+    let h = Number(m[1]);
+    const ap = (m[3] || "").toUpperCase();
+    if (ap === "PM" && h < 12) h += 12;
+    if (ap === "AM" && h === 12) h = 0;
+    return h * 60 + Number(m[2]);
+  };
+  const conflict =
+    formData.start_date && formData.end_date
+      ? bookings.find((b) => {
+          if ((b.status || "").toLowerCase() !== "approved") return false;
+          const same =
+            b.resource_id != null
+              ? String(b.resource_id) === String(resourceId)
+              : b.resource === selectedVehicle.name;
+          if (!same) return false;
+          const bStart = b.start_date;
+          const bEnd = b.end_date || b.start_date;
+          if (!bStart) return false;
+          if (!(formData.start_date <= bEnd && bStart <= formData.end_date))
+            return false;
+          const ns = toMins(formData.start_time);
+          const ne = toMins(formData.end_time);
+          const bs = toMins(b.start_time);
+          const be = toMins(b.end_time);
+          if ([ns, ne, bs, be].some((v) => v === null)) return true;
+          return Math.max(ns, bs) < Math.min(ne, be);
+        })
+      : null;
+
   const update = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
@@ -248,7 +281,8 @@ export default function VehicleBookingModal({
     formData.purpose.trim() &&
     formData.full_name.trim() && // <-- Change 'name' to 'full_name'
     formData.cell_number.length === 11 &&
-    formData.address.trim();
+    formData.address.trim() &&
+    !conflict;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -439,7 +473,17 @@ export default function VehicleBookingModal({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
+            {conflict && (
+              <p className="mr-auto basis-full text-[11.5px] font-medium text-status-rejected sm:basis-auto sm:max-w-[60%]">
+                Already booked: an approved request holds this resource from{" "}
+                {conflict.start_date} to {conflict.end_date}
+                {conflict.time && conflict.time !== "All Day"
+                  ? ` (${conflict.time})`
+                  : ""}
+                . Choose a different date or time.
+              </p>
+            )}
             <button
               type="button"
               onClick={onClose}

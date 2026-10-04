@@ -91,7 +91,11 @@ function hasTimeDateConflict(targetBooking, allBookings) {
     const bResource = (b.resource || b.resource_name || b.item_name || "")
       .trim()
       .toLowerCase();
-    if (bResource !== targetResource) continue;
+    if (b.resource_id != null && targetBooking.resource_id != null) {
+      if (String(b.resource_id) !== String(targetBooking.resource_id)) continue;
+    } else if (bResource !== targetResource) {
+      continue;
+    }
 
     const bStart = b.start_date || b.date;
     const bEnd = b.end_date || b.date || bStart;
@@ -149,6 +153,7 @@ export default function Bookings() {
 
   async function handleStatusChange(id, status) {
     const targetBooking = bookings.find((b) => (b.id || b.booking_id) === id);
+    const previousStatus = targetBooking?.status;
 
     // If attempting to approve, check for time and date conflicts
     if (status === "approved" && targetBooking) {
@@ -168,8 +173,18 @@ export default function Bookings() {
     );
     try {
       await api.updateBookingStatus(id, status);
-    } catch {
-      // Handle error
+    } catch (err) {
+      // Put the old status back and explain what went wrong
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === id || b.booking_id === id
+            ? { ...b, status: previousStatus }
+            : b,
+        ),
+      );
+      alert(
+        err?.response?.data?.message || "Could not update the booking status.",
+      );
     }
   }
 
