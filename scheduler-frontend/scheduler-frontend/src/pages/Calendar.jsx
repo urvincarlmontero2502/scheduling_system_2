@@ -70,13 +70,16 @@ function getWeekDays(date) {
   return days;
 }
 
-// Size of a booking block in the week view
+// Size of a booking block in the week view (offset relative to 7:00 AM base)
 function blockBox(b) {
   const startMins = timeToMinutes(
     formatTimeTo12Hour(b.start_time || b.time || "07:00"),
   );
   const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
-  const top = Math.max(0, (startMins / 60) * 56);
+
+  // 7:00 AM base offset in minutes (7 * 60 = 420 mins)
+  const baseOffsetMins = 7 * 60;
+  const top = Math.max(0, ((startMins - baseOffsetMins) / 60) * 56);
   const height = Math.max(65, Math.max(0.5, (endMins - startMins) / 60) * 56);
   return { top, height };
 }
@@ -103,7 +106,7 @@ function layoutOverlaps(items) {
     ordered.forEach((it) => {
       let col = columns.findIndex((items) =>
         items.every(
-          (x) => it.top >= x.top + x.height || it.top + it.height <= x.top,
+          (x) => it.top >= x.top + x.height || it.top + x.height <= x.top,
         ),
       );
       if (col === -1) {
@@ -215,13 +218,6 @@ export default function CalendarView() {
     };
   }, []);
 
-  // Automatically scroll directly to 7:00 AM on initial load / view change
-  useEffect(() => {
-    if (!isYearView && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 12 * 28;
-    }
-  }, [isYearView, currentDate]);
-
   const weekDays = getWeekDays(currentDate);
   const monthDays = getMonthDays(currentDate);
   const currentYear = currentDate.getFullYear();
@@ -266,19 +262,8 @@ export default function CalendarView() {
     setCurrentDate(new Date());
   };
 
+  // Strictly 7:00 AM to 5:00 PM time slots
   const timeSlots = [
-    "1:00 AM",
-    "1:30 AM",
-    "2:00 AM",
-    "2:30 AM",
-    "3:00 AM",
-    "3:30 AM",
-    "4:00 AM",
-    "4:30 AM",
-    "5:00 AM",
-    "5:30 AM",
-    "6:00 AM",
-    "6:30 AM",
     "7:00 AM",
     "7:30 AM",
     "8:00 AM",
@@ -300,20 +285,6 @@ export default function CalendarView() {
     "4:00 PM",
     "4:30 PM",
     "5:00 PM",
-    "5:30 PM",
-    "6:00 PM",
-    "6:30 PM",
-    "7:00 PM",
-    "7:30 PM",
-    "8:00 PM",
-    "8:30 PM",
-    "9:00 PM",
-    "9:30 PM",
-    "10:00 PM",
-    "10:30 PM",
-    "11:00 PM",
-    "11:30 PM",
-    "12:00 AM",
   ];
 
   const monthYearLabel = currentDate.toLocaleDateString("en-US", {
@@ -322,74 +293,74 @@ export default function CalendarView() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 p-2 sm:p-4 overflow-y-auto">
+    <div className="flex flex-col min-h-screen bg-gray-100 p-6 overflow-y-auto">
       {/* Main Wrapper Layout with Sidebar Configuration */}
-      <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 items-start">
+      <div className="w-full max-w-7xl mx-auto flex gap-6 items-start">
         {/* Left / Main Content Container */}
         <div className="flex flex-col flex-1 w-full bg-white rounded-lg border border-line shadow-sm overflow-hidden">
           {/* Top Header Controls */}
-          <header className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-3 border-b border-line bg-white shrink-0">
-            <div className="flex items-center justify-between sm:justify-start gap-3">
-              <h1 className="text-[15px] sm:text-[17px] font-semibold text-ink">
+          <header className="flex items-center justify-between px-6 py-4 border-b border-line bg-white shrink-0">
+            <div className="flex items-center gap-3">
+              <h1 className="text-[18px] font-semibold text-ink">
                 {isYearView
                   ? `Yearly Overview (${currentYear})`
                   : monthYearLabel}
               </h1>
             </div>
 
-            <div className="flex items-center justify-end gap-2 flex-wrap">
+            <div className="flex items-center gap-3">
               {isYearView ? (
                 <div className="flex items-center border border-line rounded-lg overflow-hidden bg-paper/50">
                   <button
                     onClick={handlePrevYear}
-                    className="p-1.5 hover:bg-line/50 text-steel transition"
+                    className="p-2 hover:bg-line/50 text-steel transition"
                     title="Previous Year">
-                    <ChevronLeft size={14} />
+                    <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={handleToday}
-                    className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
+                    className="px-3 py-1.5 text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
                     This Year
                   </button>
                   <button
                     onClick={handleNextYear}
-                    className="p-1.5 hover:bg-line/50 text-steel transition"
+                    className="p-2 hover:bg-line/50 text-steel transition"
                     title="Next Year">
-                    <ChevronRight size={14} />
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center border border-line rounded-lg overflow-hidden bg-paper/50">
                   <button
                     onClick={handlePrevWeek}
-                    className="p-1.5 hover:bg-line/50 text-steel transition"
+                    className="p-2 hover:bg-line/50 text-steel transition"
                     title="Previous Week">
-                    <ChevronLeft size={14} />
+                    <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={handleToday}
-                    className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
+                    className="px-3 py-1.5 text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
                     Today
                   </button>
                   <button
                     onClick={handleNextWeek}
-                    className="p-1.5 hover:bg-line/50 text-steel transition"
+                    className="p-2 hover:bg-line/50 text-steel transition"
                     title="Next Week">
-                    <ChevronRight size={14} />
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               )}
 
               <button
                 onClick={() => setIsYearView(!isYearView)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
+                className="flex items-center gap-2 px-3.5 py-1.5 text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
                 {isYearView ? (
                   <>
-                    <CalendarIcon size={14} /> Back to Schedule
+                    <CalendarIcon size={15} /> Back to Schedule
                   </>
                 ) : (
                   <>
-                    <Grid size={14} /> Year View
+                    <Grid size={15} /> Year View
                   </>
                 )}
               </button>
@@ -398,8 +369,8 @@ export default function CalendarView() {
 
           {/* Conditional View: Year View vs Weekly Schedule View */}
           {isYearView ? (
-            <div className="p-4 sm:p-6 bg-paper/20">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-white border border-line p-3 rounded-lg shadow-xs">
+            <div className="p-6 bg-paper/20">
+              <div className="flex items-center justify-between mb-4 bg-white border border-line p-3 rounded-lg shadow-xs">
                 <div className="flex items-center gap-2 text-[13px] font-medium text-steel">
                   <Filter size={15} />
                   <span>Filter Year View:</span>
@@ -533,42 +504,43 @@ export default function CalendarView() {
               </div>
             </div>
           ) : (
-            <div className="bg-white w-full relative overflow-hidden">
+            <div className="bg-white w-full relative overflow-hidden flex flex-col">
               <div className="w-full flex flex-col">
                 <div
                   className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-20"
                   style={{
-                    gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
+                    gridTemplateColumns: "60px repeat(7, minmax(0, 1fr))",
                   }}>
-                  <div className="py-2 text-[9px] sm:text-[10px] font-medium text-steel border-r border-line bg-paper sticky left-0 z-30 flex items-center justify-center">
+                  <div className="py-2.5 text-[10px] font-medium text-steel border-r border-line bg-paper sticky left-0 z-30 flex items-center justify-center">
                     GMT
                   </div>
                   {weekDays.map((day, idx) => (
                     <div
                       key={idx}
-                      className="py-1.5 sm:py-2 border-r border-line last:border-r-0 flex flex-col items-center bg-paper">
-                      <span className="text-[8px] sm:text-[9px] font-semibold text-steel tracking-tight">
+                      className="py-2.5 border-r border-line last:border-r-0 flex flex-col items-center bg-paper">
+                      <span className="text-[10px] font-semibold text-steel tracking-tight">
                         {day.name}
                       </span>
                       <span
-                        className={`text-[11px] sm:text-[13px] font-bold mt-0.5 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
+                        className={`text-[13px] font-bold mt-0.5 h-6 w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
                         {day.dateNum}
                       </span>
                     </div>
                   ))}
                 </div>
 
+                {/* Added explicit styling to make sure the scrollbar is fully functional and visible */}
                 <div
                   ref={scrollContainerRef}
-                  className="grid relative max-h-[480px] overflow-y-auto"
+                  className="grid relative max-h-[600px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
                   style={{
-                    gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
+                    gridTemplateColumns: "60px repeat(7, minmax(0, 1fr))",
                   }}>
                   <div className="border-r border-line bg-paper/25 sticky left-0 z-10">
                     {timeSlots.map((time, idx) => (
                       <div
                         key={idx}
-                        className="h-7 border-b border-line px-0.5 text-right text-[8px] sm:text-[9px] font-mono text-steel pt-1 bg-white">
+                        className="h-7 border-b border-line px-1 text-right text-[10px] font-mono text-steel pt-1 bg-white">
                         {time}
                       </div>
                     ))}
@@ -631,7 +603,7 @@ export default function CalendarView() {
                             <div
                               key={b.id || b.booking_id}
                               title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
-                              className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
+                              className={`absolute p-1 hover:z-10 rounded shadow-xs text-[10px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
                                 isApproved
                                   ? "bg-emerald-500 text-white border border-emerald-600"
                                   : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
@@ -643,16 +615,16 @@ export default function CalendarView() {
                                 width: `calc(${100 / cols}% - 2px)`,
                               }}>
                               <div className="space-y-0.5">
-                                <div className="flex items-center justify-between gap-0.5">
-                                  <span className="font-bold text-[9px] leading-tight truncate">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-bold text-[10px] leading-tight truncate">
                                     {resourceName}
                                   </span>
                                 </div>
-                                <div className="text-[8px] opacity-90 truncate">
+                                <div className="text-[9px] opacity-90 truncate">
                                   {startTime}
                                 </div>
                               </div>
-                              <div className="text-[7.5px] opacity-90 truncate">
+                              <div className="text-[8.5px] opacity-90 truncate">
                                 {requesterName}
                               </div>
                             </div>
@@ -668,7 +640,7 @@ export default function CalendarView() {
         </div>
 
         {/* Right Sidebar: Mini Calendar & Legend Container */}
-        <div className="w-full lg:w-[300px] shrink-0 bg-white border border-line rounded-lg p-4 shadow-sm">
+        <div className="w-[300px] shrink-0 bg-white border border-line rounded-lg p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[13px] font-semibold text-ink">
               {monthYearLabel}
@@ -678,13 +650,13 @@ export default function CalendarView() {
                 onClick={handlePrevMonth}
                 className="p-1 hover:bg-paper rounded text-steel transition"
                 title="Previous Month">
-                <ChevronLeft size={13} />
+                <ChevronLeft size={14} />
               </button>
               <button
                 onClick={handleNextMonth}
                 className="p-1 hover:bg-paper rounded text-steel transition"
                 title="Next Month">
-                <ChevronRight size={13} />
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
