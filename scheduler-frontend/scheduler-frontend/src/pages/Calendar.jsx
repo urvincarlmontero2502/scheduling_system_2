@@ -83,7 +83,7 @@ function blockBox(b) {
 // Put overlapping bookings side by side instead of stacking them
 function layoutOverlaps(items) {
   const sorted = [...items].sort(
-    (a, c) => a.top - c.top || c.height - c.height,
+    (a, c) => a.top - c.top || c.height - a.height,
   );
   const result = [];
   let cluster = [];
@@ -471,8 +471,8 @@ export default function CalendarView() {
             </div>
           </div>
         ) : (
-          /* Scrollable Container with Explicit Vertical Scrollbar on Pane Edge */
-          <div className="flex-1 overflow-x-auto overflow-y-scroll w-full relative">
+          /* Scrollable Container */
+          <div className="flex-1 overflow-x-auto overflow-y-auto w-full relative">
             <div className="min-w-[800px] flex flex-col">
               {/* Days Header Row */}
               <div
