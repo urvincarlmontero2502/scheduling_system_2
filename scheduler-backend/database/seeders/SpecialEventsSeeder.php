@@ -4,12 +4,14 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use DatePeriod;
+use DateTime;
+use DateInterval;
 
 class SpecialEventsSeeder extends Seeder
 {
     public function run()
     {
-        // Define the special events with their date ranges and resource names
         $events = [
             [
                 'title' => 'Sumayajaw Festival',
@@ -37,27 +39,36 @@ class SpecialEventsSeeder extends Seeder
             ],
         ];
 
-        // Find an admin or system user ID to attribute these official bookings to
         $systemUserId = DB::table('users')->where('role', 'admin')->value('user_id') ?? 1;
 
         foreach ($events as $event) {
-            foreach ($event['resources'] as $resourceName) {
-                // Look up the resource_id from the resources table
-               // Change 'LIKE' to 'ILIKE' for case-insensitive matching in PostgreSQL
-$resource = DB::table('resources')->where('name', 'ILIKE', "%{$resourceName}%")->first();
-                if ($resource) {
-                    DB::table('booking_request')->insert([
-                        'user_id' => $systemUserId,
-                        'resource_id' => $resource->resource_id,
-                        'full_name' => $event['title'], // Used as event/requester title
-                        'purpose' => 'Community Festival / Official Event',
-                        'start_date' => $event['start_date'],
-                        'end_date' => $event['end_date'],
-                        'start_time' => '07:00:00',
-                        'end_time' => '17:00:00',
-                        'status' => 'approved', // Automatically approved so it blocks the calendar
-                        'created_at' => now(),
-                    ]);
+            // Create a date period to loop through every single day of multi-day events
+            $period = new DatePeriod(
+                new DateTime($event['start_date']),
+                new DateInterval('P1D'),
+                (new DateTime($event['end_date']))->modify('+1 day')
+            );
+
+            foreach ($period as $date) {
+                $currentDate = $date->format('Y-m-d');
+
+                foreach ($event['resources'] as $resourceName) {
+                    $resource = DB::table('resources')->where('name', 'ILIKE', "%{$resourceName}%")->first();
+
+                    if ($resource) {
+                        DB::table('booking_request')->insert([
+                            'user_id' => $systemUserId,
+                            'resource_id' => $resource->resource_id,
+                            'full_name' => $event['title'],
+                            'purpose' => 'Community Festival / Official Event',
+                            'start_date' => $currentDate,
+                            'end_date' => $currentDate,
+                            'start_time' => '07:00:00',
+                            'end_time' => '17:00:00',
+                            'status' => 'approved',
+                            'created_at' => now(),
+                        ]);
+                    }
                 }
             }
         }
