@@ -312,27 +312,25 @@ export default function CalendarView() {
           </div>
 
           <div className="flex items-center justify-end gap-2 flex-wrap">
-            {/* Today / This Year Button First */}
-            <button
-              onClick={handleToday}
-              className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
-              {isYearView ? "This Year" : "Today"}
-            </button>
-
-            {/* Navigation Arrows in the Middle */}
+            {/* < Today > Combined Group */}
             {isYearView ? (
               <div className="flex items-center border border-line rounded-lg overflow-hidden bg-paper/50">
                 <button
                   onClick={handlePrevYear}
                   className="p-1.5 hover:bg-line/50 text-steel transition"
                   title="Previous Year">
-                  <ChevronLeft size={15} />
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  onClick={handleToday}
+                  className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
+                  This Year
                 </button>
                 <button
                   onClick={handleNextYear}
-                  className="p-1.5 hover:bg-line/50 text-steel transition border-l border-line"
+                  className="p-1.5 hover:bg-line/50 text-steel transition"
                   title="Next Year">
-                  <ChevronRight size={15} />
+                  <ChevronRight size={14} />
                 </button>
               </div>
             ) : (
@@ -341,18 +339,23 @@ export default function CalendarView() {
                   onClick={handlePrevWeek}
                   className="p-1.5 hover:bg-line/50 text-steel transition"
                   title="Previous Week">
-                  <ChevronLeft size={15} />
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  onClick={handleToday}
+                  className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
+                  Today
                 </button>
                 <button
                   onClick={handleNextWeek}
-                  className="p-1.5 hover:bg-line/50 text-steel transition border-l border-line"
+                  className="p-1.5 hover:bg-line/50 text-steel transition"
                   title="Next Week">
-                  <ChevronRight size={15} />
+                  <ChevronRight size={14} />
                 </button>
               </div>
             )}
 
-            {/* Year View / Schedule Button Last */}
+            {/* Year View / Schedule Button */}
             <button
               onClick={() => setIsYearView(!isYearView)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
