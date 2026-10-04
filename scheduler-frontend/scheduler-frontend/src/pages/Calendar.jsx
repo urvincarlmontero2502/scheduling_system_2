@@ -5,6 +5,7 @@ import {
   Clock,
   Calendar as CalendarIcon,
   Grid,
+  Filter,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 
@@ -179,6 +180,7 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isYearView, setIsYearView] = useState(false);
+  const [yearViewFilter, setYearViewFilter] = useState("all"); // 'all' | 'approved' | 'pending'
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
@@ -394,10 +396,48 @@ export default function CalendarView() {
           </div>
         </header>
 
-        {/* Conditional View: Year View vs Weekly Schedule View */}
+        {/* Conditional View: Year View (ViewYear) vs Weekly Schedule View */}
         {isYearView ? (
           <div className="p-4 sm:p-6 bg-paper/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Quick-Filtering Options Bar directly above the 12-month grid */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-white border border-line p-3 rounded-lg shadow-xs">
+              <div className="flex items-center gap-2 text-[13px] font-medium text-steel">
+                <Filter size={15} />
+                <span>Filter Year View:</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-paper p-1 rounded-md border border-line">
+                <button
+                  onClick={() => setYearViewFilter("all")}
+                  className={`px-3 py-1 text-[12px] font-medium rounded transition ${
+                    yearViewFilter === "all"
+                      ? "bg-brand text-white shadow-xs"
+                      : "text-ink hover:bg-line/50"
+                  }`}>
+                  All Bookings
+                </button>
+                <button
+                  onClick={() => setYearViewFilter("approved")}
+                  className={`px-3 py-1 text-[12px] font-medium rounded transition ${
+                    yearViewFilter === "approved"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-ink hover:bg-line/50"
+                  }`}>
+                  Approved Only
+                </button>
+                <button
+                  onClick={() => setYearViewFilter("pending")}
+                  className={`px-3 py-1 text-[12px] font-medium rounded transition ${
+                    yearViewFilter === "pending"
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "text-ink hover:bg-line/50"
+                  }`}>
+                  Pending Only
+                </button>
+              </div>
+            </div>
+
+            {/* ViewYear Layout: 12-Month Responsive Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {Array.from({ length: 12 }).map((_, mIndex) => {
                 const monthDate = new Date(currentYear, mIndex, 1);
                 const monthName = monthDate.toLocaleDateString("en-US", {
@@ -408,7 +448,7 @@ export default function CalendarView() {
                 return (
                   <div
                     key={mIndex}
-                    className="bg-white border border-line rounded-xl p-3 shadow-sm">
+                    className="bg-white border border-line rounded-xl p-3 shadow-sm hover:shadow-md transition">
                     <h3 className="text-[13px] font-bold text-ink mb-2 text-center">
                       {monthName}
                     </h3>
@@ -430,6 +470,7 @@ export default function CalendarView() {
                             status.includes("pend") ||
                             status.includes("request") ||
                             status.includes("tentative");
+
                           if (!isApproved && !isPending) return false;
 
                           const bDate = b.date || b.start_date || "";
@@ -448,6 +489,18 @@ export default function CalendarView() {
                           );
                         });
 
+                        // Filter visibility checks
+                        const showApprovedIndicator =
+                          (yearViewFilter === "all" ||
+                            yearViewFilter === "approved") &&
+                          hasApproved;
+                        const showPendingIndicator =
+                          (yearViewFilter === "all" ||
+                            yearViewFilter === "pending") &&
+                          hasPending;
+                        const hasVisibleIndicator =
+                          showApprovedIndicator || showPendingIndicator;
+
                         return (
                           <div
                             key={dIdx}
@@ -463,17 +516,16 @@ export default function CalendarView() {
                                 : "text-steel/30 cursor-default"
                             }`}>
                             <span>{item.dayNum}</span>
-                            {item.isCurrentMonth &&
-                              (hasApproved || hasPending) && (
-                                <div className="flex items-center gap-0.5 absolute bottom-0.5">
-                                  {hasApproved && (
-                                    <span className="h-1 w-1 rounded-full bg-emerald-500" />
-                                  )}
-                                  {hasPending && (
-                                    <span className="h-1 w-1 rounded-full bg-amber-500" />
-                                  )}
-                                </div>
-                              )}
+                            {item.isCurrentMonth && hasVisibleIndicator && (
+                              <div className="flex items-center gap-0.5 absolute bottom-0.5">
+                                {showApprovedIndicator && (
+                                  <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                                )}
+                                {showPendingIndicator && (
+                                  <span className="h-1 w-1 rounded-full bg-amber-500" />
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -484,7 +536,7 @@ export default function CalendarView() {
             </div>
           </div>
         ) : (
-          /* Compressed Calendar Grid */
+          /* Compressed Calendar Schedule Grid */
           <div className="bg-white w-full relative overflow-hidden">
             <div className="w-full flex flex-col">
               {/* Days Header Row */}
