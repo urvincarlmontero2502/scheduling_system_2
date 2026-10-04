@@ -202,7 +202,6 @@ export default function CalendarView() {
 
     loadBookings();
 
-    // Listen to multiple event variants to ensure deletions/updates are caught immediately
     window.addEventListener("bookingUpdated", loadBookings);
     window.addEventListener("bookingDeleted", loadBookings);
     window.addEventListener("bookingChanged", loadBookings);
@@ -314,11 +313,11 @@ export default function CalendarView() {
   });
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-white">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-white">
       {/* MAIN: Calendar Grid Area / Year View Area */}
-      <div className="flex-1 flex flex-col border-r border-line">
+      <div className="flex-1 flex flex-col border-r border-line h-full overflow-hidden">
         {/* Top Header Controls */}
-        <header className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-line bg-white">
+        <header className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-line bg-white shrink-0">
           <div className="flex items-center gap-4">
             <h1 className="text-[17px] font-semibold text-ink">
               {isYearView ? `Yearly Overview (${currentYear})` : monthYearLabel}
@@ -473,15 +472,15 @@ export default function CalendarView() {
           </div>
         ) : (
           /* Scrollable Container */
-          <div className="overflow-x-auto w-full">
+          <div className="flex-1 overflow-x-auto overflow-y-auto w-full relative">
             <div className="min-w-[800px] flex flex-col">
               {/* Days Header Row */}
               <div
-                className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-10"
+                className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-20"
                 style={{
                   gridTemplateColumns: "75px repeat(7, minmax(0, 1fr))",
                 }}>
-                <div className="py-3 text-[11px] font-medium text-steel border-r border-line bg-paper">
+                <div className="py-3 text-[11px] font-medium text-steel border-r border-line bg-paper sticky left-0 z-30">
                   GMT+08
                 </div>
                 {weekDays.map((day, idx) => (
@@ -506,11 +505,11 @@ export default function CalendarView() {
                   gridTemplateColumns: "75px repeat(7, minmax(0, 1fr))",
                 }}>
                 {/* Time Column */}
-                <div className="border-r border-line bg-paper/20">
+                <div className="border-r border-line bg-paper/25 sticky left-0 z-10">
                   {timeSlots.map((time, idx) => (
                     <div
                       key={idx}
-                      className="h-8 border-b border-line px-2 text-right text-[11px] font-mono text-steel pt-1">
+                      className="h-8 border-b border-line px-2 text-right text-[11px] font-mono text-steel pt-1 bg-white">
                       {time}
                     </div>
                   ))}
@@ -573,16 +572,6 @@ export default function CalendarView() {
 
                         const startTime = formatTimeTo12Hour(rawStart);
                         const endTime = formatTimeTo12Hour(rawEnd);
-
-                        const startMins = timeToMinutes(startTime);
-                        const endMins = timeToMinutes(endTime);
-
-                        const topOffset = ((startMins - 60) / 60) * 64;
-                        const durationHours = Math.max(
-                          0.5,
-                          (endMins - startMins) / 60,
-                        );
-                        const blockHeight = durationHours * 64;
 
                         return (
                           <div
@@ -651,7 +640,7 @@ export default function CalendarView() {
       </div>
 
       {/* RIGHT SIDEBAR: Mini Calendar & Legend Panel */}
-      <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-line bg-white flex flex-col p-5 shrink-0">
+      <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-line bg-white flex flex-col p-5 shrink-0 overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[14px] font-semibold text-ink">
             {monthYearLabel}
