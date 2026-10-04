@@ -103,7 +103,7 @@ function layoutOverlaps(items) {
     ordered.forEach((it) => {
       let col = columns.findIndex((items) =>
         items.every(
-          (x) => it.top >= x.top + x.height || it.top + it.height <= x.top,
+          (x) => it.top >= x.top + x.height || it.top + x.height <= x.top,
         ),
       );
       if (col === -1) {
@@ -217,6 +217,7 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {
+      // Index 12 corresponds to 7:00 AM
       scrollContainerRef.current.scrollTop = 12 * 28;
     }
   }, [isYearView, currentDate]);
@@ -555,7 +556,7 @@ export default function CalendarView() {
 
                 <div
                   ref={scrollContainerRef}
-                  className="grid relative max-h-[650px] overflow-y-auto"
+                  className="grid relative max-h-[588px] overflow-y-auto"
                   style={{
                     gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                   }}>
