@@ -215,7 +215,6 @@ export default function CalendarView() {
     };
   }, []);
 
-  // Automatically scroll directly to 7:00 AM on initial load / view change
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 12 * 28;
@@ -323,11 +322,8 @@ export default function CalendarView() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 p-2 sm:p-4 overflow-y-auto">
-      {/* Main Wrapper Layout with Sidebar Configuration */}
       <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 items-start">
-        {/* Left / Main Content Container */}
         <div className="flex flex-col flex-1 w-full bg-white rounded-lg border border-line shadow-sm overflow-hidden">
-          {/* Top Header Controls */}
           <header className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-3 border-b border-line bg-white shrink-0">
             <div className="flex items-center justify-between sm:justify-start gap-3">
               <h1 className="text-[15px] sm:text-[17px] font-semibold text-ink">
@@ -396,7 +392,6 @@ export default function CalendarView() {
             </div>
           </header>
 
-          {/* Conditional View: Year View vs Weekly Schedule View */}
           {isYearView ? (
             <div className="p-4 sm:p-6 bg-paper/20">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-white border border-line p-3 rounded-lg shadow-xs">
@@ -560,7 +555,7 @@ export default function CalendarView() {
 
                 <div
                   ref={scrollContainerRef}
-                  className="grid relative max-h-[480px] overflow-y-auto"
+                  className="grid relative max-h-[650px] overflow-y-auto"
                   style={{
                     gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                   }}>
