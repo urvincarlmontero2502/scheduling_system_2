@@ -309,8 +309,12 @@ export default function CalendarView() {
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-ink">
               {isYearView ? `Yearly Overview (${currentYear})` : monthYearLabel}
             </h1>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            {/* Navigation Arrows Grouped With Actions */}
             {isYearView ? (
-              <div className="flex items-center gap-1 border border-line rounded-lg overflow-hidden bg-paper/50">
+              <div className="flex items-center border border-line rounded-lg overflow-hidden bg-paper/50">
                 <button
                   onClick={handlePrevYear}
                   className="p-1.5 hover:bg-line/50 text-steel transition"
@@ -319,13 +323,13 @@ export default function CalendarView() {
                 </button>
                 <button
                   onClick={handleNextYear}
-                  className="p-1.5 hover:bg-line/50 text-steel transition"
+                  className="p-1.5 hover:bg-line/50 text-steel transition border-l border-line"
                   title="Next Year">
                   <ChevronRight size={15} />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1 border border-line rounded-lg overflow-hidden bg-paper/50">
+              <div className="flex items-center border border-line rounded-lg overflow-hidden bg-paper/50">
                 <button
                   onClick={handlePrevWeek}
                   className="p-1.5 hover:bg-line/50 text-steel transition"
@@ -334,15 +338,13 @@ export default function CalendarView() {
                 </button>
                 <button
                   onClick={handleNextWeek}
-                  className="p-1.5 hover:bg-line/50 text-steel transition"
+                  className="p-1.5 hover:bg-line/50 text-steel transition border-l border-line"
                   title="Next Week">
                   <ChevronRight size={15} />
                 </button>
               </div>
             )}
-          </div>
 
-          <div className="flex items-center justify-end gap-2">
             <button
               onClick={handleToday}
               className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
