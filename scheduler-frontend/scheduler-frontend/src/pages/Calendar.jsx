@@ -85,7 +85,7 @@ function blockBox(b) {
 // Put overlapping bookings side by side instead of stacking them
 function layoutOverlaps(items) {
   const sorted = [...items].sort(
-    (a, c) => a.top - c.top || c.height - c.height,
+    (a, c) => a.top - c.top || c.height - a.height,
   );
   const result = [];
   let cluster = [];
@@ -104,7 +104,7 @@ function layoutOverlaps(items) {
     ordered.forEach((it) => {
       let col = columns.findIndex((items) =>
         items.every(
-          (x) => it.top >= x.top + x.height || it.top + x.height <= x.top,
+          (x) => it.top >= x.top + x.height || it.top + it.height <= x.top,
         ),
       );
       if (col === -1) {
