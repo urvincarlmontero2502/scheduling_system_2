@@ -94,7 +94,6 @@ function layoutOverlaps(items) {
 
   const flush = () => {
     if (!cluster.length) return;
-    // Approved bookings get the first (leftmost) columns, pending after them
     const ordered = [...cluster].sort(
       (a, c) =>
         Number(isApprovedItem(c)) - Number(isApprovedItem(a)) || a.top - c.top,
@@ -313,9 +312,9 @@ export default function CalendarView() {
   });
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-white">
-      {/* MAIN: Calendar Grid Area / Year View Area */}
-      <div className="flex-1 flex flex-col border-r border-line h-full overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-gray-50 overflow-y-auto">
+      {/* Main Container Stacked Column Layout for Mobile & Desktop */}
+      <div className="flex flex-col w-full max-w-7xl mx-auto flex-1">
         {/* Top Header Controls */}
         <header className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-line bg-white shrink-0">
           <div className="flex items-center gap-4">
@@ -383,7 +382,7 @@ export default function CalendarView() {
 
         {/* Conditional View: Year View vs Weekly Schedule View */}
         {isYearView ? (
-          <div className="flex-1 p-6 overflow-y-auto bg-paper/20">
+          <div className="p-6 bg-paper/20">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 12 }).map((_, mIndex) => {
                 const monthDate = new Date(currentYear, mIndex, 1);
@@ -471,8 +470,8 @@ export default function CalendarView() {
             </div>
           </div>
         ) : (
-          /* Scrollable Container with Explicit Vertical Scrollbar on Pane Edge */
-          <div className="flex-1 overflow-x-auto overflow-y-scroll w-full relative">
+          /* Calendar Grid Container with Horizontal Scroll for Small Screens */
+          <div className="bg-white border-b border-line overflow-x-auto w-full relative shadow-sm">
             <div className="min-w-[800px] flex flex-col">
               {/* Days Header Row */}
               <div
@@ -500,7 +499,7 @@ export default function CalendarView() {
 
               {/* Time Grid Content */}
               <div
-                className="grid relative"
+                className="grid relative max-h-[600px] overflow-y-scroll"
                 style={{
                   gridTemplateColumns: "75px repeat(7, minmax(0, 1fr))",
                 }}>
@@ -549,10 +548,6 @@ export default function CalendarView() {
                       {laidOut.map(({ b, top, height, col, cols }) => {
                         const status = (b.status || "").toLowerCase();
                         const isApproved = status.includes("approv");
-                        const isPending =
-                          status.includes("pend") ||
-                          status.includes("request") ||
-                          status.includes("tentative");
 
                         const resourceName =
                           b.resource ||
@@ -637,129 +632,131 @@ export default function CalendarView() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* RIGHT SIDEBAR: Mini Calendar & Legend Panel */}
-      <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-line bg-white flex flex-col p-5 shrink-0 overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[14px] font-semibold text-ink">
-            {monthYearLabel}
-          </h3>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handlePrevMonth}
-              className="p-1 hover:bg-paper rounded text-steel transition"
-              title="Previous Month">
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              onClick={handleNextMonth}
-              className="p-1 hover:bg-paper rounded text-steel transition"
-              title="Next Month">
-              <ChevronRight size={14} />
-            </button>
+        {/* BOTTOM SECTION: Mini Calendar & Legend Panel (Stacked underneath like Courses list) */}
+        <div className="w-full bg-white border-t border-line p-5 mt-4 shadow-sm rounded-xl">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[14px] font-semibold text-ink">
+              {monthYearLabel}
+            </h3>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handlePrevMonth}
+                className="p-1 hover:bg-paper rounded text-steel transition"
+                title="Previous Month">
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                onClick={handleNextMonth}
+                className="p-1 hover:bg-paper rounded text-steel transition"
+                title="Next Month">
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-7 text-center text-[12px] text-steel mb-2 font-medium">
-          <span>S</span>
-          <span>M</span>
-          <span>T</span>
-          <span>W</span>
-          <span>T</span>
-          <span>F</span>
-          <span>S</span>
-        </div>
-        <div className="grid grid-cols-7 text-center text-[12px] gap-y-1 mb-6 text-ink">
-          {monthDays.map((item, i) => {
-            const isSelected =
-              item.isCurrentMonth && item.dayNum === currentDate.getDate();
+          <div className="max-w-md mx-auto">
+            <div className="grid grid-cols-7 text-center text-[12px] text-steel mb-2 font-medium">
+              <span>S</span>
+              <span>M</span>
+              <span>T</span>
+              <span>W</span>
+              <span>T</span>
+              <span>F</span>
+              <span>S</span>
+            </div>
+            <div className="grid grid-cols-7 text-center text-[12px] gap-y-1 mb-6 text-ink">
+              {monthDays.map((item, i) => {
+                const isSelected =
+                  item.isCurrentMonth && item.dayNum === currentDate.getDate();
 
-            const dayBookings = bookings.filter((b) => {
-              const status = (b.status || "").toLowerCase();
-              const isApproved = status.includes("approv");
-              const isPending =
-                status.includes("pend") ||
-                status.includes("request") ||
-                status.includes("tentative");
-              if (!isApproved && !isPending) return false;
+                const dayBookings = bookings.filter((b) => {
+                  const status = (b.status || "").toLowerCase();
+                  const isApproved = status.includes("approv");
+                  const isPending =
+                    status.includes("pend") ||
+                    status.includes("request") ||
+                    status.includes("tentative");
+                  if (!isApproved && !isPending) return false;
 
-              const bDate = b.date || b.start_date || "";
-              return bDate.includes(item.fullDateStr);
-            });
+                  const bDate = b.date || b.start_date || "";
+                  return bDate.includes(item.fullDateStr);
+                });
 
-            const hasApproved = dayBookings.some((b) =>
-              (b.status || "").toLowerCase().includes("approv"),
-            );
-            const hasPending = dayBookings.some((b) => {
-              const s = (b.status || "").toLowerCase();
-              return (
-                s.includes("pend") ||
-                s.includes("request") ||
-                s.includes("tentative")
-              );
-            });
+                const hasApproved = dayBookings.some((b) =>
+                  (b.status || "").toLowerCase().includes("approv"),
+                );
+                const hasPending = dayBookings.some((b) => {
+                  const s = (b.status || "").toLowerCase();
+                  return (
+                    s.includes("pend") ||
+                    s.includes("request") ||
+                    s.includes("tentative")
+                  );
+                });
 
-            return (
-              <div
-                key={i}
-                onClick={() => {
-                  if (item.isCurrentMonth && item.fullDate) {
-                    setCurrentDate(new Date(item.fullDate));
-                    setIsYearView(false);
-                  }
-                }}
-                className={`h-9 w-9 mx-auto flex flex-col items-center justify-center rounded-full transition relative ${
-                  item.isCurrentMonth
-                    ? "cursor-pointer hover:bg-paper"
-                    : "text-steel/30 cursor-default"
-                } ${isSelected ? "bg-brand text-white font-bold" : ""}`}>
-                <span>{item.dayNum}</span>
-                {item.isCurrentMonth && (hasApproved || hasPending) && (
-                  <div className="flex items-center gap-0.5 absolute bottom-1">
-                    {hasApproved && (
-                      <span
-                        className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-emerald-500"}`}
-                      />
-                    )}
-                    {hasPending && (
-                      <span
-                        className={`h-1 w-1 rounded-full ${isSelected ? "bg-amber-200" : "bg-amber-500"}`}
-                      />
+                return (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      if (item.isCurrentMonth && item.fullDate) {
+                        setCurrentDate(new Date(item.fullDate));
+                        setIsYearView(false);
+                      }
+                    }}
+                    className={`h-9 w-9 mx-auto flex flex-col items-center justify-center rounded-full transition relative ${
+                      item.isCurrentMonth
+                        ? "cursor-pointer hover:bg-paper"
+                        : "text-steel/30 cursor-default"
+                    } ${isSelected ? "bg-brand text-white font-bold" : ""}`}>
+                    <span>{item.dayNum}</span>
+                    {item.isCurrentMonth && (hasApproved || hasPending) && (
+                      <div className="flex items-center gap-0.5 absolute bottom-1">
+                        {hasApproved && (
+                          <span
+                            className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-emerald-500"}`}
+                          />
+                        )}
+                        {hasPending && (
+                          <span
+                            className={`h-1 w-1 rounded-full ${isSelected ? "bg-amber-200" : "bg-amber-500"}`}
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <hr className="border-line mb-4" />
-
-        <div>
-          <h4 className="text-[12px] font-semibold text-steel uppercase tracking-wider mb-3">
-            Legend & Status
-          </h4>
-          <div className="space-y-2.5 text-[13px]">
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-ink font-medium">Approved Bookings</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 rounded-full bg-amber-400 border border-dashed border-amber-600 shrink-0" />
-              <span className="text-ink font-medium">Pending Requests</span>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 bg-paper rounded-lg p-3.5 border border-line/60">
-          <p className="text-[12px] text-steel leading-relaxed">
-            💡 <strong className="text-ink">Note:</strong> Pending requests
-            display with dashed borders so admins can easily track tentative
-            schedule slots.
-          </p>
+          <hr className="border-line mb-4" />
+
+          <div className="max-w-md mx-auto">
+            <h4 className="text-[12px] font-semibold text-steel uppercase tracking-wider mb-3">
+              Legend & Status
+            </h4>
+            <div className="space-y-2.5 text-[13px]">
+              <div className="flex items-center gap-2.5">
+                <span className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-ink font-medium">Approved Bookings</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="h-3 w-3 rounded-full bg-amber-400 border border-dashed border-amber-600 shrink-0" />
+                <span className="text-ink font-medium">Pending Requests</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 max-w-md mx-auto bg-paper rounded-lg p-3.5 border border-line/60">
+            <p className="text-[12px] text-steel leading-relaxed">
+              💡 <strong className="text-ink">Note:</strong> Pending requests
+              display with dashed borders so admins can easily track tentative
+              schedule slots.
+            </p>
+          </div>
         </div>
-      </aside>
+      </div>
     </div>
   );
 }
