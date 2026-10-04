@@ -312,7 +312,14 @@ export default function CalendarView() {
           </div>
 
           <div className="flex items-center justify-end gap-2 flex-wrap">
-            {/* Navigation Arrows Grouped With Actions */}
+            {/* Today / This Year Button First */}
+            <button
+              onClick={handleToday}
+              className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
+              {isYearView ? "This Year" : "Today"}
+            </button>
+
+            {/* Navigation Arrows in the Middle */}
             {isYearView ? (
               <div className="flex items-center border border-line rounded-lg overflow-hidden bg-paper/50">
                 <button
@@ -345,11 +352,7 @@ export default function CalendarView() {
               </div>
             )}
 
-            <button
-              onClick={handleToday}
-              className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
-              {isYearView ? "This Year" : "Today"}
-            </button>
+            {/* Year View / Schedule Button Last */}
             <button
               onClick={() => setIsYearView(!isYearView)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border border-line rounded-lg bg-paper hover:bg-line/50 text-ink transition">
