@@ -89,20 +89,32 @@ function layoutOverlaps(items) {
   let cluster = [];
   let clusterEnd = -1;
 
+  const isApprovedItem = (it) =>
+    (it.b.status || "").toLowerCase().includes("approv");
+
   const flush = () => {
     if (!cluster.length) return;
-    const ends = [];
-    cluster.forEach((it) => {
-      let col = ends.findIndex((end) => end <= it.top);
+    // Approved bookings get the first (leftmost) columns, pending after them
+    const ordered = [...cluster].sort(
+      (a, c) =>
+        Number(isApprovedItem(c)) - Number(isApprovedItem(a)) || a.top - c.top,
+    );
+    const columns = [];
+    ordered.forEach((it) => {
+      let col = columns.findIndex((items) =>
+        items.every(
+          (x) => it.top >= x.top + x.height || it.top + it.height <= x.top,
+        ),
+      );
       if (col === -1) {
-        col = ends.length;
-        ends.push(0);
+        col = columns.length;
+        columns.push([]);
       }
-      ends[col] = it.top + it.height;
+      columns[col].push(it);
       it.col = col;
     });
     cluster.forEach((it) => {
-      it.cols = ends.length;
+      it.cols = columns.length;
       result.push(it);
     });
     cluster = [];
