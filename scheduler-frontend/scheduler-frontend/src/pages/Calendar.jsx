@@ -76,9 +76,7 @@ function blockBox(b) {
     formatTimeTo12Hour(b.start_time || b.time || "07:00"),
   );
   const endMins = timeToMinutes(formatTimeTo12Hour(b.end_time || "17:00"));
-
-  // Adjust top offset relative to the new 7:00 AM start time (7 AM = 420 mins)
-  const top = Math.max(0, ((startMins - 420) / 60) * 56);
+  const top = Math.max(0, (startMins / 60) * 56);
   const height = Math.max(65, Math.max(0.5, (endMins - startMins) / 60) * 56);
   return { top, height };
 }
@@ -217,10 +215,10 @@ export default function CalendarView() {
     };
   }, []);
 
-  // Scroll container starts at the top since 7:00 AM is the first slot now
+  // Automatically scroll directly to 7:00 AM on initial load / view change
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
+      scrollContainerRef.current.scrollTop = 12 * 28;
     }
   }, [isYearView, currentDate]);
 
@@ -268,8 +266,19 @@ export default function CalendarView() {
     setCurrentDate(new Date());
   };
 
-  // Restricted to 7:00 AM to 5:00 PM (30-minute intervals)
   const timeSlots = [
+    "1:00 AM",
+    "1:30 AM",
+    "2:00 AM",
+    "2:30 AM",
+    "3:00 AM",
+    "3:30 AM",
+    "4:00 AM",
+    "4:30 AM",
+    "5:00 AM",
+    "5:30 AM",
+    "6:00 AM",
+    "6:30 AM",
     "7:00 AM",
     "7:30 AM",
     "8:00 AM",
@@ -291,6 +300,20 @@ export default function CalendarView() {
     "4:00 PM",
     "4:30 PM",
     "5:00 PM",
+    "5:30 PM",
+    "6:00 PM",
+    "6:30 PM",
+    "7:00 PM",
+    "7:30 PM",
+    "8:00 PM",
+    "8:30 PM",
+    "9:00 PM",
+    "9:30 PM",
+    "10:00 PM",
+    "10:30 PM",
+    "11:00 PM",
+    "11:30 PM",
+    "12:00 AM",
   ];
 
   const monthYearLabel = currentDate.toLocaleDateString("en-US", {
