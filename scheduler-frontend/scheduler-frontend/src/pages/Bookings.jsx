@@ -252,14 +252,14 @@ export default function Bookings() {
 
   return (
     <div className="pb-12">
-      <header className="border-b border-line bg-white px-6 py-4">
+      <header className="border-b border-line bg-white px-4 sm:px-6 py-4">
         <h1 className="text-[17px] font-semibold">Bookings</h1>
         <p className="text-[13px] text-steel">
           Manage and review facility and vehicle reservation requests
         </p>
       </header>
 
-      <div className="px-6 py-6 space-y-6">
+      <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* Tab Buttons Navigation & Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
           <div className="flex flex-wrap items-center gap-2">

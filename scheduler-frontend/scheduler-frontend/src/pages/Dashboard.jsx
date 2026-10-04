@@ -28,14 +28,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <header className="border-b border-line bg-white px-6 py-4">
+      <header className="border-b border-line bg-white px-4 sm:px-6 py-4">
         <h1 className="text-[17px] font-semibold">Welcome back</h1>
         <p className="text-[13px] text-steel">
           Here's what's happening with facility and vehicle bookings
         </p>
       </header>
 
-      <div className="px-6 py-6 space-y-6">
+      <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* Stat Cards Grid matching your dashboard design */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Pending Requests */}

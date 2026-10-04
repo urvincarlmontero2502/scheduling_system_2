@@ -18,3 +18,18 @@ body {
   outline: 2px solid #1F6F5C;
   outline-offset: 2px;
 }
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 16px inputs stop iPhones from zooming in when a field is tapped */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}

@@ -301,7 +301,7 @@ export default function Resources() {
 
       {/* Request Booking Modal */}
       {isRequestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4 border-b border-line pb-3">
               <div>
@@ -451,7 +451,7 @@ export default function Resources() {
 
       {/* Add / Edit Resource Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <h2 className="text-[16px] font-semibold mb-4">
               {editingResource ? "Edit Resource" : "Add New Resource"}

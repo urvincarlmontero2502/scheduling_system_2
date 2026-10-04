@@ -384,7 +384,7 @@ export default function BookingHistory() {
   return (
     <div className="pb-12">
       {/* Header */}
-      <header className="border-b border-line bg-white px-6 py-4">
+      <header className="border-b border-line bg-white px-4 sm:px-6 py-4">
         <h1 className="text-[17px] font-semibold">Booking History</h1>
 
         <p className="text-[13px] text-steel">
@@ -392,7 +392,7 @@ export default function BookingHistory() {
         </p>
       </header>
 
-      <div className="px-6 py-6 space-y-6">
+      <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* Batch Print Controls Bar */}
         <div className="flex flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-3">
@@ -598,7 +598,7 @@ export default function BookingHistory() {
       {/* Details Modal */}
       {selectedBooking && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/40 p-4"
           onClick={() => setSelectedBooking(null)}>
           <div
             className="w-full max-w-lg rounded-xl bg-white shadow-xl"

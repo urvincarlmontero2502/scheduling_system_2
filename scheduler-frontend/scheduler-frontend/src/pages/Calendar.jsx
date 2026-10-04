@@ -255,7 +255,7 @@ export default function CalendarView() {
       {/* MAIN: Calendar Grid Area / Year View Area */}
       <div className="flex-1 flex flex-col border-r border-line">
         {/* Top Header Controls */}
-        <header className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-line bg-white">
+        <header className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-line bg-white">
           <div className="flex items-center gap-4">
             <h1 className="text-[17px] font-semibold text-ink">
               {isYearView ? `Yearly Overview (${currentYear})` : monthYearLabel}

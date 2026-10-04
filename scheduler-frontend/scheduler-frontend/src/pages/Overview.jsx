@@ -174,7 +174,7 @@ export default function Overview() {
 
   return (
     <div>
-      <header className="flex flex-col gap-3 border-b border-line bg-white px-6 py-4 md:flex-row md:items-center md:justify-between">
+      <header className="flex flex-col gap-3 border-b border-line bg-white px-4 sm:px-6 py-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-[17px] font-semibold">
             Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
@@ -234,7 +234,7 @@ export default function Overview() {
       </header>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 px-6 py-6">
+      <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6 md:grid-cols-4">
         {STATS_ITEMS.map((stat) => (
           <div
             key={stat.label}
@@ -248,7 +248,7 @@ export default function Overview() {
       </div>
 
       {/* Main Content Area */}
-      <div className="px-6 pb-6 space-y-6">
+      <div className="px-4 sm:px-6 pb-6 space-y-6">
         {/* Filter Navigation Block */}
         <div className="border-b border-line pb-4 space-y-3">
           {/* Main Filter Navigation Buttons */}

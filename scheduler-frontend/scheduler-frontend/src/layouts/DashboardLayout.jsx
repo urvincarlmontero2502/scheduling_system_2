@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarClock,
   LayoutGrid,
@@ -6,6 +7,8 @@ import {
   History,
   Building2,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -13,23 +16,43 @@ const NAV_ITEMS = [
   { to: "/", label: "Overview", icon: LayoutGrid, end: true },
   { to: "/calendar", label: "Calendar", icon: CalendarClock },
   { to: "/bookings", label: "Bookings", icon: ClipboardList },
-  {
-    to: "/booking-history",
-    label: "Booking History",
-    icon: History,
-    roles: ["admin"], // Restricted to admin only
-  },
-  {
-    to: "/resources",
-    label: "Facilities & Vehicles",
-    icon: Building2,
-    roles: ["admin"],
-  },
+  { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin"] },
+  { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
 ];
+
+const itemStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  padding: "14px",
+  borderRadius: "10px",
+  fontSize: "15px",
+  fontWeight: "500",
+  textDecoration: "none",
+};
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+
+  // Close the mobile menu when the page changes
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  // Escape closes the menu; lock page scroll while it is open
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   async function handleSignOut() {
     await signOut();
@@ -41,41 +64,60 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="flex min-h-screen bg-paper">
-      {/* Sidebar */}
-      <aside className="sticky top-0 flex h-screen w-60 flex-col border-r border-line bg-white">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-white">
-            <CalendarClock size={20} />
-          </div>
+    <div className="min-h-screen bg-paper md:flex">
+      {/* Mobile top bar */}
+      <header
+        className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden"
+        style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}>
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={open}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-ink hover:bg-paper">
+          <Menu size={22} />
+        </button>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
+          <CalendarClock size={18} />
+        </div>
+        <p className="text-[16px] font-bold">Scheduler</p>
+      </header>
 
-          <p className="text-[16px] font-bold leading-tight">Scheduler</p>
+      {/* Dim background behind the mobile menu */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar: slide-out on mobile, fixed column on desktop */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-line bg-white transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-60 md:max-w-none md:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}>
+        <div className="flex items-center justify-between gap-3 px-6 py-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-white">
+              <CalendarClock size={20} />
+            </div>
+            <p className="text-[16px] font-bold leading-tight">Scheduler</p>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close menu"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-steel hover:bg-paper md:hidden">
+            <X size={22} />
+          </button>
         </div>
 
-        {/* Navigation */}
-        <nav
-          className="flex-1 px-4 py-3 overflow-y-auto"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-          }}>
+        <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-3">
           {visibleItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "16px 14px",
-                borderRadius: "10px",
-                fontSize: "15px",
-                fontWeight: "500",
-                textDecoration: "none",
-              }}
+              style={itemStyle}
               className={({ isActive }) =>
                 isActive
                   ? "bg-brand-light text-brand-dark shadow-sm"
@@ -87,35 +129,20 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {/* User Section */}
-        <div className="border-t border-line px-4 py-4">
+        <div
+          className="border-t border-line px-4 py-4"
+          style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
           <div className="mb-3 px-3">
             <p className="truncate text-[14px] font-medium text-ink">
               {user?.username || user?.name || "Signed in user"}
             </p>
-
             <p className="truncate text-[12.5px] text-steel">
-              {user?.barangay
-                ? `Brgy. ${user.barangay}`
-                : user?.role || "Staff"}
+              {user?.barangay ? `Brgy. ${user.barangay}` : user?.role || "Staff"}
             </p>
           </div>
-
           <button
             onClick={handleSignOut}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              width: "100%",
-              padding: "16px 14px",
-              borderRadius: "10px",
-              fontSize: "15px",
-              fontWeight: "500",
-              cursor: "pointer",
-              border: "none",
-              background: "transparent",
-            }}
+            style={{ ...itemStyle, width: "100%", cursor: "pointer", border: "none", background: "transparent" }}
             className="text-steel transition hover:bg-paper hover:text-status-rejected">
             <LogOut size={20} />
             Sign out
@@ -123,8 +150,8 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Main content */}
+      <div className="min-w-0 flex-1 [overflow-x:clip]">
         <Outlet />
       </div>
     </div>

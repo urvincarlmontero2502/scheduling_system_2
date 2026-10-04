@@ -203,7 +203,7 @@ export default function FacilityBookingModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4"
       onClick={onClose}>
       <div
         className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl"
