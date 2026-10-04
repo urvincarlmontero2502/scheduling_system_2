@@ -218,7 +218,7 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {
-      // Index 12 corresponds to 7:00 AM
+      // Index 12 corresponds to 7:00 AM (offset by header rows if needed, or adjust)
       scrollContainerRef.current.scrollTop = 12 * 28;
     }
   }, [isYearView, currentDate]);
@@ -531,134 +531,129 @@ export default function CalendarView() {
             </div>
           ) : (
             <div className="bg-white w-full relative overflow-hidden">
-              <div className="w-full flex flex-col">
-                <div
-                  className="grid border-b border-line bg-paper/40 text-center sticky top-0 z-20"
-                  style={{
-                    gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
-                  }}>
-                  <div className="py-2 text-[9px] sm:text-[10px] font-medium text-steel border-r border-line bg-paper sticky left-0 z-30 flex items-center justify-center">
-                    GMT
+              <div
+                ref={scrollContainerRef}
+                className="grid relative max-h-[588px] overflow-y-auto w-full"
+                style={{
+                  gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
+                }}>
+                {/* Sticky Header Row inside the same grid container */}
+                <div className="py-2 text-[9px] sm:text-[10px] font-medium text-steel border-r border-b border-line bg-paper sticky top-0 z-30 flex items-center justify-center">
+                  GMT
+                </div>
+                {weekDays.map((day, idx) => (
+                  <div
+                    key={idx}
+                    className="py-1.5 sm:py-2 border-r border-b border-line last:border-r-0 flex flex-col items-center bg-paper sticky top-0 z-30">
+                    <span className="text-[8px] sm:text-[9px] font-semibold text-steel tracking-tight">
+                      {day.name}
+                    </span>
+                    <span
+                      className={`text-[11px] sm:text-[13px] font-bold mt-0.5 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
+                      {day.dateNum}
+                    </span>
                   </div>
-                  {weekDays.map((day, idx) => (
+                ))}
+
+                {/* Time Slots Column */}
+                <div className="border-r border-line bg-paper/25 sticky left-0 z-20 flex flex-col">
+                  {timeSlots.map((time, idx) => (
                     <div
                       key={idx}
-                      className="py-1.5 sm:py-2 border-r border-line last:border-r-0 flex flex-col items-center bg-paper">
-                      <span className="text-[8px] sm:text-[9px] font-semibold text-steel tracking-tight">
-                        {day.name}
-                      </span>
-                      <span
-                        className={`text-[11px] sm:text-[13px] font-bold mt-0.5 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
-                        {day.dateNum}
-                      </span>
+                      className="h-[28px] border-b border-line px-0.5 text-right text-[8px] sm:text-[9px] font-mono text-steel pt-1 bg-white box-border">
+                      {time}
                     </div>
                   ))}
                 </div>
 
-                <div
-                  ref={scrollContainerRef}
-                  className="grid relative max-h-[588px] overflow-y-auto"
-                  style={{
-                    gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
-                  }}>
-                  <div className="border-r border-line bg-paper/25 sticky left-0 z-10 flex flex-col">
-                    {timeSlots.map((time, idx) => (
-                      <div
-                        key={idx}
-                        className="h-[28px] border-b border-line px-0.5 text-right text-[8px] sm:text-[9px] font-mono text-steel pt-1 bg-white box-border">
-                        {time}
-                      </div>
-                    ))}
-                  </div>
+                {/* Day Columns */}
+                {weekDays.map((day, colIdx) => {
+                  const colBookings = bookings.filter((b) => {
+                    const status = (b.status || "").toLowerCase();
+                    const isApproved = status.includes("approv");
+                    const isPending =
+                      status.includes("pend") ||
+                      status.includes("request") ||
+                      status.includes("tentative");
 
-                  {weekDays.map((day, colIdx) => {
-                    const colBookings = bookings.filter((b) => {
-                      const status = (b.status || "").toLowerCase();
-                      const isApproved = status.includes("approv");
-                      const isPending =
-                        status.includes("pend") ||
-                        status.includes("request") ||
-                        status.includes("tentative");
+                    if (!isApproved && !isPending) return false;
 
-                      if (!isApproved && !isPending) return false;
+                    const bDate = b.date || b.start_date || "";
+                    return bDate.includes(day.fullDateStr);
+                  });
 
-                      const bDate = b.date || b.start_date || "";
-                      return bDate.includes(day.fullDateStr);
-                    });
+                  const laidOut = layoutOverlaps(
+                    colBookings.map((b) => ({ b, ...blockBox(b) })),
+                  );
 
-                    const laidOut = layoutOverlaps(
-                      colBookings.map((b) => ({ b, ...blockBox(b) })),
-                    );
+                  return (
+                    <div
+                      key={colIdx}
+                      className="border-r border-line last:border-r-0 relative flex flex-col"
+                      style={{ minHeight: `${timeSlots.length * 28}px` }}>
+                      {timeSlots.map((_, tIdx) => (
+                        <div
+                          key={tIdx}
+                          className="h-[28px] border-b border-line w-full box-border"
+                        />
+                      ))}
 
-                    return (
-                      <div
-                        key={colIdx}
-                        className="border-r border-line last:border-r-0 relative flex flex-col"
-                        style={{ minHeight: `${timeSlots.length * 28}px` }}>
-                        {timeSlots.map((_, tIdx) => (
+                      {laidOut.map(({ b, top, height, col, cols }) => {
+                        const status = (b.status || "").toLowerCase();
+                        const isApproved = status.includes("approv");
+
+                        const resourceName =
+                          b.resource ||
+                          b.resource_name ||
+                          b.item_name ||
+                          "Resource";
+                        const requesterName =
+                          b.requester ||
+                          b.full_name ||
+                          b.name ||
+                          b.user_name ||
+                          "Representative";
+
+                        const rawStart = b.start_time || b.time || "07:00";
+                        const rawEnd = b.end_time || "17:00";
+
+                        const startTime = formatTimeTo12Hour(rawStart);
+                        const endTime = formatTimeTo12Hour(rawEnd);
+
+                        return (
                           <div
-                            key={tIdx}
-                            className="h-[28px] border-b border-line w-full box-border"
-                          />
-                        ))}
-
-                        {laidOut.map(({ b, top, height, col, cols }) => {
-                          const status = (b.status || "").toLowerCase();
-                          const isApproved = status.includes("approv");
-
-                          const resourceName =
-                            b.resource ||
-                            b.resource_name ||
-                            b.item_name ||
-                            "Resource";
-                          const requesterName =
-                            b.requester ||
-                            b.full_name ||
-                            b.name ||
-                            b.user_name ||
-                            "Representative";
-
-                          const rawStart = b.start_time || b.time || "07:00";
-                          const rawEnd = b.end_time || "17:00";
-
-                          const startTime = formatTimeTo12Hour(rawStart);
-                          const endTime = formatTimeTo12Hour(rawEnd);
-
-                          return (
-                            <div
-                              key={b.id || b.booking_id}
-                              title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
-                              className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
-                                isApproved
-                                  ? "bg-emerald-500 text-white border border-emerald-600"
-                                  : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
-                              }`}
-                              style={{
-                                top: `${top}px`,
-                                height: `${height}px`,
-                                left: `calc(${(col / cols) * 100}% + 1px)`,
-                                width: `calc(${100 / cols}% - 2px)`,
-                              }}>
-                              <div className="space-y-0.5">
-                                <div className="flex items-center justify-between gap-0.5">
-                                  <span className="font-bold text-[9px] leading-tight truncate">
-                                    {resourceName}
-                                  </span>
-                                </div>
-                                <div className="text-[8px] opacity-90 truncate">
-                                  {startTime}
-                                </div>
+                            key={b.id || b.booking_id}
+                            title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
+                            className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
+                              isApproved
+                                ? "bg-emerald-500 text-white border border-emerald-600"
+                                : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
+                            }`}
+                            style={{
+                              top: `${top}px`,
+                              height: `${height}px`,
+                              left: `calc(${(col / cols) * 100}% + 1px)`,
+                              width: `calc(${100 / cols}% - 2px)`,
+                            }}>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center justify-between gap-0.5">
+                                <span className="font-bold text-[9px] leading-tight truncate">
+                                  {resourceName}
+                                </span>
                               </div>
-                              <div className="text-[7.5px] opacity-90 truncate">
-                                {requesterName}
+                              <div className="text-[8px] opacity-90 truncate">
+                                {startTime}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
+                            <div className="text-[7.5px] opacity-90 truncate">
+                              {requesterName}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
