@@ -43,8 +43,8 @@ class SpecialEventsSeeder extends Seeder
         foreach ($events as $event) {
             foreach ($event['resources'] as $resourceName) {
                 // Look up the resource_id from the resources table
-                $resource = DB::table('resources')->where('name', 'LIKE', "%{$resourceName}%")->first();
-
+               // Change 'LIKE' to 'ILIKE' for case-insensitive matching in PostgreSQL
+$resource = DB::table('resources')->where('name', 'ILIKE', "%{$resourceName}%")->first();
                 if ($resource) {
                     DB::table('booking_request')->insert([
                         'user_id' => $systemUserId,
