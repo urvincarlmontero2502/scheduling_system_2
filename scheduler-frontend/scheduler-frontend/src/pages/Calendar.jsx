@@ -773,33 +773,52 @@ export default function CalendarView() {
 
           <hr className="border-line mb-3" />
 
-          {/* Special Events List */}
+          {/* Special Events List with Resources Used */}
           <div className="w-full bg-amber-50/60 rounded-lg p-3 border border-amber-200/80">
             <h4 className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider mb-2.5">
-              Special Events
+              Special Events & Resources
             </h4>
-            <div className="space-y-2.5 text-[11px] text-amber-950">
+            <div className="space-y-3 text-[11px] text-amber-950">
               <div className="border-b border-amber-200/60 pb-2">
                 <p className="font-semibold text-amber-900">Araw ng Habongan</p>
-                <p className="text-amber-700 text-[10px]">July 1</p>
+                <p className="text-amber-700 text-[10px] mb-1">July 1</p>
+                <p className="text-[10px] text-amber-900/80">
+                  <span className="font-medium">Resources:</span> Municipal
+                  Gymnasium, Mini-Bus
+                </p>
               </div>
               <div className="border-b border-amber-200/60 pb-2">
                 <p className="font-semibold text-amber-900">
                   Sumayajaw Festival
                 </p>
-                <p className="text-amber-700 text-[10px]">August 11 – 15</p>
+                <p className="text-amber-700 text-[10px] mb-1">
+                  August 11 – 15
+                </p>
+                <p className="text-[10px] text-amber-900/80">
+                  <span className="font-medium">Resources:</span> Municipal
+                  Gymnasium, Cargo Truck, Mini-Bus, Man Lift, 2 Dumptruck
+                  (6-Wheel)
+                </p>
               </div>
               <div className="border-b border-amber-200/60 pb-2">
                 <p className="font-semibold text-amber-900">
                   Elementary Alumni
                 </p>
-                <p className="text-amber-700 text-[10px]">August 16</p>
+                <p className="text-amber-700 text-[10px] mb-1">August 16</p>
+                <p className="text-[10px] text-amber-900/80">
+                  <span className="font-medium">Resources:</span> Municipal
+                  Gymnasium, Mini-Bus
+                </p>
               </div>
               <div>
                 <p className="font-semibold text-amber-900">
                   High School Alumni
                 </p>
-                <p className="text-amber-700 text-[10px]">October 31</p>
+                <p className="text-amber-700 text-[10px] mb-1">October 31</p>
+                <p className="text-[10px] text-amber-900/80">
+                  <span className="font-medium">Resources:</span> Municipal
+                  Gymnasium, Cargo Truck, Mini-Bus
+                </p>
               </div>
             </div>
           </div>
