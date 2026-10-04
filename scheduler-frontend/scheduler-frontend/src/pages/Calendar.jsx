@@ -532,7 +532,7 @@ export default function CalendarView() {
             <div className="bg-white w-full relative overflow-hidden">
               <div
                 ref={scrollContainerRef}
-                className="grid relative max-h-[588px] overflow-y-auto w-full"
+                className="grid relative max-h-[650px] overflow-y-auto w-full"
                 style={{
                   gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                 }}>
