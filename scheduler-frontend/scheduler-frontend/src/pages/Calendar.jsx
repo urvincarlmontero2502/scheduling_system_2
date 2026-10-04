@@ -218,7 +218,6 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {
-      // Index 12 corresponds to 7:00 AM (offset by header rows if needed, or adjust)
       scrollContainerRef.current.scrollTop = 12 * 28;
     }
   }, [isYearView, currentDate]);
@@ -537,7 +536,6 @@ export default function CalendarView() {
                 style={{
                   gridTemplateColumns: "50px repeat(7, minmax(0, 1fr))",
                 }}>
-                {/* Sticky Header Row inside the same grid container */}
                 <div className="py-2 text-[9px] sm:text-[10px] font-medium text-steel border-r border-b border-line bg-paper sticky top-0 z-30 flex items-center justify-center">
                   GMT
                 </div>
@@ -555,7 +553,6 @@ export default function CalendarView() {
                   </div>
                 ))}
 
-                {/* Time Slots Column */}
                 <div className="border-r border-line bg-paper/25 sticky left-0 z-20 flex flex-col">
                   {timeSlots.map((time, idx) => (
                     <div
@@ -566,7 +563,6 @@ export default function CalendarView() {
                   ))}
                 </div>
 
-                {/* Day Columns */}
                 {weekDays.map((day, colIdx) => {
                   const colBookings = bookings.filter((b) => {
                     const status = (b.status || "").toLowerCase();
@@ -659,7 +655,7 @@ export default function CalendarView() {
           )}
         </div>
 
-        {/* Right Sidebar: Mini Calendar & Legend Container */}
+        {/* Right Sidebar: Mini Calendar, Legend & Special Events Container */}
         <div className="w-full lg:w-[300px] shrink-0 bg-white border border-line rounded-lg p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[13px] font-semibold text-ink">
@@ -758,7 +754,8 @@ export default function CalendarView() {
 
           <hr className="border-line mb-3" />
 
-          <div className="w-full">
+          {/* Legend & Status */}
+          <div className="w-full mb-4">
             <h4 className="text-[11px] font-semibold text-steel uppercase tracking-wider mb-2">
               Legend & Status
             </h4>
@@ -770,6 +767,39 @@ export default function CalendarView() {
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400 border border-dashed border-amber-600 shrink-0" />
                 <span className="text-ink font-medium">Pending Requests</span>
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-line mb-3" />
+
+          {/* Special Events List */}
+          <div className="w-full bg-amber-50/60 rounded-lg p-3 border border-amber-200/80">
+            <h4 className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider mb-2.5">
+              Special Events
+            </h4>
+            <div className="space-y-2.5 text-[11px] text-amber-950">
+              <div className="border-b border-amber-200/60 pb-2">
+                <p className="font-semibold text-amber-900">Araw ng Habongan</p>
+                <p className="text-amber-700 text-[10px]">July 1</p>
+              </div>
+              <div className="border-b border-amber-200/60 pb-2">
+                <p className="font-semibold text-amber-900">
+                  Sumayajaw Festival
+                </p>
+                <p className="text-amber-700 text-[10px]">August 11 – 15</p>
+              </div>
+              <div className="border-b border-amber-200/60 pb-2">
+                <p className="font-semibold text-amber-900">
+                  Elementary Alumni
+                </p>
+                <p className="text-amber-700 text-[10px]">August 16</p>
+              </div>
+              <div>
+                <p className="font-semibold text-amber-900">
+                  High School Alumni
+                </p>
+                <p className="text-amber-700 text-[10px]">October 31</p>
               </div>
             </div>
           </div>
