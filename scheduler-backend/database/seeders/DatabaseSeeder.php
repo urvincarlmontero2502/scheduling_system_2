@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
 
         // 2. Insert resources (Facilities & Vehicles)
         DB::table('resources')->insert([
-            // --- Original Facilities ---
+            // --- Facilities ---
             [
                 'name' => 'Municipal Gymnasium',
                 'type' => 'facility',
@@ -29,8 +29,6 @@ class DatabaseSeeder extends Seeder
                 'status' => 'available',
                 'image' => null,
             ],
-
-            // --- New Facilities Added ---
             [
                 'name' => 'Barangay Hall',
                 'type' => 'facility',
@@ -67,18 +65,70 @@ class DatabaseSeeder extends Seeder
                 'image' => null,
             ],
 
-            // --- Vehicles ---
+            // --- Vehicles & Heavy Equipment ---
+            // 3 Dumptrucks
             [
-                'name' => 'Emergency Service Vehicle (Ambulance 1)',
+                'name' => 'Dumptruck (10-Wheel)',
                 'type' => 'vehicle',
-                'description' => 'Dedicated medical transport vehicle.',
+                'description' => 'Heavy-duty ten-wheeler utility dump truck.',
                 'status' => 'available',
                 'image' => null,
             ],
             [
-                'name' => 'Utility Dump Truck',
+                'name' => 'Dumptruck (6-Wheel)',
                 'type' => 'vehicle',
-                'description' => 'Heavy vehicle for community cleanup and hauling.',
+                'description' => '6-wheel utility dump truck fleet (Unit 1).',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Dumptruck (6-Wheel)',
+                'type' => 'vehicle',
+                'description' => '6-wheel utility dump truck fleet (Unit 2).',
+                'status' => 'available',
+                'image' => null,
+            ],
+
+            // Heavy Equipment & Special Trucks
+            [
+                'name' => 'Backhoe',
+                'type' => 'vehicle',
+                'description' => 'Heavy excavation and earthmoving equipment.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Payloader',
+                'type' => 'vehicle',
+                'description' => 'Heavy loader for material handling and clearing.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Bulldozer',
+                'type' => 'vehicle',
+                'description' => 'Heavy crawler tractor for grading and earthmoving.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Road Roller',
+                'type' => 'vehicle',
+                'description' => 'Compactor heavy equipment for road construction.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Grader',
+                'type' => 'vehicle',
+                'description' => 'Motor grader for surface grading and leveling.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Self Load',
+                'type' => 'vehicle',
+                'description' => 'Specialized self-loading transport truck.',
                 'status' => 'available',
                 'image' => null,
             ],
@@ -90,13 +140,6 @@ class DatabaseSeeder extends Seeder
                 'image' => null,
             ],
             [
-                'name' => 'Mini-Bus',
-                'type' => 'vehicle',
-                'description' => 'Passenger mini-bus for official travel.',
-                'status' => 'available',
-                'image' => null,
-            ],
-            [
                 'name' => 'Man Lift',
                 'type' => 'vehicle',
                 'description' => 'Specialized equipment for elevated maintenance tasks.',
@@ -104,9 +147,76 @@ class DatabaseSeeder extends Seeder
                 'image' => null,
             ],
             [
-                'name' => '2 Dumptruck (6-Wheel)',
+                'name' => 'Mini-Bus',
                 'type' => 'vehicle',
-                'description' => '6-wheel utility dump truck fleet.',
+                'description' => 'Passenger mini-bus for official travel.',
+                'status' => 'available',
+                'image' => null,
+            ],
+
+            // Ambulances (4 Units)
+            [
+                'name' => 'Ambulance',
+                'type' => 'vehicle',
+                'description' => 'Dedicated emergency medical transport unit 1.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Ambulance',
+                'type' => 'vehicle',
+                'description' => 'Dedicated emergency medical transport unit 2.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Ambulance',
+                'type' => 'vehicle',
+                'description' => 'Dedicated emergency medical transport unit 3.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Ambulance',
+                'type' => 'vehicle',
+                'description' => 'Dedicated emergency medical transport unit 4.',
+                'status' => 'available',
+                'image' => null,
+            ],
+
+            // Service Vehicles
+            [
+                'name' => 'Terra',
+                'type' => 'vehicle',
+                'description' => 'Official municipal utility and transport vehicle.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Navara',
+                'type' => 'vehicle',
+                'description' => 'Official pickup truck for field operations.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Hi-Ace (SB Office)',
+                'type' => 'vehicle',
+                'description' => 'Sangguniang Bayan office transport van.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Hi-Ace (MSWD)',
+                'type' => 'vehicle',
+                'description' => 'Municipal Social Welfare and Development transport van.',
+                'status' => 'available',
+                'image' => null,
+            ],
+            [
+                'name' => 'Montero Sports',
+                'type' => 'vehicle',
+                'description' => 'Official administrative vehicle.',
                 'status' => 'available',
                 'image' => null,
             ],
