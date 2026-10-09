@@ -89,9 +89,9 @@ export default function Overview() {
       start_time: payload.start_time,
       end_time: payload.end_time,
       purpose: payload.purpose,
-      destination: payload.destination || null,
-      address: payload.address || null,
+      full_name: payload.full_name || null,
       cell_number: payload.cell_number,
+      address: payload.address || null,
     };
 
     api
