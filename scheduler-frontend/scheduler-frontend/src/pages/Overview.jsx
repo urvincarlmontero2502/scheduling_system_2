@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
-import { Building2, Car, Image as ImageIcon } from "lucide-react";
+import { Building2, Car, Image as ImageIcon, Search, Filter } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
@@ -18,6 +18,8 @@ export default function Overview() {
   const [selectedResource, setSelectedResource] = useState(null);
   const [mainFilter, setMainFilter] = useState("all"); // "all" | "facility" | "vehicle"
   const [vehicleSubFilter, setVehicleSubFilter] = useState("all"); // "all" | "heavy" | "ambulance" | "service"
+  const [searchQuery, setSearchQuery] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all"); // "all" | "available" | "booked"
 
   useEffect(() => {
     let isMounted = true;
@@ -108,12 +110,35 @@ export default function Overview() {
       });
   };
 
-  const facilities = resources.filter(
+  const allFacilities = resources.filter(
     (r) => r?.type?.toLowerCase() === "facility",
   );
-  const vehicles = resources.filter(
+  const allVehicles = resources.filter(
     (r) => r?.type?.toLowerCase() === "vehicle",
   );
+
+  // Apply search and availability filters
+  const applyFilters = (items) => {
+    return items.filter((item) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const name = (item?.name || "").toLowerCase();
+        const description = (item?.description || "").toLowerCase();
+        if (!name.includes(query) && !description.includes(query)) return false;
+      }
+      // Availability filter
+      if (availabilityFilter === "available") {
+        if (item?.available !== true && item?.status !== "available") return false;
+      } else if (availabilityFilter === "booked") {
+        if (item?.available !== false && item?.status !== "booked") return false;
+      }
+      return true;
+    });
+  };
+
+  const facilities = applyFilters(allFacilities);
+  const vehicles = applyFilters(allVehicles);
 
   // Helper function to categorize vehicles based on their names (with typo handling for 'abulance')
   const getVehicleCategory = (name = "") => {
@@ -153,6 +178,14 @@ export default function Overview() {
     return getVehicleCategory(v.name) === vehicleSubFilter;
   });
 
+  // Available resources (for stats display)
+  const availableFacilities = allFacilities.filter(
+    (f) => f?.available === true || f?.status === "available",
+  );
+  const availableVehicles = allVehicles.filter(
+    (v) => v?.available === true || v?.status === "available",
+  );
+
   const STATS_ITEMS = [
     {
       label: "Pending requests",
@@ -165,13 +198,15 @@ export default function Overview() {
       tone: "text-status-approved",
     },
     {
-      label: "Active facilities",
-      value: loading ? "..." : facilities.length,
+      label: "Facilities",
+      value: loading ? "..." : `${availableFacilities.length}/${allFacilities.length}`,
+      subLabel: "(available/total)",
       tone: "text-ink",
     },
     {
-      label: "Active vehicles",
-      value: loading ? "..." : vehicles.length,
+      label: "Vehicles",
+      value: loading ? "..." : `${availableVehicles.length}/${allVehicles.length}`,
+      subLabel: "(available/total)",
       tone: "text-ink",
     },
   ];
@@ -248,7 +283,7 @@ export default function Overview() {
             <p className={`font-mono text-[28px] font-semibold ${stat.tone}`}>
               {stat.value}
             </p>
-            <p className="mt-1 text-[13px] text-steel">{stat.label}</p>
+            <p className="mt-1 text-[13px] text-steel">{stat.label}{stat.subLabel ? ` ${stat.subLabel}` : ""}</p>
           </div>
         ))}
       </div>
@@ -295,6 +330,43 @@ export default function Overview() {
             </button>
           </div>
 
+          {/* Search and Availability Filter */}
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel" />
+              <input
+                type="text"
+                placeholder="Search resources..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Filter size={14} className="text-steel" />
+              <span className="text-[12px] text-steel">Show:</span>
+              <select
+                value={availabilityFilter}
+                onChange={(e) => setAvailabilityFilter(e.target.value)}
+                className="rounded-md border border-line bg-white px-2 py-1 text-[12px] outline-none focus:border-brand"
+              >
+                <option value="all">All Status</option>
+                <option value="available">Available Only</option>
+                <option value="booked">Booked Only</option>
+              </select>
+            </div>
+          </div>
+          {(searchQuery || availabilityFilter !== "all") && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setAvailabilityFilter("all");
+              }}
+              className="mt-1 text-[12px] text-brand hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
           {/* Sub-category pills for vehicles (Shown below buttons when viewing Vehicles) */}
           {mainFilter === "vehicle" && (
             <div className="flex items-center gap-1.5 overflow-x-auto pt-1">
@@ -352,7 +424,9 @@ export default function Overview() {
               <p className="text-[13px] text-steel">Loading facilities...</p>
             ) : facilities.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-[13px] text-steel">
-                No facilities found.
+                {searchQuery || availabilityFilter !== "all"
+                  ? "No facilities match your current filters. Try adjusting your search."
+                  : "No facilities found."}
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -416,7 +490,9 @@ export default function Overview() {
               <p className="text-[13px] text-steel">Loading vehicles...</p>
             ) : filteredVehicles.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-[13px] text-steel">
-                No vehicles found in this category.
+                {searchQuery || availabilityFilter !== "all"
+                  ? "No vehicles match your current filters. Try adjusting your search."
+                  : "No vehicles found in this category."}
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
