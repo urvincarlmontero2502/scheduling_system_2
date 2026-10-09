@@ -109,19 +109,29 @@ export default function Resources() {
         })
         .catch((err) => {
           console.error("Failed to delete resource", err);
+          const msg =
+            err?.response?.data?.message ||
+            err?.message ||
+            "Failed to delete resource. Please try again.";
+          alert(msg);
         });
     }
   };
 
   const handleMaintenanceToggle = (item) => {
+    const resourceId = item.resource_id || item.id;
+    if (!resourceId) {
+      alert("Error: Resource ID is missing. Please refresh the page and try again.");
+      return;
+    }
     const isCurrentlyMaintenance = item.is_maintenance || item.status === "maintenance";
     const actionText = isCurrentlyMaintenance ? "available" : "under maintenance";
 
     if (!window.confirm(`Mark "${item.name}" as ${actionText}?`)) return;
 
     const request = isCurrentlyMaintenance
-      ? api.setResourceAvailable?.(item.resource_id)
-      : api.setResourceMaintenance?.(item.resource_id);
+      ? api.setResourceAvailable?.(resourceId)
+      : api.setResourceMaintenance?.(resourceId);
 
     request
       .then((res) => {
@@ -168,7 +178,7 @@ export default function Resources() {
     }
 
     const request = editingResource
-      ? api.client.post(`/resources/${editingResource.resource_id}`, data)
+      ? api.client.post(`/resources/${editingResource.resource_id || editingResource.id}`, data)
       : api.createResource(data);
 
     request
@@ -192,7 +202,7 @@ export default function Resources() {
     const endTime = requestData.endDate ? requestData.endDate.split("T")[1] : "";
 
     const payload = {
-      resource_id: selectedResource?.resource_id,
+      resource_id: selectedResource?.resource_id || selectedResource?.id,
       start_date: startDate,
       end_date: endDate,
       start_time: startTime,
@@ -239,7 +249,7 @@ export default function Resources() {
 
   const renderResourceCard = (item) => (
     <div
-      key={item.resource_id}
+      key={item.resource_id || item.id}
       className="flex flex-col justify-between overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:shadow-md transition">
       <div>
         <div className="h-32 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line relative">
@@ -291,7 +301,7 @@ export default function Resources() {
                   <Wrench size={15} />
                 </button>
                 <button
-                  onClick={() => handleDelete(item.resource_id)}
+                  onClick={() => handleDelete(item.resource_id || item.id)}
                   className="text-steel hover:text-red-500 transition p-1"
                   title="Delete Resource">
                   <Trash2 size={15} />
