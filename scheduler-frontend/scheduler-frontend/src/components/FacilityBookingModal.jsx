@@ -72,10 +72,23 @@ export default function FacilityBookingModal({
         ? String(b.resource_id) === String(resourceId)
         : b.resource === selectedFacility.name;
     if (!sameResource) return;
-    const [sy, sm, sd] = (b.start_date || "").split("-").map(Number);
-    const [ey, em, ed] = (b.end_date || b.start_date || "")
-      .split("-")
-      .map(Number);
+
+    // Handle both date-only and datetime formats (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
+    const parseDateStr = (dateStr) => {
+      if (!dateStr) return null;
+      const datePart = dateStr.split("T")[0];
+      const parts = datePart.split("-").map(Number);
+      if (parts.length !== 3) return null;
+      return parts;
+    };
+
+    const startParts = parseDateStr(b.start_date);
+    const endParts = parseDateStr(b.end_date || b.start_date);
+    if (!startParts || !endParts) return;
+
+    const sy = startParts[0], sm = startParts[1], sd = startParts[2];
+    const ey = endParts[0], em = endParts[1], ed = endParts[2];
+
     if (!sy || !ey) return;
     const cur = new Date(sy, sm - 1, sd);
     const last = new Date(ey, em - 1, ed);
@@ -107,8 +120,9 @@ export default function FacilityBookingModal({
               ? String(b.resource_id) === String(resourceId)
               : b.resource === selectedFacility.name;
           if (!same) return false;
-          const bStart = b.start_date;
-          const bEnd = b.end_date || b.start_date;
+          // Handle datetime format: extract date portion for comparison
+          const bStart = (b.start_date || "").split("T")[0];
+          const bEnd = (b.end_date || b.start_date || "").split("T")[0];
           if (!bStart) return false;
           if (!(formData.start_date <= bEnd && bStart <= formData.end_date))
             return false;
