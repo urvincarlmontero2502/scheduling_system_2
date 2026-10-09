@@ -44,18 +44,24 @@ export default function FacilityBookingModal({
         .fetchBookings?.()
         .then((res) => {
           const fetchedBookings = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-          console.log("🏢 [BookingModal] Bookings fetched:", fetchedBookings.length);
-          console.log("🏢 [BookingModal] Sample booking:", fetchedBookings[0]);
-          console.log("🏢 [BookingModal] Selected facility:", selectedFacility);
-          const resId = selectedFacility?.resource_id || selectedFacility?.id;
-          console.log("🏢 [BookingModal] Resource ID for matching:", resId);
-          console.log("🏢 [BookingModal] Matching bookings:", fetchedBookings.filter(b => 
-            String(b.resource_id || "") === String(resId)
-          ).length);
+          console.log("🏢 [FacilityBookingModal] Bookings fetched:", fetchedBookings.length);
+          if (fetchedBookings.length > 0) {
+            console.log("🏢 [FacilityBookingModal] Sample booking keys:", Object.keys(fetchedBookings[0]));
+            console.log("🏢 [FacilityBookingModal] Sample booking:", fetchedBookings[0]);
+            const resId = selectedFacility?.resource_id || selectedFacility?.id;
+            console.log("🏢 [FacilityBookingModal] Resource ID:", resId, "Type:", typeof resId);
+            console.log("🏢 [FacilityBookingModal] Booking resource_id:", fetchedBookings[0]?.resource_id, "Type:", typeof fetchedBookings[0]?.resource_id);
+            console.log("🏢 [FacilityBookingModal] Match by resource_id:", fetchedBookings.filter(b => String(b.resource_id) === String(resId)).length);
+            console.log("🏢 [FacilityBookingModal] Match by id:", fetchedBookings.filter(b => String(b.id) === String(selectedFacility?.id)).length);
+            console.log("🏢 [FacilityBookingModal] Match by resource name:", fetchedBookings.filter(b => b.resource === selectedFacility?.name).length);
+            console.log("🏢 [FacilityBookingModal] Booking start_date:", fetchedBookings[0]?.start_date);
+            console.log("🏢 [FacilityBookingModal] Booking status:", fetchedBookings[0]?.status);
+            console.log("🏢 [FacilityBookingModal] Total matching bookings:", fetchedBookings.filter(b => String(b.resource_id || "") === String(resId) || String(b.id || "") === String(selectedFacility?.id) || b.resource === selectedFacility?.name).length);
+          }
           setBookings(fetchedBookings);
         })
         .catch((err) => {
-          console.error("🏢 [BookingModal] Failed to fetch bookings:", err);
+          console.error("🏢 [FacilityBookingModal] Failed to fetch bookings:", err);
           setBookings([]);
         });
     load();

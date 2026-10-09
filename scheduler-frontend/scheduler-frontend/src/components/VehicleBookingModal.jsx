@@ -45,18 +45,23 @@ export default function VehicleBookingModal({
         .fetchBookings?.()
         .then((res) => {
           const fetchedBookings = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-          console.log("📅 [BookingModal] Bookings fetched:", fetchedBookings.length);
-          console.log("📅 [BookingModal] Sample booking:", fetchedBookings[0]);
-          console.log("📅 [BookingModal] Selected vehicle:", selectedVehicle);
+          console.log("📅 [VehicleBookingModal] Bookings fetched:", fetchedBookings.length);
+          console.log("📅 [VehicleBookingModal] Sample booking:", fetchedBookings[0]);
           const resId = selectedVehicle?.resource_id || selectedVehicle?.id;
-          console.log("📅 [BookingModal] Resource ID for matching:", resId);
-          console.log("📅 [BookingModal] Matching bookings:", fetchedBookings.filter(b => 
-            String(b.resource_id || "") === String(resId)
-          ).length);
+          console.log("📅 [VehicleBookingModal] Selected vehicle:", selectedVehicle);
+          console.log("📅 [VehicleBookingModal] Resource ID:", resId, "Type:", typeof resId);
+          console.log("📅 [VehicleBookingModal] Booking resource_id:", fetchedBookings[0]?.resource_id, "Type:", typeof fetchedBookings[0]?.resource_id);
+          console.log("📅 [VehicleBookingModal] Match by resource_id:", fetchedBookings.filter(b => String(b.resource_id) === String(resId)).length);
+          console.log("📅 [VehicleBookingModal] Match by id:", fetchedBookings.filter(b => String(b.id) === String(selectedVehicle?.id)).length);
+          console.log("📅 [VehicleBookingModal] Match by resource name:", fetchedBookings.filter(b => b.resource === selectedVehicle?.name).length);
+          console.log("📅 [VehicleBookingModal] Booking start_date:", fetchedBookings[0]?.start_date);
+          console.log("📅 [VehicleBookingModal] Booking status:", fetchedBookings[0]?.status);
+          // Debug: show total matching for this resource
+          console.log("📅 [VehicleBookingModal] Total matching bookings:", fetchedBookings.filter(b => String(b.resource_id || "") === String(resId) || String(b.id || "") === String(selectedVehicle?.id) || b.resource === selectedVehicle?.name).length);
           setBookings(fetchedBookings);
         })
         .catch((err) => {
-          console.error("📅 [BookingModal] Failed to fetch bookings:", err);
+          console.error("📅 [VehicleBookingModal] Failed to fetch bookings:", err);
           setBookings([]);
         });
     load();
