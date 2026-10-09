@@ -115,7 +115,6 @@ export default function Resources() {
 
   const handleMaintenanceToggle = (item) => {
     const isCurrentlyMaintenance = item.is_maintenance || item.status === "maintenance";
-    const action = isCurrentlyMaintenance ? "available" : "maintenance";
     const actionText = isCurrentlyMaintenance ? "available" : "under maintenance";
 
     if (!window.confirm(`Mark "${item.name}" as ${actionText}?`)) return;
@@ -125,12 +124,24 @@ export default function Resources() {
       : api.setResourceMaintenance?.(item.resource_id);
 
     request
-      .then(() => {
+      .then((res) => {
         loadResources();
       })
       .catch((err) => {
         console.error("Failed to update resource status", err);
-        alert("Failed to update resource status. Please try again.");
+        if (err?.response?.status === 403) {
+          alert("You don't have permission to modify resource status. Please contact an administrator.");
+        } else if (err?.response?.status === 404) {
+          alert("Resource not found. It may have been deleted.");
+        } else if (err?.code === "ERR_NETWORK") {
+          alert("Network error: Could not connect to the server. Please check your connection and try again.");
+        } else {
+          const msg =
+            err?.response?.data?.message ||
+            err?.message ||
+            "Failed to update resource status. Please try again.";
+          alert(`Failed to update resource status: ${msg}`);
+        }
       });
   };
 
