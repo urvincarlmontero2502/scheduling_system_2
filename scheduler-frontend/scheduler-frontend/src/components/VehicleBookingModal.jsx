@@ -44,9 +44,21 @@ export default function VehicleBookingModal({
         .fetchBookings?.()
         .then((res) => {
           const fetchedBookings = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+          // Debug logging
+          console.log("VehicleBookingModal - bookings fetched:", fetchedBookings.length);
+          if (fetchedBookings.length > 0) {
+            console.log("Sample booking:", fetchedBookings[0]);
+            console.log("Selected vehicle resource_id:", selectedVehicle?.resource_id || selectedVehicle?.id);
+            console.log("Matching bookings:", fetchedBookings.filter(b => 
+              String(b.resource_id || "") === String(selectedVehicle?.resource_id || selectedVehicle?.id)
+            ).length);
+          }
           setBookings(fetchedBookings);
         })
-        .catch(() => setBookings([]));
+        .catch((err) => {
+          console.error("VehicleBookingModal - failed to fetch bookings:", err);
+          setBookings([]);
+        });
     load();
     window.addEventListener("bookingUpdated", load);
     window.addEventListener("bookingChanged", load);
