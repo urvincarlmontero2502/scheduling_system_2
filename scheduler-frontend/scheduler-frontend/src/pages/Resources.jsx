@@ -246,6 +246,11 @@ export default function Resources() {
   const facilities = resources.filter(
     (item) => item.type === "facility" && matchesSearch(item),
   );
+  const maintenanceItems = resources.filter(
+    (item) =>
+      (item.is_maintenance || item.status === "maintenance") &&
+      matchesSearch(item),
+  );
 
   const renderResourceCard = (item) => (
     <div
@@ -382,7 +387,7 @@ export default function Resources() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Left Column: Vehicles */}
           <div className="rounded-xl border border-line bg-paper/50 p-4 space-y-4">
             <div className="flex items-center justify-between border-b border-line pb-3 px-1">
@@ -430,6 +435,33 @@ export default function Resources() {
               </div>
             )}
           </div>
+
+          {/* Under Maintenance Section (Admin only) */}
+          {isAdmin && (
+            <div className="rounded-xl border-2 border-orange-200 bg-orange-50/50 p-4 space-y-4">
+              <div className="flex items-center justify-between border-b border-orange-200 pb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <Wrench size={18} className="text-orange-600" />
+                  <h2 className="text-[15px] font-semibold text-orange-800">
+                    Under Maintenance
+                  </h2>
+                </div>
+                <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-[12px] font-medium text-orange-800">
+                  {maintenanceItems.length}
+                </span>
+              </div>
+
+              {maintenanceItems.length === 0 ? (
+                <p className="text-[13px] text-steel italic p-4 text-center">
+                  No resources currently under maintenance.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {maintenanceItems.map(renderResourceCard)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
