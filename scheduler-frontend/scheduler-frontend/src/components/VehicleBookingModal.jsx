@@ -37,6 +37,8 @@ export default function VehicleBookingModal({
   // Load bookings so the calendar can show pending / approved days
   useEffect(() => {
     if (!isOpen) return;
+    // Reset calendar to current month when modal opens
+    setCurrentMonthDate(new Date());
     const load = () =>
       api
         .fetchBookings?.()
