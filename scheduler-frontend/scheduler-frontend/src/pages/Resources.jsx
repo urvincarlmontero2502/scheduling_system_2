@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import VehicleBookingModal from "../components/VehicleBookingModal";
+import FacilityBookingModal from "../components/FacilityBookingModal";
 
 export default function Resources() {
   const { user } = useAuth();
@@ -23,11 +25,9 @@ export default function Resources() {
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-
   const [editingResource, setEditingResource] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
-  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [resourceType, setResourceType] = useState(null);
 
   // Form state for creating/editing resources
   const [formData, setFormData] = useState({
@@ -36,16 +36,6 @@ export default function Resources() {
     description: "",
     capacity: "",
     image: null,
-  });
-
-  // Form state for resource booking requests
-  const [requestData, setRequestData] = useState({
-    startDate: "",
-    endDate: "",
-    destination: "",
-    name: "",
-    address: "",
-    phone: "",
   });
 
   const loadResources = () => {
@@ -88,17 +78,9 @@ export default function Resources() {
     setIsModalOpen(true);
   };
 
-  const handleOpenRequestModal = (resource) => {
-    setSelectedResource(resource);
-    setRequestData({
-      startDate: "",
-      endDate: "",
-      destination: "",
-      name: "",
-      address: "",
-      phone: "",
-    });
-    setIsRequestModalOpen(true);
+  const handleOpenRequestModal = (item) => {
+    setSelectedResource(item);
+    setResourceType(item?.type?.toLowerCase() || null);
   };
 
   const handleDelete = (id) => {
@@ -117,6 +99,34 @@ export default function Resources() {
           alert(msg);
         });
     }
+  };
+
+  const handleBookingSubmit = (payload) => {
+    const apiPayload = {
+      resource_id: payload.item_id,
+      start_date: payload.start_date,
+      end_date: payload.end_date,
+      start_time: payload.start_time,
+      end_time: payload.end_time,
+      purpose: payload.purpose,
+      full_name: payload.full_name || null,
+      cell_number: payload.cell_number,
+      address: payload.address || null,
+    };
+
+    return api
+      .createBooking(apiPayload)
+      .then(() => {
+        alert("Booking request submitted successfully!");
+        setSelectedResource(null);
+        setResourceType(null);
+      })
+      .catch((err) => {
+        console.error("Failed to submit booking request", err);
+        alert(
+          err?.response?.data?.message || "Failed to submit booking request.",
+        );
+      });
   };
 
   const handleMaintenanceToggle = (item) => {
@@ -190,67 +200,6 @@ export default function Resources() {
       .catch((err) => {
         console.error("Failed to save resource", err.response?.data || err);
       });
-  };
-
-  const handleRequestSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validate required fields
-    if (!requestData.startDate || !requestData.endDate) {
-      alert("Please select both start and end date/time.");
-      return;
-    }
-    if (!requestData.destination) {
-      alert("Please enter the purpose/destination.");
-      return;
-    }
-
-    const resourceId = selectedResource?.resource_id || selectedResource?.id;
-    if (!resourceId) {
-      alert("Error: Resource information is missing. Please try again.");
-      return;
-    }
-
-    setIsSubmittingRequest(true);
-
-    // Parse the datetime-local values into separate date and time
-    // datetime-local format: "2026-10-01T08:00"
-    const startDate = requestData.startDate ? requestData.startDate.split("T")[0] : "";
-    const startTime = requestData.startDate ? requestData.startDate.split("T")[1] : "";
-    const endDate = requestData.endDate ? requestData.endDate.split("T")[0] : "";
-    const endTime = requestData.endDate ? requestData.endDate.split("T")[1] : "";
-
-    const payload = {
-      resource_id: resourceId,
-      start_date: startDate,
-      end_date: endDate,
-      start_time: startTime,
-      end_time: endTime,
-      purpose: requestData.destination || "Resource request",
-      full_name: requestData.name || "",
-      cell_number: requestData.phone || "",
-      address: requestData.address || "",
-    };
-
-    try {
-      const res = await api.createBooking(payload);
-      const bookingId = res?.data?.booking_id || res?.data?.id;
-      alert(`Request submitted successfully for ${selectedResource?.name}! Booking #${bookingId || "—"} is pending approval.`);
-      setIsRequestModalOpen(false);
-      loadResources();
-    } catch (err) {
-      console.error("Failed to submit booking request", err);
-      const errorMsg = err?.response?.data?.message || err?.message;
-      if (errorMsg?.includes("already booked")) {
-        alert(`Conflict: ${errorMsg} Please choose a different date or time.`);
-      } else if (errorMsg?.includes("required")) {
-        alert(`Validation error: ${errorMsg}`);
-      } else {
-        alert(`Failed to submit booking request: ${errorMsg || "Please try again."}`);
-      }
-    } finally {
-      setIsSubmittingRequest(false);
-    }
   };
 
   // Helper to filter resources by search query
@@ -492,185 +441,27 @@ export default function Resources() {
         </div>
       )}
 
-      {/* Request Booking Modal */}
-      {isRequestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 border-b border-line pb-3">
-              <div>
-                <h2 className="text-[16px] font-semibold text-ink">
-                  Request Resource Use
-                </h2>
-                <p className="text-[12.5px] text-steel">
-                  Booking:{" "}
-                  <span className="font-medium text-brand">
-                    {selectedResource?.name}
-                  </span>
-                </p>
-              </div>
-              <button
-                onClick={() => setIsRequestModalOpen(false)}
-                className="text-steel hover:text-ink text-[18px] font-bold">
-                &times;
-              </button>
-            </div>
+      {/* Vehicle Booking Modal (uses dedicated component) */}
+      <VehicleBookingModal
+        isOpen={!!selectedResource && resourceType === "vehicle"}
+        onClose={() => {
+          setSelectedResource(null);
+          setResourceType(null);
+        }}
+        onSubmit={handleBookingSubmit}
+        selectedVehicle={selectedResource}
+      />
 
-            <form onSubmit={handleRequestSubmit} className="space-y-4">
-              {/* Date & Duration Calendar Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[13px] font-medium text-ink mb-1">
-                    Start Date & Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={requestData.startDate}
-                    onChange={(e) =>
-                      setRequestData({
-                        ...requestData,
-                        startDate: e.target.value,
-                      })
-                    }
-                    className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-ink mb-1">
-                    End Date & Time (Duration)
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={requestData.endDate}
-                    onChange={(e) =>
-                      setRequestData({
-                        ...requestData,
-                        endDate: e.target.value,
-                      })
-                    }
-                    className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                  />
-                </div>
-              </div>
-
-              {/* Destination */}
-              <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
-                  Where do you want to go / Purpose Location
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={requestData.destination}
-                  onChange={(e) =>
-                    setRequestData({
-                      ...requestData,
-                      destination: e.target.value,
-                    })
-                  }
-                  placeholder="e.g., City Hall Conference Room / Provincial Site"
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                />
-              </div>
-
-              {/* User Information */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[13px] font-medium text-ink mb-1">
-                    Your Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={requestData.name}
-                    onChange={(e) =>
-                      setRequestData({ ...requestData, name: e.target.value })
-                    }
-                    placeholder="e.g., Juan Dela Cruz"
-                    className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-ink mb-1">
-                    Cell Number
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={requestData.phone}
-                    onChange={(e) =>
-                      setRequestData({ ...requestData, phone: e.target.value })
-                    }
-                    placeholder="e.g., 09123456789"
-                    className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
-                  Where You Live (Address)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={requestData.address}
-                  onChange={(e) =>
-                    setRequestData({ ...requestData, address: e.target.value })
-                  }
-                  placeholder="e.g., Brgy. San Jose, Butuan City"
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-line">
-                <button
-                  type="button"
-                  onClick={() => setIsRequestModalOpen(false)}
-                  className="rounded-md border border-line px-4 py-2 text-[13px] text-steel hover:bg-paper">
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingRequest}
-                  className={`flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white transition ${
-                    isSubmittingRequest
-                      ? "opacity-70 cursor-not-allowed"
-                      : "hover:opacity-90"
-                  }`}>
-                  {isSubmittingRequest ? (
-                    <>
-                      <svg
-                        className="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042.875 5.878 2.439 8.139l2.551-2.848z"></path>
-                      </svg>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={14} /> Submit Request
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Facility Booking Modal (uses dedicated component) */}
+      <FacilityBookingModal
+        isOpen={!!selectedResource && resourceType === "facility"}
+        onClose={() => {
+          setSelectedResource(null);
+          setResourceType(null);
+        }}
+        onSubmit={handleBookingSubmit}
+        selectedFacility={selectedResource}
+      />
 
       {/* Add / Edit Resource Modal */}
       {isModalOpen && (
