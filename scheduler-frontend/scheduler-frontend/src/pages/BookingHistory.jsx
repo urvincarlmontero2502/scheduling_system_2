@@ -37,9 +37,25 @@ function formatTimeTo12Hour(timeStr) {
   return `${hours}:${minutes} ${ampm}`;
 }
 
+function normalizeDate(dateStr) {
+  if (!dateStr) return null;
+  // Handle ISO datetime: 2026-10-15T08:00:00 or 2026-10-15 08:00:00
+  const datePart = String(dateStr).split("T")[0].split(" ")[0];
+  const parts = datePart.split("-");
+  if (parts.length !== 3) return null;
+  const [y, m, d] = parts.map(Number);
+  if (!y || !m || !d) return null;
+  // Format as YYYY-MM-DD with proper padding
+  const year = String(y).padStart(4, "0");
+  const month = String(m).padStart(2, "0");
+  const day = String(d).padStart(2, "0");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${monthNames[m - 1]} ${day}, ${year}`;
+}
+
 function getDateValue(booking) {
-  const startDate = booking.start_date || booking.date;
-  const endDate = booking.end_date || booking.date;
+  const startDate = normalizeDate(booking.start_date || booking.date);
+  const endDate = normalizeDate(booking.end_date || booking.date);
 
   if (startDate && endDate && startDate !== endDate) {
     return `${startDate} to ${endDate}`;
@@ -478,7 +494,7 @@ export default function BookingHistory() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto whitespace-nowrap">
               <table className="w-full min-w-[850px]">
                 <thead className="border-b border-line bg-gray-50">
                   <tr>
