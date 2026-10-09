@@ -42,12 +42,22 @@ export default function FacilityBookingModal({
     const load = () =>
       api
         .fetchBookings?.()
-        .then((res) =>
-          setBookings(
-            Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [],
-          ),
-        )
-        .catch(() => setBookings([]));
+        .then((res) => {
+          const fetchedBookings = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+          console.log("🏢 [BookingModal] Bookings fetched:", fetchedBookings.length);
+          console.log("🏢 [BookingModal] Sample booking:", fetchedBookings[0]);
+          console.log("🏢 [BookingModal] Selected facility:", selectedFacility);
+          const resId = selectedFacility?.resource_id || selectedFacility?.id;
+          console.log("🏢 [BookingModal] Resource ID for matching:", resId);
+          console.log("🏢 [BookingModal] Matching bookings:", fetchedBookings.filter(b => 
+            String(b.resource_id || "") === String(resId)
+          ).length);
+          setBookings(fetchedBookings);
+        })
+        .catch((err) => {
+          console.error("🏢 [BookingModal] Failed to fetch bookings:", err);
+          setBookings([]);
+        });
     load();
     window.addEventListener("bookingUpdated", load);
     window.addEventListener("bookingChanged", load);
