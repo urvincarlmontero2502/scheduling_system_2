@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Settings,
+  User,
   X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -19,7 +20,6 @@ const NAV_ITEMS = [
   { to: "/bookings", label: "Bookings", icon: ClipboardList },
   { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin"] },
   { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
-  { to: "/account-settings", label: "Account Settings", icon: Settings },
 ];
 
 const itemStyle = {
@@ -132,11 +132,37 @@ export default function DashboardLayout() {
         </nav>
 
         <div
-          className="border-t border-line px-4 py-4"
+          className="border-t border-line px-2 py-4"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+          {/* Account Settings link */}
+          <NavLink
+            to="/account-settings"
+            end
+            style={{ ...itemStyle, margin: "0 8px 4px" }}
+            className={({ isActive }) =>
+              isActive
+                ? "bg-brand-light text-brand-dark shadow-sm"
+                : "text-steel hover:bg-paper hover:text-ink"
+            }>
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
+                {user?.image ? (
+                  <img
+                    src={user.image}
+                    alt={user?.full_name || user?.name || "User"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User size={15} />
+                )}
+              </div>
+              <span className="text-[13px]">Account Settings</span>
+            </div>
+          </NavLink>
+
           <div className="mb-3 px-3">
             <p className="truncate text-[14px] font-medium text-ink">
-              {user?.username || user?.name || "Signed in user"}
+              {user?.full_name || user?.name || user?.username || "Signed in user"}
             </p>
             <p className="truncate text-[12.5px] text-steel">
               {user?.barangay ? `Brgy. ${user.barangay}` : user?.role || "Staff"}
