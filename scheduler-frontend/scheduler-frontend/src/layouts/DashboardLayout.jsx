@@ -8,6 +8,7 @@ import {
   Building2,
   LogOut,
   Menu,
+  Settings,
   X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/bookings", label: "Bookings", icon: ClipboardList },
   { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin"] },
   { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
+  { to: "/account-settings", label: "Account Settings", icon: Settings },
 ];
 
 const itemStyle = {

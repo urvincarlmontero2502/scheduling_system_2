@@ -8,6 +8,7 @@ import Calendar from "./pages/Calendar";
 import Bookings from "./pages/Bookings";
 import BookingHistory from "./pages/BookingHistory"; // ⚡ 1. Import it here
 import Resources from "./pages/Resources";
+import AccountSettings from "./pages/AccountSettings";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="booking-history" element={<BookingHistory />} />{" "}
             {/* ⚡ 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
+            <Route path="account-settings" element={<AccountSettings />} />
           </Route>
         </Routes>
       </AuthProvider>

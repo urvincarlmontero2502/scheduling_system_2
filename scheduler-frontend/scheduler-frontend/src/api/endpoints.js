@@ -4,6 +4,7 @@ import client from "./client";
 export const login = (credentials) => client.post("/login", credentials);
 export const logout = () => client.post("/logout");
 export const fetchCurrentUser = () => client.get("/user");
+export const updateUser = (payload) => client.put("/user", payload);
 
 // --- Bookings -----------------------------------------------------------
 export const fetchBookings = (params) => client.get("/bookings", { params });
