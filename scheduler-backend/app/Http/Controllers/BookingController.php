@@ -248,6 +248,10 @@ class BookingController extends Controller
                 'nullable',
                 'string'
             ],
+            'status' => [
+                'nullable',
+                'in:pending,approved,rejected'
+            ],
         ]);
 
 
@@ -318,7 +322,7 @@ class BookingController extends Controller
                 $validated['address'] ?? null,
 
             'status' =>
-                'pending',
+                $validated['status'] ?? 'pending',
         ]);
 
 

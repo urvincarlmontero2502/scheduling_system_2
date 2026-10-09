@@ -18,6 +18,7 @@ export default function FacilityBookingModal({
   onClose,
   onSubmit,
   selectedFacility,
+  isDirectUse = false,
 }) {
   const [formData, setFormData] = useState({
     start_date: "",
@@ -322,6 +323,7 @@ export default function FacilityBookingModal({
       ...formData,
       start_date: formatLocalDate(formData.start_date),
       end_date: formatLocalDate(formData.end_date),
+      status: isDirectUse ? "approved" : "pending",
     };
 
     Promise.resolve(onSubmit(payload)).finally(() => setSubmitting(false));
@@ -337,7 +339,7 @@ export default function FacilityBookingModal({
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <div>
             <h2 className="text-[15px] font-semibold text-ink">
-              Request Booking: {selectedFacility.name}
+              {isDirectUse ? "Direct Allocation" : "Request Booking"}: {selectedFacility.name}
             </h2>
             <p className="text-[11.5px] capitalize text-steel">
               Type: Facility
@@ -516,6 +518,8 @@ export default function FacilityBookingModal({
                   <Loader2 size={14} className="animate-spin" />
                   Submitting...
                 </>
+              ) : isDirectUse ? (
+                "Allocate"
               ) : (
                 "Submit Request"
               )}

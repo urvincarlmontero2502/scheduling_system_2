@@ -28,6 +28,7 @@ export default function Resources() {
   const [editingResource, setEditingResource] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
   const [resourceType, setResourceType] = useState(null);
+  const [isDirectUse, setIsDirectUse] = useState(false);
 
   // Form state for creating/editing resources
   const [formData, setFormData] = useState({
@@ -78,9 +79,10 @@ export default function Resources() {
     setIsModalOpen(true);
   };
 
-  const handleOpenRequestModal = (item) => {
+  const handleOpenRequestModal = (item, direct = false) => {
     setSelectedResource(item);
     setResourceType(item?.type?.toLowerCase() || null);
+    setIsDirectUse(direct);
   };
 
   const handleDelete = (id) => {
@@ -112,12 +114,17 @@ export default function Resources() {
       full_name: payload.full_name || null,
       cell_number: payload.cell_number,
       address: payload.address || null,
+      status: payload.status || 'pending',
     };
 
     return api
       .createBooking(apiPayload)
       .then(() => {
-        alert("Booking request submitted successfully!");
+        if (payload.status === 'approved') {
+          alert("Resource allocated successfully!");
+        } else {
+          alert("Booking request submitted successfully!");
+        }
         setSelectedResource(null);
         setResourceType(null);
       })
@@ -304,11 +311,19 @@ export default function Resources() {
 
       {/* Request Button Footer */}
       <div className="p-3.5 pt-0">
-        <button
-          onClick={() => handleOpenRequestModal(item)}
-          className="w-full mt-2 flex items-center justify-center gap-1.5 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-2 text-[12.5px] font-medium transition">
-          <Calendar size={14} /> Request Use
-        </button>
+        {isAdmin ? (
+          <button
+            onClick={() => handleOpenRequestModal(item, true)}
+            className="w-full mt-2 flex items-center justify-center gap-1.5 rounded-md bg-brand text-white hover:bg-brand-dark py-2 text-[12.5px] font-medium transition">
+            <Calendar size={14} /> Use
+          </button>
+        ) : (
+          <button
+            onClick={() => handleOpenRequestModal(item)}
+            className="w-full mt-2 flex items-center justify-center gap-1.5 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-2 text-[12.5px] font-medium transition">
+            <Calendar size={14} /> Request Use
+          </button>
+        )}
       </div>
     </div>
   );
@@ -447,9 +462,11 @@ export default function Resources() {
         onClose={() => {
           setSelectedResource(null);
           setResourceType(null);
+          setIsDirectUse(false);
         }}
         onSubmit={handleBookingSubmit}
         selectedVehicle={selectedResource}
+        isDirectUse={isDirectUse}
       />
 
       {/* Facility Booking Modal (uses dedicated component) */}
@@ -458,9 +475,11 @@ export default function Resources() {
         onClose={() => {
           setSelectedResource(null);
           setResourceType(null);
+          setIsDirectUse(false);
         }}
         onSubmit={handleBookingSubmit}
         selectedFacility={selectedResource}
+        isDirectUse={isDirectUse}
       />
 
       {/* Add / Edit Resource Modal */}

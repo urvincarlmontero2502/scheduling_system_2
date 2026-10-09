@@ -18,6 +18,7 @@ export default function VehicleBookingModal({
   onClose,
   onSubmit,
   selectedVehicle,
+  isDirectUse = false,
 }) {
   const [formData, setFormData] = useState({
     start_date: "",
@@ -26,7 +27,7 @@ export default function VehicleBookingModal({
     end_time: "17:00",
     destination: "",
     purpose: "",
-    full_name: "", // <-- Change 'name' to 'full_name'
+    full_name: "",
     cell_number: "",
     address: "",
   });
@@ -44,21 +45,9 @@ export default function VehicleBookingModal({
         .fetchBookings?.()
         .then((res) => {
           const fetchedBookings = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-          // Debug logging
-          console.log("VehicleBookingModal - bookings fetched:", fetchedBookings.length);
-          if (fetchedBookings.length > 0) {
-            console.log("Sample booking:", fetchedBookings[0]);
-            console.log("Selected vehicle resource_id:", selectedVehicle?.resource_id || selectedVehicle?.id);
-            console.log("Matching bookings:", fetchedBookings.filter(b => 
-              String(b.resource_id || "") === String(selectedVehicle?.resource_id || selectedVehicle?.id)
-            ).length);
-          }
           setBookings(fetchedBookings);
         })
-        .catch((err) => {
-          console.error("VehicleBookingModal - failed to fetch bookings:", err);
-          setBookings([]);
-        });
+        .catch(() => setBookings([]));
     load();
     window.addEventListener("bookingUpdated", load);
     window.addEventListener("bookingChanged", load);
@@ -321,6 +310,7 @@ export default function VehicleBookingModal({
       item_id: selectedVehicle.resource_id || selectedVehicle.id,
       type: "vehicle",
       ...formData,
+      status: isDirectUse ? "approved" : "pending",
     };
     Promise.resolve(onSubmit(payload)).finally(() => setSubmitting(false));
   };
@@ -335,7 +325,7 @@ export default function VehicleBookingModal({
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <div>
             <h2 className="text-[15px] font-semibold text-ink">
-              Request Booking: {selectedVehicle.name}
+              {isDirectUse ? "Direct Allocation" : "Request Booking"}: {selectedVehicle.name}
             </h2>
             <p className="text-[11.5px] capitalize text-steel">Type: Vehicle</p>
           </div>
@@ -529,6 +519,8 @@ export default function VehicleBookingModal({
                   <Loader2 size={14} className="animate-spin" />
                   Submitting...
                 </>
+              ) : isDirectUse ? (
+                "Allocate"
               ) : (
                 "Submit Request"
               )}
