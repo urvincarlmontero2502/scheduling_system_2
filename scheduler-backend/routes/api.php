@@ -45,6 +45,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/resources/{resource}', [ResourceController::class, 'destroy'])
         ->middleware('admin');
 
+    // Maintenance toggle
+    Route::patch('/resources/{resource}/maintenance/on', [ResourceController::class, 'setMaintenance'])
+        ->middleware('admin');
+    Route::patch('/resources/{resource}/maintenance/off', [ResourceController::class, 'setAvailable'])
+        ->middleware('admin');
+
     // Bookings
     Route::get('/bookings', [BookingController::class, 'index']);
 

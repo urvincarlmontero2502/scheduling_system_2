@@ -25,6 +25,8 @@ class ResourceController extends Controller
                 'type' => $r->type,
                 'image' => $r->image ? asset('storage/' . $r->image) : null,
                 'available' => $r->status === 'available',
+                'status' => $r->status,
+                'is_maintenance' => $r->status === 'maintenance',
                 'description' => $r->description,
                 'capacity' => $r->type === 'facility'
                     ? ($details->capacity ?? null) . ' pax'
@@ -83,6 +85,7 @@ class ResourceController extends Controller
             'type' => ['required', 'in:facility,vehicle'],
             'description' => ['nullable', 'string'],
             'capacity' => ['nullable', 'string'],
+            'status' => ['nullable', 'in:available,unavailable,maintenance'],
             'image' => ['nullable', 'image', 'max:2048'], // Optional image upload on update
         ]);
 
@@ -95,12 +98,18 @@ class ResourceController extends Controller
             $imagePath = $request->file('image')->store('resources', 'public');
         }
 
-        $resource->update([
+        $updateData = [
             'name' => $validated['name'],
             'type' => $validated['type'],
             'description' => $validated['description'] ?? null,
             'image' => $imagePath,
-        ]);
+        ];
+
+        if (isset($validated['status'])) {
+            $updateData['status'] = $validated['status'];
+        }
+
+        $resource->update($updateData);
 
         if ($validated['type'] === 'facility') {
             $resource->facilityDetails()->updateOrCreate(
@@ -134,5 +143,29 @@ class ResourceController extends Controller
         $resource->delete();
 
         return response()->json(['message' => 'Resource deleted successfully']);
+    }
+
+    public function setMaintenance($id)
+    {
+        $resource = Resource::findOrFail($id);
+
+        $resource->update(['status' => 'maintenance']);
+
+        return response()->json([
+            'message' => "{$resource->name} is now marked for maintenance.",
+            'resource' => $resource,
+        ]);
+    }
+
+    public function setAvailable($id)
+    {
+        $resource = Resource::findOrFail($id);
+
+        $resource->update(['status' => 'available']);
+
+        return response()->json([
+            'message' => "{$resource->name} is now available.",
+            'resource' => $resource,
+        ]);
     }
 }

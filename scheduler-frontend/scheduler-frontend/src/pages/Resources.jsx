@@ -8,12 +8,18 @@ import {
   Car,
   Calendar,
   Send,
+  Search,
+  Wrench,
 } from "lucide-react";
 import * as api from "../api/endpoints";
+import { useAuth } from "../context/AuthContext";
 
 export default function Resources() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,6 +113,27 @@ export default function Resources() {
     }
   };
 
+  const handleMaintenanceToggle = (item) => {
+    const isCurrentlyMaintenance = item.is_maintenance || item.status === "maintenance";
+    const action = isCurrentlyMaintenance ? "available" : "maintenance";
+    const actionText = isCurrentlyMaintenance ? "available" : "under maintenance";
+
+    if (!window.confirm(`Mark "${item.name}" as ${actionText}?`)) return;
+
+    const request = isCurrentlyMaintenance
+      ? api.setResourceAvailable?.(item.resource_id)
+      : api.setResourceMaintenance?.(item.resource_id);
+
+    request
+      .then(() => {
+        loadResources();
+      })
+      .catch((err) => {
+        console.error("Failed to update resource status", err);
+        alert("Failed to update resource status. Please try again.");
+      });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -143,21 +170,61 @@ export default function Resources() {
       });
   };
 
-  const handleRequestSubmit = (e) => {
+  const handleRequestSubmit = async (e) => {
     e.preventDefault();
-    // Payload to submit booking request
+
+    // Parse the datetime-local values into separate date and time
+    // datetime-local format: "2026-10-01T08:00"
+    const startDate = requestData.startDate ? requestData.startDate.split("T")[0] : "";
+    const startTime = requestData.startDate ? requestData.startDate.split("T")[1] : "";
+    const endDate = requestData.endDate ? requestData.endDate.split("T")[0] : "";
+    const endTime = requestData.endDate ? requestData.endDate.split("T")[1] : "";
+
     const payload = {
       resource_id: selectedResource?.resource_id,
-      ...requestData,
+      start_date: startDate,
+      end_date: endDate,
+      start_time: startTime,
+      end_time: endTime,
+      purpose: requestData.destination || "Resource request",
+      full_name: requestData.name || "",
+      cell_number: requestData.phone || "",
+      address: requestData.address || "",
     };
 
-    console.log("Submitting resource request:", payload);
-    alert(`Request submitted successfully for ${selectedResource?.name}!`);
-    setIsRequestModalOpen(false);
+    try {
+      await api.createBooking(payload);
+      alert(`Request submitted successfully for ${selectedResource?.name}!`);
+      setIsRequestModalOpen(false);
+      loadResources();
+    } catch (err) {
+      console.error("Failed to submit booking request", err);
+      alert(
+        err?.response?.data?.message || "Failed to submit booking request."
+      );
+    }
   };
 
-  const vehicles = resources.filter((item) => item.type === "vehicle");
-  const facilities = resources.filter((item) => item.type === "facility");
+  // Helper to filter resources by search query
+  const matchesSearch = (item) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const name = (item?.name || "").toLowerCase();
+    const description = (item?.description || "").toLowerCase();
+    const capacity = (item?.capacity || item?.unit_name || "").toLowerCase();
+    return (
+      name.includes(query) ||
+      description.includes(query) ||
+      capacity.includes(query)
+    );
+  };
+
+  const vehicles = resources.filter(
+    (item) => item.type === "vehicle" && matchesSearch(item),
+  );
+  const facilities = resources.filter(
+    (item) => item.type === "facility" && matchesSearch(item),
+  );
 
   const renderResourceCard = (item) => (
     <div
@@ -180,23 +247,46 @@ export default function Resources() {
         </div>
         <div className="p-3.5">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-[14px] font-semibold text-ink line-clamp-1">
-              {item.name}
-            </h3>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => handleOpenModal(item)}
-                className="text-steel hover:text-brand transition p-1"
-                title="Edit Resource">
-                <Edit2 size={15} />
-              </button>
-              <button
-                onClick={() => handleDelete(item.resource_id)}
-                className="text-steel hover:text-red-500 transition p-1"
-                title="Delete Resource">
-                <Trash2 size={15} />
-              </button>
+            <div>
+              <h3 className="text-[14px] font-semibold text-ink line-clamp-1">
+                {item.name}
+              </h3>
+              {(item.is_maintenance || item.status === "maintenance") && (
+                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-800">
+                  <Wrench size={10} /> Under Maintenance
+                </span>
+              )}
             </div>
+            {isAdmin && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => handleOpenModal(item)}
+                  className="text-steel hover:text-brand transition p-1"
+                  title="Edit Resource">
+                  <Edit2 size={15} />
+                </button>
+                <button
+                  onClick={() => handleMaintenanceToggle(item)}
+                  className={`transition p-1 ${
+                    item.is_maintenance || item.status === "maintenance"
+                      ? "text-orange-600 hover:text-orange-700"
+                      : "text-steel hover:text-orange-600"
+                  }`}
+                  title={
+                    item.is_maintenance || item.status === "maintenance"
+                      ? "Mark as Available"
+                      : "Mark as Under Maintenance"
+                  }>
+                  <Wrench size={15} />
+                </button>
+                <button
+                  onClick={() => handleDelete(item.resource_id)}
+                  className="text-steel hover:text-red-500 transition p-1"
+                  title="Delete Resource">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            )}
           </div>
           <p className="mt-1.5 text-[12.5px] text-steel">
             Details:{" "}
@@ -227,11 +317,34 @@ export default function Resources() {
         <h1 className="text-[20px] font-semibold text-ink">
           Facilities & Vehicles
         </h1>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90 transition">
-          <Plus size={16} /> Add Resource
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90 transition">
+            <Plus size={16} /> Add Resource
+          </button>
+        )}
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel" />
+        <input
+          type="text"
+          placeholder="Search resources by name or description..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-steel hover:text-ink"
+            title="Clear search"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {loading ? (

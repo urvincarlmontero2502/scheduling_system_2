@@ -25,4 +25,11 @@ export const updateResource = (id, payload) =>
 
 export const deleteResource = (id) => client.delete(`/resources/${id}`);
 
+// Maintenance status toggle
+export const setResourceMaintenance = (id) =>
+  client.patch(`/resources/${id}/maintenance/on`);
+
+export const setResourceAvailable = (id) =>
+  client.patch(`/resources/${id}/maintenance/off`);
+
 export const checkHealth = () => client.get("/health");
