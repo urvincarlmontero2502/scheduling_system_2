@@ -194,6 +194,23 @@ export default function Resources() {
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!requestData.startDate || !requestData.endDate) {
+      alert("Please select both start and end date/time.");
+      return;
+    }
+    if (!requestData.destination) {
+      alert("Please enter the purpose/destination.");
+      return;
+    }
+
+    const resourceId = selectedResource?.resource_id || selectedResource?.id;
+    if (!resourceId) {
+      alert("Error: Resource information is missing. Please try again.");
+      return;
+    }
+
     setIsSubmittingRequest(true);
 
     // Parse the datetime-local values into separate date and time
@@ -204,7 +221,7 @@ export default function Resources() {
     const endTime = requestData.endDate ? requestData.endDate.split("T")[1] : "";
 
     const payload = {
-      resource_id: selectedResource?.resource_id || selectedResource?.id,
+      resource_id: resourceId,
       start_date: startDate,
       end_date: endDate,
       start_time: startTime,
@@ -216,15 +233,21 @@ export default function Resources() {
     };
 
     try {
-      await api.createBooking(payload);
-      alert(`Request submitted successfully for ${selectedResource?.name}!`);
+      const res = await api.createBooking(payload);
+      const bookingId = res?.data?.booking_id || res?.data?.id;
+      alert(`Request submitted successfully for ${selectedResource?.name}! Booking #${bookingId || "—"} is pending approval.`);
       setIsRequestModalOpen(false);
       loadResources();
     } catch (err) {
       console.error("Failed to submit booking request", err);
-      alert(
-        err?.response?.data?.message || "Failed to submit booking request."
-      );
+      const errorMsg = err?.response?.data?.message || err?.message;
+      if (errorMsg?.includes("already booked")) {
+        alert(`Conflict: ${errorMsg} Please choose a different date or time.`);
+      } else if (errorMsg?.includes("required")) {
+        alert(`Validation error: ${errorMsg}`);
+      } else {
+        alert(`Failed to submit booking request: ${errorMsg || "Please try again."}`);
+      }
     } finally {
       setIsSubmittingRequest(false);
     }
