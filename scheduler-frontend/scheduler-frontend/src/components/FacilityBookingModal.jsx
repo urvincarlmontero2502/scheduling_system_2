@@ -78,12 +78,16 @@ export default function FacilityBookingModal({
   // Days of this resource that have approved / pending bookings
   const dayStatus = {};
   const resourceId = selectedFacility.resource_id || selectedFacility.id;
-  bookings.forEach((b) => {
+  console.log("🏢 [FacilityBookingModal] Computing dayStatus for resourceId:", resourceId, "bookings count:", bookings.length);
+  bookings.forEach((b, idx) => {
     const s = (b.status || "").toLowerCase();
     const isApproved = s.includes("approv");
     const isPending =
       s.includes("pend") || s.includes("request") || s.includes("tentative");
-    if (!isApproved && !isPending) return;
+    if (!isApproved && !isPending) {
+      console.log("🏢 [FacilityBookingModal] Booking idx:", idx, "Status not approved/pending:", b.status);
+      return;
+    }
     const sameResource =
       b.resource_id != null
         ? String(b.resource_id) === String(resourceId)
@@ -101,7 +105,10 @@ export default function FacilityBookingModal({
 
     const startParts = parseDateStr(b.start_date);
     const endParts = parseDateStr(b.end_date || b.start_date);
-    if (!startParts || !endParts) return;
+    if (!startParts || !endParts) {
+      console.log("🏢 [FacilityBookingModal] Booking idx:", idx, "Date parse failed - start_date:", b.start_date, "end_date:", b.end_date);
+      return;
+    }
 
     const sy = startParts[0], sm = startParts[1], sd = startParts[2];
     const ey = endParts[0], em = endParts[1], ed = endParts[2];

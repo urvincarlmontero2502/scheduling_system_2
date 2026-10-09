@@ -78,17 +78,24 @@ export default function VehicleBookingModal({
   // Days of this resource that have approved / pending bookings
   const dayStatus = {};
   const resourceId = selectedVehicle.resource_id || selectedVehicle.id;
-  bookings.forEach((b) => {
+  console.log("📅 [VehicleBookingModal] Computing dayStatus for resourceId:", resourceId, "bookings count:", bookings.length);
+  bookings.forEach((b, idx) => {
     const s = (b.status || "").toLowerCase();
     const isApproved = s.includes("approv");
     const isPending =
       s.includes("pend") || s.includes("request") || s.includes("tentative");
-    if (!isApproved && !isPending) return;
+    if (!isApproved && !isPending) {
+      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Status not approved/pending:", b.status);
+      return;
+    }
     const sameResource =
       b.resource_id != null
         ? String(b.resource_id) === String(resourceId)
         : b.resource === selectedVehicle.name;
-    if (!sameResource) return;
+    if (!sameResource) {
+      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Resource mismatch - b.resource_id:", b.resource_id, "expected:", resourceId, "b.resource:", b.resource, "selectedVehicle.name:", selectedVehicle.name);
+      return;
+    }
 
     // Handle both date-only and datetime formats (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
     const parseStartDate = (dateStr) => {
@@ -102,12 +109,16 @@ export default function VehicleBookingModal({
 
     const startParts = parseStartDate(b.start_date);
     const endParts = parseStartDate(b.end_date || b.start_date);
-    if (!startParts || !endParts) return;
+    if (!startParts || !endParts) {
+      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Date parse failed - start_date:", b.start_date, "end_date:", b.end_date);
+      return;
+    }
 
     const sy = startParts[0], sm = startParts[1], sd = startParts[2];
     const ey = endParts[0], em = endParts[1], ed = endParts[2];
 
     if (!sy || !ey) return;
+    console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Date parsed OK - start:", `${sy}-${sm}-${sd}`, "end:", `${ey}-${em}-${ed}`);
     const cur = new Date(sy, sm - 1, sd);
     const last = new Date(ey, em - 1, ed);
     for (let i = 0; cur <= last && i < 366; i++) {
@@ -118,8 +129,7 @@ export default function VehicleBookingModal({
       cur.setDate(cur.getDate() + 1);
     }
   });
-
-  // Approved bookings of this resource that overlap the chosen dates and times
+  console.log("📅 [VehicleBookingModal] dayStatus computed:", dayStatus);
   const toMins = (t) => {
     const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (!m) return null;
