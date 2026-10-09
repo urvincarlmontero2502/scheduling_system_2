@@ -27,6 +27,7 @@ export default function Resources() {
 
   const [editingResource, setEditingResource] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   // Form state for creating/editing resources
   const [formData, setFormData] = useState({
@@ -193,6 +194,7 @@ export default function Resources() {
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmittingRequest(true);
 
     // Parse the datetime-local values into separate date and time
     // datetime-local format: "2026-10-01T08:00"
@@ -223,6 +225,8 @@ export default function Resources() {
       alert(
         err?.response?.data?.message || "Failed to submit booking request."
       );
+    } finally {
+      setIsSubmittingRequest(false);
     }
   };
 
@@ -606,8 +610,38 @@ export default function Resources() {
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90">
-                  <Send size={14} /> Submit Request
+                  disabled={isSubmittingRequest}
+                  className={`flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white transition ${
+                    isSubmittingRequest
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:opacity-90"
+                  }`}>
+                  {isSubmittingRequest ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042.875 5.878 2.439 8.139l2.551-2.848z"></path>
+                      </svg>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={14} /> Submit Request
+                    </>
+                  )}
                 </button>
               </div>
             </form>
