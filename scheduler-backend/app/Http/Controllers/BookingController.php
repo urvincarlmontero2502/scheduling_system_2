@@ -20,15 +20,11 @@ class BookingController extends Controller
     public function stats()
     {
         return response()->json([
-            'pending' => BookingRequest::where('status', 'pending')
-                ->where('purpose', 'not like', '%Festival%')
-                ->where('purpose', 'not like', '%Alumni%')
-                ->where('purpose', 'not like', '%Habongan%')
+            'pending' => BookingRequest::notSpecialEvent()
+                ->where('status', 'pending')
                 ->count(),
-            'approved' => BookingRequest::where('status', 'approved')
-                ->where('purpose', 'not like', '%Festival%')
-                ->where('purpose', 'not like', '%Alumni%')
-                ->where('purpose', 'not like', '%Habongan%')
+            'approved' => BookingRequest::notSpecialEvent()
+                ->where('status', 'approved')
                 ->count(),
             'resources' => Resource::count(),
         ]);
@@ -183,6 +179,9 @@ class BookingController extends Controller
 
                 'status' =>
                     $b->status,
+
+                'is_special_event' =>
+                    $b->is_special_event ?? false,
             ];
         });
 

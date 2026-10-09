@@ -92,6 +92,7 @@ class SpecialEventsSeeder extends Seeder
                                 'start_time' => self::START_TIME,
                                 'end_time' => self::END_TIME,
                                 'status' => 'approved',
+                                'is_special_event' => true,
                                 'created_at' => now(),
                             ]);
                         }

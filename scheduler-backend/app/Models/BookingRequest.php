@@ -21,7 +21,8 @@ class BookingRequest extends Model
         'end_time',
         'cell_number',
         'address',
-        'status'
+        'status',
+        'is_special_event',
     ];
 
     protected function casts(): array
@@ -29,7 +30,24 @@ class BookingRequest extends Model
         return [
             'start_date' => 'date',
             'end_date' => 'date',
+            'is_special_event' => 'boolean',
         ];
+    }
+
+    /**
+     * Scope a query to exclude special events (annual festivals, alumni reunions, etc.).
+     */
+    public function scopeNotSpecialEvent($query)
+    {
+        $query->where('is_special_event', false);
+    }
+
+    /**
+     * Scope a query to include only special events.
+     */
+    public function scopeSpecialEvent($query)
+    {
+        $query->where('is_special_event', true);
     }
 
     public function user()
