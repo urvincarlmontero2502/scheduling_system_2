@@ -13,6 +13,52 @@ import {
   Loader2,
 } from "lucide-react";
 
+// Helper: robustly extract date parts from various formats
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  // Handle ISO datetime: 2026-10-15T08:00:00
+  const datePart = String(dateStr).split("T")[0];
+  const parts = datePart.split("-").map(Number);
+  if (parts.length !== 3) return null;
+  const [y, m, d] = parts;
+  if (!y || !m || !d) return null;
+  return { y, m, d };
+};
+
+// Helper: match booking to resource ID
+const isMatch = (booking, resourceId) => {
+  // Try multiple possible field names for resource ID
+  const bookingResourceId =
+    booking.resource_id ??
+    booking.item_id ??
+    booking.resourceId ??
+    booking.resource ??
+    null;
+  if (bookingResourceId != null) {
+    return String(bookingResourceId) === String(resourceId);
+  }
+  return false;
+};
+
+// Helper: determine if status is approved
+const isApprovedStatus = (status) => {
+  const s = (status || "").toLowerCase();
+  return s.includes("approv") || s.includes("accept") || s.includes("confirm") || s === "yes";
+};
+
+// Helper: determine if status is pending
+const isPendingStatus = (status) => {
+  const s = (status || "").toLowerCase();
+  return (
+    s.includes("pend") ||
+    s.includes("request") ||
+    s.includes("tentative") ||
+    s.includes("submit") ||
+    s.includes("waiting") ||
+    s === "new"
+  );
+};
+
 export default function VehicleBookingModal({
   isOpen,
   onClose,
@@ -46,18 +92,16 @@ export default function VehicleBookingModal({
         .then((res) => {
           const fetchedBookings = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
           console.log("📅 [VehicleBookingModal] Bookings fetched:", fetchedBookings.length);
-          console.log("📅 [VehicleBookingModal] Sample booking:", fetchedBookings[0]);
-          const resId = selectedVehicle?.resource_id || selectedVehicle?.id;
-          console.log("📅 [VehicleBookingModal] Selected vehicle:", selectedVehicle);
-          console.log("📅 [VehicleBookingModal] Resource ID:", resId, "Type:", typeof resId);
-          console.log("📅 [VehicleBookingModal] Booking resource_id:", fetchedBookings[0]?.resource_id, "Type:", typeof fetchedBookings[0]?.resource_id);
-          console.log("📅 [VehicleBookingModal] Match by resource_id:", fetchedBookings.filter(b => String(b.resource_id) === String(resId)).length);
-          console.log("📅 [VehicleBookingModal] Match by id:", fetchedBookings.filter(b => String(b.id) === String(selectedVehicle?.id)).length);
-          console.log("📅 [VehicleBookingModal] Match by resource name:", fetchedBookings.filter(b => b.resource === selectedVehicle?.name).length);
-          console.log("📅 [VehicleBookingModal] Booking start_date:", fetchedBookings[0]?.start_date);
-          console.log("📅 [VehicleBookingModal] Booking status:", fetchedBookings[0]?.status);
-          // Debug: show total matching for this resource
-          console.log("📅 [VehicleBookingModal] Total matching bookings:", fetchedBookings.filter(b => String(b.resource_id || "") === String(resId) || String(b.id || "") === String(selectedVehicle?.id) || b.resource === selectedVehicle?.name).length);
+          if (fetchedBookings.length > 0) {
+            console.log("📅 [VehicleBookingModal] Sample booking:", fetchedBookings[0]);
+            const resId = selectedVehicle?.resource_id || selectedVehicle?.id;
+            console.log("📅 [VehicleBookingModal] Selected vehicle:", selectedVehicle);
+            console.log("📅 [VehicleBookingModal] Resource ID:", resId, "Type:", typeof resId);
+            console.log("📅 [VehicleBookingModal] Booking resource_id:", fetchedBookings[0]?.resource_id, "Type:", typeof fetchedBookings[0]?.resource_id);
+            console.log("📅 [VehicleBookingModal] Booking status:", fetchedBookings[0]?.status);
+            console.log("📅 [VehicleBookingModal] Booking start_date:", fetchedBookings[0]?.start_date);
+            console.log("📅 [VehicleBookingModal] Total matching bookings:", fetchedBookings.filter(b => isMatch(b, resId)).length);
+          }
           setBookings(fetchedBookings);
         })
         .catch((err) => {
@@ -79,46 +123,32 @@ export default function VehicleBookingModal({
   const dayStatus = {};
   const resourceId = selectedVehicle.resource_id || selectedVehicle.id;
   console.log("📅 [VehicleBookingModal] Computing dayStatus for resourceId:", resourceId, "bookings count:", bookings.length);
+
   bookings.forEach((b, idx) => {
-    const s = (b.status || "").toLowerCase();
-    const isApproved = s.includes("approv");
-    const isPending =
-      s.includes("pend") || s.includes("request") || s.includes("tentative");
+    const isApproved = isApprovedStatus(b.status);
+    const isPending = isPendingStatus(b.status);
     if (!isApproved && !isPending) {
-      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Status not approved/pending:", b.status);
+      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Status not recognized as approved/pending:", b.status);
       return;
     }
-    const sameResource =
-      b.resource_id != null
-        ? String(b.resource_id) === String(resourceId)
-        : b.resource === selectedVehicle.name;
+
+    const sameResource = isMatch(b, resourceId);
     if (!sameResource) {
-      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Resource mismatch - b.resource_id:", b.resource_id, "expected:", resourceId, "b.resource:", b.resource, "selectedVehicle.name:", selectedVehicle.name);
+      console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Resource mismatch - b.resource_id:", b.resource_id, "b.item_id:", b.item_id, "expected:", resourceId, "b.resource:", b.resource, "selectedVehicle.name:", selectedVehicle.name);
       return;
     }
 
-    // Handle both date-only and datetime formats (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
-    const parseStartDate = (dateStr) => {
-      if (!dateStr) return null;
-      // Handle ISO datetime: 2026-10-15T08:00:00
-      const datePart = dateStr.split("T")[0];
-      const parts = datePart.split("-").map(Number);
-      if (parts.length !== 3) return null;
-      return parts;
-    };
-
-    const startParts = parseStartDate(b.start_date);
-    const endParts = parseStartDate(b.end_date || b.start_date);
+    const startParts = parseDate(b.start_date);
+    const endParts = parseDate(b.end_date || b.start_date);
     if (!startParts || !endParts) {
       console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Date parse failed - start_date:", b.start_date, "end_date:", b.end_date);
       return;
     }
 
-    const sy = startParts[0], sm = startParts[1], sd = startParts[2];
-    const ey = endParts[0], em = endParts[1], ed = endParts[2];
+    const sy = startParts.y, sm = startParts.m, sd = startParts.d;
+    const ey = endParts.y, em = endParts.m, ed = endParts.d;
 
     if (!sy || !ey) return;
-    console.log("📅 [VehicleBookingModal] Booking idx:", idx, "Date parsed OK - start:", `${sy}-${sm}-${sd}`, "end:", `${ey}-${em}-${ed}`);
     const cur = new Date(sy, sm - 1, sd);
     const last = new Date(ey, em - 1, ed);
     for (let i = 0; cur <= last && i < 366; i++) {
@@ -130,6 +160,8 @@ export default function VehicleBookingModal({
     }
   });
   console.log("📅 [VehicleBookingModal] dayStatus computed:", dayStatus);
+
+  // Approved bookings of this resource that overlap the chosen dates and times
   const toMins = (t) => {
     const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (!m) return null;
@@ -142,12 +174,8 @@ export default function VehicleBookingModal({
   const conflict =
     formData.start_date && formData.end_date
       ? bookings.find((b) => {
-          if ((b.status || "").toLowerCase() !== "approved") return false;
-          const same =
-            b.resource_id != null
-              ? String(b.resource_id) === String(resourceId)
-              : b.resource === selectedVehicle.name;
-          if (!same) return false;
+          if (!isApprovedStatus(b.status)) return false;
+          if (!isMatch(b, resourceId)) return false;
           // Handle datetime format: extract date portion for comparison
           const bStart = (b.start_date || "").split("T")[0];
           const bEnd = (b.end_date || b.start_date || "").split("T")[0];
@@ -323,7 +351,7 @@ export default function VehicleBookingModal({
     formData.start_date &&
     formData.end_date &&
     formData.purpose.trim() &&
-    formData.full_name.trim() && // <-- Change 'name' to 'full_name'
+    formData.full_name.trim() &&
     formData.cell_number.length === 11 &&
     formData.address.trim() &&
     !conflict;
@@ -475,8 +503,8 @@ export default function VehicleBookingModal({
                     type="text"
                     required
                     placeholder="John Doe"
-                    value={formData.full_name} // <-- Change 'formData.name' to 'formData.full_name'
-                    onChange={(e) => update("full_name", e.target.value)} // <-- Change 'name' to 'full_name'
+                    value={formData.full_name}
+                    onChange={(e) => update("full_name", e.target.value)}
                     className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                   />
                 </div>
@@ -538,7 +566,7 @@ export default function VehicleBookingModal({
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="rounded-md bg-brand px-4 py-1.5 text-[13px] font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+              className="rounded-md bg-brand px-4 py-1.5 text-[12px] font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

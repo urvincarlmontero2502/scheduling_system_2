@@ -13,6 +13,52 @@ import {
   Loader2,
 } from "lucide-react";
 
+// Helper: robustly extract date parts from various formats
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  // Handle ISO datetime: 2026-10-15T08:00:00
+  const datePart = String(dateStr).split("T")[0];
+  const parts = datePart.split("-").map(Number);
+  if (parts.length !== 3) return null;
+  const [y, m, d] = parts;
+  if (!y || !m || !d) return null;
+  return { y, m, d };
+};
+
+// Helper: match booking to resource ID
+const isMatch = (booking, resourceId) => {
+  // Try multiple possible field names for resource ID
+  const bookingResourceId =
+    booking.resource_id ??
+    booking.item_id ??
+    booking.resourceId ??
+    booking.resource ??
+    null;
+  if (bookingResourceId != null) {
+    return String(bookingResourceId) === String(resourceId);
+  }
+  return false;
+};
+
+// Helper: determine if status is approved
+const isApprovedStatus = (status) => {
+  const s = (status || "").toLowerCase();
+  return s.includes("approv") || s.includes("accept") || s.includes("confirm") || s === "yes";
+};
+
+// Helper: determine if status is pending
+const isPendingStatus = (status) => {
+  const s = (status || "").toLowerCase();
+  return (
+    s.includes("pend") ||
+    s.includes("request") ||
+    s.includes("tentative") ||
+    s.includes("submit") ||
+    s.includes("waiting") ||
+    s === "new"
+  );
+};
+
 export default function FacilityBookingModal({
   isOpen,
   onClose,
@@ -49,14 +95,12 @@ export default function FacilityBookingModal({
             console.log("🏢 [FacilityBookingModal] Sample booking keys:", Object.keys(fetchedBookings[0]));
             console.log("🏢 [FacilityBookingModal] Sample booking:", fetchedBookings[0]);
             const resId = selectedFacility?.resource_id || selectedFacility?.id;
+            console.log("🏢 [FacilityBookingModal] Selected facility:", selectedFacility);
             console.log("🏢 [FacilityBookingModal] Resource ID:", resId, "Type:", typeof resId);
             console.log("🏢 [FacilityBookingModal] Booking resource_id:", fetchedBookings[0]?.resource_id, "Type:", typeof fetchedBookings[0]?.resource_id);
-            console.log("🏢 [FacilityBookingModal] Match by resource_id:", fetchedBookings.filter(b => String(b.resource_id) === String(resId)).length);
-            console.log("🏢 [FacilityBookingModal] Match by id:", fetchedBookings.filter(b => String(b.id) === String(selectedFacility?.id)).length);
-            console.log("🏢 [FacilityBookingModal] Match by resource name:", fetchedBookings.filter(b => b.resource === selectedFacility?.name).length);
-            console.log("🏢 [FacilityBookingModal] Booking start_date:", fetchedBookings[0]?.start_date);
             console.log("🏢 [FacilityBookingModal] Booking status:", fetchedBookings[0]?.status);
-            console.log("🏢 [FacilityBookingModal] Total matching bookings:", fetchedBookings.filter(b => String(b.resource_id || "") === String(resId) || String(b.id || "") === String(selectedFacility?.id) || b.resource === selectedFacility?.name).length);
+            console.log("🏢 [FacilityBookingModal] Booking start_date:", fetchedBookings[0]?.start_date);
+            console.log("🏢 [FacilityBookingModal] Total matching bookings:", fetchedBookings.filter(b => isMatch(b, resId)).length);
           }
           setBookings(fetchedBookings);
         })
@@ -79,39 +123,30 @@ export default function FacilityBookingModal({
   const dayStatus = {};
   const resourceId = selectedFacility.resource_id || selectedFacility.id;
   console.log("🏢 [FacilityBookingModal] Computing dayStatus for resourceId:", resourceId, "bookings count:", bookings.length);
+
   bookings.forEach((b, idx) => {
-    const s = (b.status || "").toLowerCase();
-    const isApproved = s.includes("approv");
-    const isPending =
-      s.includes("pend") || s.includes("request") || s.includes("tentative");
+    const isApproved = isApprovedStatus(b.status);
+    const isPending = isPendingStatus(b.status);
     if (!isApproved && !isPending) {
       console.log("🏢 [FacilityBookingModal] Booking idx:", idx, "Status not approved/pending:", b.status);
       return;
     }
-    const sameResource =
-      b.resource_id != null
-        ? String(b.resource_id) === String(resourceId)
-        : b.resource === selectedFacility.name;
-    if (!sameResource) return;
 
-    // Handle both date-only and datetime formats (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
-    const parseDateStr = (dateStr) => {
-      if (!dateStr) return null;
-      const datePart = dateStr.split("T")[0];
-      const parts = datePart.split("-").map(Number);
-      if (parts.length !== 3) return null;
-      return parts;
-    };
+    const sameResource = isMatch(b, resourceId);
+    if (!sameResource) {
+      console.log("🏢 [FacilityBookingModal] Booking idx:", idx, "Resource mismatch - b.resource_id:", b.resource_id, "b.item_id:", b.item_id, "expected:", resourceId, "b.resource:", b.resource, "selectedFacility.name:", selectedFacility.name);
+      return;
+    }
 
-    const startParts = parseDateStr(b.start_date);
-    const endParts = parseDateStr(b.end_date || b.start_date);
+    const startParts = parseDate(b.start_date);
+    const endParts = parseDate(b.end_date || b.start_date);
     if (!startParts || !endParts) {
       console.log("🏢 [FacilityBookingModal] Booking idx:", idx, "Date parse failed - start_date:", b.start_date, "end_date:", b.end_date);
       return;
     }
 
-    const sy = startParts[0], sm = startParts[1], sd = startParts[2];
-    const ey = endParts[0], em = endParts[1], ed = endParts[2];
+    const sy = startParts.y, sm = startParts.m, sd = startParts.d;
+    const ey = endParts.y, em = endParts.m, ed = endParts.d;
 
     if (!sy || !ey) return;
     const cur = new Date(sy, sm - 1, sd);
@@ -124,6 +159,7 @@ export default function FacilityBookingModal({
       cur.setDate(cur.getDate() + 1);
     }
   });
+  console.log("🏢 [FacilityBookingModal] dayStatus computed:", dayStatus);
 
   // Approved bookings of this resource that overlap the chosen dates and times
   const toMins = (t) => {
@@ -138,12 +174,8 @@ export default function FacilityBookingModal({
   const conflict =
     formData.start_date && formData.end_date
       ? bookings.find((b) => {
-          if ((b.status || "").toLowerCase() !== "approved") return false;
-          const same =
-            b.resource_id != null
-              ? String(b.resource_id) === String(resourceId)
-              : b.resource === selectedFacility.name;
-          if (!same) return false;
+          if (!isApprovedStatus(b.status)) return false;
+          if (!isMatch(b, resourceId)) return false;
           // Handle datetime format: extract date portion for comparison
           const bStart = (b.start_date || "").split("T")[0];
           const bEnd = (b.end_date || b.start_date || "").split("T")[0];
@@ -328,7 +360,6 @@ export default function FacilityBookingModal({
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
-
     // Helper to format date strictly in local terms to prevent timezone shifting
     const formatLocalDate = (dateStr) => {
       if (!dateStr) return "";
@@ -534,7 +565,7 @@ export default function FacilityBookingModal({
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="rounded-md bg-brand px-4 py-1.5 text-[13px] font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+              className="rounded-md bg-brand px-4 py-1.5 text-[12px] font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
