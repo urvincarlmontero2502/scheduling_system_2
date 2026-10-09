@@ -94,7 +94,7 @@ export default function Overview() {
       address: payload.address || null,
     };
 
-    api
+    return api
       .createBooking(apiPayload)
       .then(() => {
         alert("Booking request submitted successfully!");

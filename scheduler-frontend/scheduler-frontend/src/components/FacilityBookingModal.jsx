@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 
 export default function FacilityBookingModal({
@@ -492,8 +493,16 @@ export default function FacilityBookingModal({
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="rounded-md bg-brand px-4 py-1.5 text-[13px] font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50">
-              {submitting ? "Submitting..." : "Submit Request"}
+              className="rounded-md bg-brand px-4 py-1.5 text-[13px] font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Request"
+              )}
             </button>
           </div>
         </form>
