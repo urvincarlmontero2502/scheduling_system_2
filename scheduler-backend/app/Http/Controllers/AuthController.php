@@ -162,14 +162,18 @@ class AuthController extends Controller
             // Use transaction to ensure atomicity — either everything deletes or nothing does
             DB::beginTransaction();
 
-            // 1. Delete all of the user's tokens first (so they can't make more requests)
+            // 1. Delete all of the user's API tokens first (so they can't make more requests)
             $user->tokens()->delete();
 
-            // 2. Hard delete the user record — completely removes from database
-            //    This allows re-registration via JIT flow on next Google OAuth login
-            $user->delete();
+            // 2. Hard delete the user record using raw query to bypass any
+            //    soft-delete mechanisms (Supabase Auth users table has a deleted_at column
+            //    that can interfere with Eloquent's delete() method)
+            DB::table('users')->where('user_id', $user->user_id)->delete();
 
-            // 3. Verify the deletion actually worked
+            // 3. Also clear any pending email changes for this user
+            DB::table('email_change_logs')->where('user_id', $user->user_id)->delete();
+
+            // 4. Verify the deletion actually worked
             $remaining = User::where('user_id', $user->user_id)->count();
             if ($remaining > 0) {
                 throw new \Exception('Failed to delete user record from database (row still exists after delete call).');
