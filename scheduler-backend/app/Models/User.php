@@ -35,9 +35,19 @@ class User extends Authenticatable
 
     /**
      * Resolve profile image URL with fallback to generated avatar.
+     * Checks Google avatar first, then uploaded profile_image, then ui-avatars.com fallback.
      */
     public function getProfileImageUrlAttribute(): string
     {
+        // Check Google avatar first (stored during JIT registration)
+        if ($this->avatar) {
+            if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+                return $this->avatar;
+            }
+            return asset('storage/' . $this->avatar);
+        }
+
+        // Then check uploaded profile_image
         if ($this->profile_image) {
             if (filter_var($this->profile_image, FILTER_VALIDATE_URL)) {
                 return $this->profile_image;
