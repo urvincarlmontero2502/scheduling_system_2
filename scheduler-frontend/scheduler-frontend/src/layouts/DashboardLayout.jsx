@@ -134,34 +134,11 @@ export default function DashboardLayout() {
         <div
           className="border-t border-line bg-white py-4"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
-          {/* Account Settings link */}
+          {/* Clickable user profile block → navigates to Account Settings */}
           <NavLink
             to="/account-settings"
             end
-            style={{ ...itemStyle, margin: "0 14px 2px" }}
-            className={({ isActive }) =>
-              isActive
-                ? "bg-brand-light text-brand-dark shadow-sm"
-                : "text-steel hover:bg-paper hover:text-ink"
-            }>
-            <div className="flex items-center gap-3">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
-                {user?.image ? (
-                  <img
-                    src={user.image}
-                    alt={user?.full_name || user?.name || "User"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User size={15} />
-                )}
-              </div>
-              <span className="text-[13px]">Account Settings</span>
-            </div>
-          </NavLink>
-
-          {/* User info block */}
-          <div className="mb-4 flex items-center gap-3 px-3">
+            className="mb-4 flex items-center gap-3 px-3 py-2 rounded-lg text-steel hover:bg-paper hover:text-ink transition-colors duration-150 no-underline">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
               {user?.image ? (
                 <img
@@ -185,7 +162,7 @@ export default function DashboardLayout() {
                     : user?.role || "Staff"}
               </p>
             </div>
-          </div>
+          </NavLink>
 
           {/* Sign out button */}
           <button
