@@ -57,6 +57,41 @@ Route::post('/verify-email-change', [AuthController::class, 'verifyEmailChange']
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
 Route::post('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
+// Diagnostic endpoint to check database schema
+Route::get('/diagnostics/oauth-schema', function () {
+    $missing = [];
+    $columns = [];
+    $tablesOk = true;
+    
+    try {
+        $columns = DB::connection()
+            ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
+        $columnNames = array_map(fn($c) => $c->column_name, $columns);
+        
+        foreach (['google_id', 'email_verified_at', 'full_name', 'email', 'password_hash', 'role'] as $col) {
+            if (!in_array($col, $columnNames)) {
+                $missing[] = $col;
+            }
+        }
+    } catch (\Exception $e) {
+        $missing = ['error: ' . $e->getMessage()];
+    }
+
+    try {
+        DB::connection()->select("SELECT 1 FROM personal_access_tokens LIMIT 1");
+    } catch (\Exception $e) {
+        $tablesOk = false;
+        $missing[] = 'personal_access_tokens table missing';
+    }
+
+    return response()->json([
+        'users_columns' => array_map(fn($c) => $c->column_name, $columns),
+        'missing_columns' => $missing,
+        'tokens_table_exists' => $tablesOk,
+        'all_required_present' => empty($missing),
+    ]);
+});
+
 Route::middleware('auth:sanctum')->group(function () {
 
     // Authentication
