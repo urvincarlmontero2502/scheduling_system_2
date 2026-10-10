@@ -97,6 +97,13 @@ export default function AccountSettings() {
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
+
+    // Frontend validation: ensure new email matches confirmation
+    if (emailForm.email !== emailForm.email_confirmation) {
+      setError("New email and confirmation email do not match.");
+      return;
+    }
+
     setEmailLoading(true);
     setError("");
     setSuccess("");
@@ -118,7 +125,7 @@ export default function AccountSettings() {
       console.error("Failed to update email:", err);
       setError(
         err.response?.data?.message ||
-          err.response?.data?.data?.password?.[0] ||
+          err.response?.data?.data?.current_password?.[0] ||
           err.response?.data?.data?.email?.[0] ||
           "Failed to update email. Please try again.",
       );
@@ -299,6 +306,7 @@ export default function AccountSettings() {
                     type="email"
                     value={emailForm.email}
                     onChange={(e) => handleEmailChange("email", e.target.value)}
+                    autoComplete="new-email"
                     className="w-full rounded-lg border border-line px-3 py-2 text-[13px] text-ink outline-none focus:border-brand"
                     placeholder="Enter your new email"
                     required
@@ -315,6 +323,7 @@ export default function AccountSettings() {
                     onChange={(e) =>
                       handleEmailChange("email_confirmation", e.target.value)
                     }
+                    autoComplete="new-email"
                     className="w-full rounded-lg border border-line px-3 py-2 text-[13px] text-ink outline-none focus:border-brand"
                     placeholder="Confirm your new email"
                     required
@@ -332,6 +341,7 @@ export default function AccountSettings() {
                     onChange={(e) =>
                       handleEmailChange("current_password", e.target.value)
                     }
+                    autoComplete="new-password"
                     className="w-full rounded-lg border border-line px-3 py-2 text-[13px] text-ink outline-none focus:border-brand"
                     placeholder="Enter your current password"
                     required

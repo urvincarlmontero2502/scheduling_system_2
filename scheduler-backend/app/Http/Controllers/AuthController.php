@@ -66,7 +66,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
             'email' => ['required', 'email', 'max:255', 'confirmed', 'unique:users,email,' . $user->user_id . ',user_id'],
-            'email_confirmation' => ['required', 'string'],
+            'email_confirmation' => ['required', 'email'],
         ]);
 
         // Verify the current password
