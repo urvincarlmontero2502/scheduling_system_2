@@ -3,7 +3,8 @@ set -e
 
 php artisan config:clear
 php artisan cache:clear
-php artisan config:cache
+php artisan route:clear
+php artisan view:clear
 php artisan migrate --force
 
 # Optional one-time seeding: set RUN_SEED=true in Render, deploy once, then remove it
