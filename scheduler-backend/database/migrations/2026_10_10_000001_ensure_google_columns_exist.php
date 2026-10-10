@@ -50,6 +50,10 @@ return new class extends Migration
         if (!in_array('department', $columnNames)) {
             DB::statement('ALTER TABLE users ADD COLUMN department VARCHAR(255) NULL');
         }
+
+        if (!in_array('avatar', $columnNames)) {
+            DB::statement('ALTER TABLE users ADD COLUMN avatar VARCHAR(500) NULL');
+        }
     }
 
     public function down(): void
