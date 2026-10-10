@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
 
-const BARANGAYS = [
+const FALLBACK_BARANGAYS = [
   "A. Beltran",
   "Baleguian",
   "Bangonay",
@@ -22,9 +22,40 @@ const BARANGAYS = [
 
 export default function BarangaySetup() {
   const navigate = useNavigate();
+  const [barangays, setBarangays] = useState(FALLBACK_BARANGAYS);
   const [selectedBarangay, setSelectedBarangay] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Check auth + fetch barangays on mount (fallback to hardcoded list)
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    api
+      .getBarangays()
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setBarangays(res.data.map((b) => b.name));
+        }
+      })
+      .catch(() => {
+        // Fallback: use hardcoded list (still works)
+      });
+
+    // Try to restore user's previously selected barangay
+    api
+      .fetchCurrentUser()
+      .then((userRes) => {
+        if (userRes.data.barangay) {
+          setSelectedBarangay(userRes.data.barangay);
+        }
+      })
+      .catch(() => {});
+  }, [navigate]);
 
   const handleSubmit = async () => {
     if (!selectedBarangay) {
@@ -77,7 +108,7 @@ export default function BarangaySetup() {
         </div>
 
         <div className="mt-6 space-y-2">
-          {BARANGAYS.map((brgy) => (
+          {barangays.map((brgy) => (
             <label
               key={brgy}
               className="flex items-center gap-3 rounded-lg border border-line p-3 cursor-pointer transition-colors"

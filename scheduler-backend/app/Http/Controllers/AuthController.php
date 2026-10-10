@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Barangay;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -443,6 +444,9 @@ class AuthController extends Controller
                 if (in_array('email_verified_at', $columnNames)) {
                     $newUserData['email_verified_at'] = now(); // Google has already verified the email
                 }
+                if ($googleAvatar && in_array('avatar', $columnNames)) {
+                    $newUserData['avatar'] = $googleAvatar; // Store Google profile picture
+                }
 
                 $user = User::create($newUserData);
 
@@ -479,4 +483,27 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all barangays.
+     */
+    public function getBarangays(Request $request)
+    {
+        $barangays = Barangay::orderBy('name')->get(['id', 'name']);
+        return response()->json($barangays);
+    }
+
+    /**
+     * Create a new barangay (admin only).
+     */
+    public function createBarangay(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:barangays,name'],
+        ]);
+
+        $barangay = Barangay::create($validated);
+        return response()->json($barangay, 201);
+    }
+}
 }
