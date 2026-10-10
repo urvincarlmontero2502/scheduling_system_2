@@ -21,6 +21,9 @@ return new class extends Migration
             if (!Schema::hasColumn("users", "google_id")) {
                 $table->string("google_id")->nullable()->index();
             }
+            if (!Schema::hasColumn("users", "email_verified_at")) {
+                $table->timestamp("email_verified_at")->nullable();
+            }
         });
 
         // password_resets table (Laravel standard, for forgot password)
@@ -64,6 +67,8 @@ return new class extends Migration
             if (Schema::hasColumn("users", "email_verification_sent_at")) {
                 $table->dropColumn("email_verification_sent_at");
             }
-        });
+            if (Schema::hasColumn("users", "email_verified_at")) {
+                $table->dropColumn("email_verified_at");
+            }
     }
 };

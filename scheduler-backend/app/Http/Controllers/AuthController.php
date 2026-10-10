@@ -397,14 +397,15 @@ class AuthController extends Controller
                 }
             }
 
-            // Create new user if not found
+            // Create new user if not found (JIT automatic registration)
             if (!$user) {
                 $user = User::create([
                     'full_name' => $googleName ?: explode('@', $googleEmail)[0],
                     'email' => $googleEmail,
-                    'password_hash' => null,
-                    'role' => 'staff',
+                    'password_hash' => Hash::make(Str::random(24)), // Secure random placeholder
+                    'role' => 'staff', // Default role for Google-registered users
                     'google_id' => $googleUserId,
+                    'email_verified_at' => now(), // Google has already verified the email
                 ]);
             }
 
