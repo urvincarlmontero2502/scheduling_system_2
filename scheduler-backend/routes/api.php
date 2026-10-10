@@ -55,6 +55,20 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
 Route::post('/verify-email-change', [AuthController::class, 'verifyEmailChange']);
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
+Route::get('/test-controller', function () {
+    try {
+        // Just test if AuthController can be instantiated
+        $controller = new \App\Http\Controllers\AuthController();
+        return response()->json(['status' => 'AuthController loads OK', 'methods' => array_map(fn($m) => $m->name, (new \ReflectionClass(\App\Http\Controllers\AuthController::class))->getMethods())]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
 Route::post('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])
     ->middleware('throttle:10,1'); // 10 attempts per minute
 
