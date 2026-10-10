@@ -119,8 +119,14 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        // Delete account trigger — handle both boolean and string formats
-        if ($request->input('delete_account') === true || $request->input('delete_account') === '1' || $request->input('delete_account') === 'true') {
+        // Delete account trigger — handle all possible formats
+        $deleteAccount = $request->input('delete_account');
+        \Log::debug('Account deletion check', [
+            'delete_account_value' => $deleteAccount,
+            'type' => gettype($deleteAccount),
+            'all_input' => $request->all(),
+        ]);
+        if ($deleteAccount === true || $deleteAccount === '1' || $deleteAccount === 'true' || $deleteAccount === 1) {
             return $this->destroyUser($request);
         }
 
