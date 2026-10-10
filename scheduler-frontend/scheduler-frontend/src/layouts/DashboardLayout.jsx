@@ -132,13 +132,13 @@ export default function DashboardLayout() {
         </nav>
 
         <div
-          className="border-t border-line px-2 py-4"
+          className="border-t border-line bg-white py-4"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
           {/* Account Settings link */}
           <NavLink
             to="/account-settings"
             end
-            style={{ ...itemStyle, margin: "0 8px 4px" }}
+            style={{ ...itemStyle, margin: "0 14px 2px" }}
             className={({ isActive }) =>
               isActive
                 ? "bg-brand-light text-brand-dark shadow-sm"
@@ -160,14 +160,34 @@ export default function DashboardLayout() {
             </div>
           </NavLink>
 
-          <div className="mb-3 px-3">
-            <p className="truncate text-[14px] font-medium text-ink">
-              {user?.full_name || user?.name || user?.username || "Signed in user"}
-            </p>
-            <p className="truncate text-[12.5px] text-steel">
-              {user?.barangay ? `Brgy. ${user.barangay}` : user?.role || "Staff"}
-            </p>
+          {/* User info block */}
+          <div className="mb-4 flex items-center gap-3 px-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
+              {user?.image ? (
+                <img
+                  src={user.image}
+                  alt={user?.full_name || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User size={20} />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-semibold leading-4 text-ink">
+                {user?.full_name || user?.name || user?.username || "Signed in user"}
+              </p>
+              <p className="mt-0.5 truncate text-[12px] leading-tight text-steel">
+                {user?.role === "admin"
+                  ? "Administrator"
+                  : user?.barangay
+                    ? `Brgy. ${user.barangay}`
+                    : user?.role || "Staff"}
+              </p>
+            </div>
           </div>
+
+          {/* Sign out button */}
           <button
             onClick={handleSignOut}
             style={{ ...itemStyle, width: "100%", cursor: "pointer", border: "none", background: "transparent" }}
