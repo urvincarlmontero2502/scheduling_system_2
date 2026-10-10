@@ -49,8 +49,16 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  async function refreshUser() {
+    const res = await api.fetchCurrentUser()
+    const refreshedUser = res.data
+    localStorage.setItem('auth_user', JSON.stringify(refreshedUser))
+    setUser(refreshedUser)
+    return refreshedUser
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )
