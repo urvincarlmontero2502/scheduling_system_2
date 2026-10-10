@@ -315,13 +315,13 @@ class AuthController extends Controller
      */
     public function redirectToGoogle()
     {
-        $clientId = config('services.google.client_id');
-        $redirectUri = config('services.google.redirect');
+        $clientId = config('services.google.client_id') ?: env('GOOGLE_CLIENT_ID');
+        $redirectUri = config('services.google.redirect') ?: env('GOOGLE_REDIRECT_URI');
 
-        if (!$clientId) {
+        if (empty($clientId) || empty($redirectUri)) {
             return response()->json([
-                'message' => 'Google OAuth is not configured. GOOGLE_CLIENT_ID is missing.',
-            ], 400);
+                'message' => 'Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.',
+            ], 500);
         }
 
         $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
@@ -341,6 +341,16 @@ class AuthController extends Controller
      */
     public function handleGoogleCallback(Request $request)
     {
+        // Defensive guard: ensure Google OAuth is configured before proceeding
+        $clientId = config('services.google.client_id') ?: env('GOOGLE_CLIENT_ID');
+        $clientSecret = config('services.google.client_secret') ?: env('GOOGLE_CLIENT_SECRET');
+
+        if (empty($clientId) || empty($clientSecret)) {
+            return response()->json([
+                'message' => 'Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.',
+            ], 500);
+        }
+
         $code = $request->input('code');
 
         if (!$code) {
@@ -353,9 +363,9 @@ class AuthController extends Controller
             // Get access token from Google using the code
             $http = \Illuminate\Support\Facades\Http::asForm();
             $tokenResponse = $http->post('https://oauth2.googleapis.com/token', [
-                'client_id' => config('services.google.client_id'),
-                'client_secret' => config('services.google.client_secret'),
-                'redirect_uri' => config('services.google.redirect'),
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'redirect_uri' => config('services.google.redirect') ?: env('GOOGLE_REDIRECT_URI'),
                 'grant_type' => 'authorization_code',
                 'code' => $code,
             ]);
