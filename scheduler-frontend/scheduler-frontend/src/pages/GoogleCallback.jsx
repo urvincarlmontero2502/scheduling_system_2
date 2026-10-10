@@ -35,16 +35,25 @@ export default function GoogleCallback() {
     api
       .googleCallback(code)
       .then((res) => {
-        const { token, user: signInUser, expires_at } = res.data;
+        const { token, user: signInUser, expires_at, requires_barangay_setup } = res.data;
         localStorage.setItem("auth_token", token);
         localStorage.setItem("auth_user", JSON.stringify(signInUser));
         if (expires_at) {
           localStorage.setItem("auth_expires_at", expires_at);
         }
         localStorage.setItem("google_auth_success", "true");
-        setStatus("success");
-        setMessage("Successfully signed in with Google!");
-        setTimeout(() => navigate("/"), 1500);
+
+        if (requires_barangay_setup) {
+          // New user created — redirect to barangay selection
+          setStatus("success");
+          setMessage("Account created! Please select your barangay to continue.");
+          setTimeout(() => navigate("/barangay-setup"), 1500);
+        } else {
+          // Existing user — go to dashboard
+          setStatus("success");
+          setMessage("Successfully signed in with Google!");
+          setTimeout(() => navigate("/"), 1500);
+        }
       })
       .catch((err) => {
         console.error("Google callback error:", err);

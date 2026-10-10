@@ -422,7 +422,20 @@ class AuthController extends Controller
                     'role' => 'staff', // Default role for Google-registered users
                     'google_id' => $googleUserId,
                     'email_verified_at' => now(), // Google has already verified the email
+                    // barangay is left null — user will select it in a follow-up step
                 ]);
+
+                // Generate token for immediate access, but flag that barangay setup is needed
+                $expiresAt = now()->addDays(30);
+                $token = $user->createToken('spa-token', ['*'], $expiresAt)->plainTextToken;
+
+                return response()->json([
+                    'token' => $token,
+                    'user' => $user,
+                    'expires_at' => $expiresAt->toDateTimeString(),
+                    'requires_barangay_setup' => true,
+                    'message' => 'Account created. Please select your barangay to continue.',
+                ], 201);
             }
 
             // Generate API token with 30-day expiry

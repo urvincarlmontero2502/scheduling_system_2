@@ -11,6 +11,7 @@ import Resources from "./pages/Resources";
 import AccountSettings from "./pages/AccountSettings";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
+import BarangaySetup from "./pages/BarangaySetup";
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           {/* Public routes */}
           <Route path="/verify-email-change" element={<VerifyEmailChange />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
+          <Route path="/barangay-setup" element={<BarangaySetup />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
