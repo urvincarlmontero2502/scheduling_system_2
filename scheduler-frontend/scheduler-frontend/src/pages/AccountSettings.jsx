@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
 import {
@@ -12,6 +12,8 @@ import {
   Lock,
   AlertCircle,
   CheckCircle,
+  Camera,
+  X,
 } from "lucide-react";
 
 export default function AccountSettings() {
@@ -31,6 +33,13 @@ export default function AccountSettings() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const fileInputRef = useRef(null);
+
+  // Resolve the current profile image URL
+  const profileImageUrl = user?.profile_image_url || user?.image || user?.profile_image || null;
 
   // Change Email state
   const [emailForm, setEmailForm] = useState({
@@ -91,6 +100,47 @@ export default function AccountSettings() {
     setFormData({ ...originalData });
     setError("");
     setSuccess("");
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file (JPEG, PNG, GIF, etc.).");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image file is too large. Maximum size is 5MB.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+    setUploadSuccess("");
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await api.updateProfileImage(formData);
+      setUploadSuccess("Profile picture updated successfully!");
+      // Refresh the user data to get the new image URL
+      refreshUser();
+    } catch (err) {
+      console.error("Failed to upload profile image:", err);
+      setUploadError(
+        err.response?.data?.message ||
+          "Failed to upload profile picture. Please try again."
+      );
+    } finally {
+      setUploading(false);
+      // Reset file input
+      event.target.value = null;
+    }
   };
 
   const handleEmailChange = (field, value) => {
@@ -170,16 +220,32 @@ export default function AccountSettings() {
         {/* Profile Picture Section */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-line bg-white p-4 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
-              {user?.image ? (
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
+              {profileImageUrl ? (
                 <img
-                  src={user.image}
+                  src={profileImageUrl}
                   alt={user?.full_name || "User"}
                   className="h-full w-full object-cover"
                 />
               ) : (
                 <User size={28} />
               )}
+              {/* Camera overlay - appears on hover */}
+              <div
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30 opacity-0 transition-opacity hover:opacity-100 cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera size={18} className="text-white" />
+              </div>
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                capture="user"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
             </div>
             <div>
               <p className="text-[14px] font-medium text-ink">
@@ -189,8 +255,22 @@ export default function AccountSettings() {
               <p className="text-[12px] text-steel capitalize">
                 Role: {userRole === "admin" ? "Administrator" : userRole}
               </p>
+              {uploadSuccess && (
+                <p className="mt-1 text-[12px] text-green-600">{uploadSuccess}</p>
+              )}
+              {uploadError && (
+                <p className="mt-1 text-[12px] text-status-rejected">{uploadError}</p>
+              )}
             </div>
           </div>
+
+          {/* Upload status indicator */}
+          {uploading && (
+            <div className="flex items-center gap-2 text-[13px] text-steel">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent"></div>
+              Uploading...
+            </div>
+          )}
         </div>
 
         {/* Form Section */}

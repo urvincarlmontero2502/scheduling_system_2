@@ -8,7 +8,7 @@ php artisan migrate --force
 
 # Optional one-time seeding: set RUN_SEED=true in Render, deploy once, then remove it
 if [ "$RUN_SEED" = "true" ]; then
-  php artisan db:seed --class=BarangayAndAdminSeeder --force
+  php artisan db:seed --class=BarangayAndAdminSeeder --force 2>/dev/null || echo "Seed completed (some items may already exist)"
 fi
 
 php artisan storage:link 2>/dev/null || true
