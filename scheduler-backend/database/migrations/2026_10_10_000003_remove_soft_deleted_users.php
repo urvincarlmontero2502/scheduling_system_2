@@ -19,19 +19,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check if deleted_at column exists before trying to use it
-        $hasColumn = DB::select("
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_name = 'users' AND column_name = 'deleted_at'
-        ");
-
-        if (!empty($hasColumn)) {
-            // Hard delete any soft-deleted records using DB facade, not Eloquent,
-            // because Supabase Auth's deleted_at column can interfere with
-            // Eloquent's delete() method (which respects soft deletes automatically)
+        // Try to hard-delete soft-deleted user records if the deleted_at column exists.
+        // This is wrapped in try-catch because:
+        // 1. The column might exist in Supabase's auth.users view but not in the
+        //    actual application users table
+        // 2. Different Supabase schemas may expose different columns
+        try {
             DB::table('users')
                 ->whereNotNull('deleted_at')
                 ->delete();
+        } catch (\Exception $e) {
+            // Column doesn't exist or table doesn't support deletion — skip cleanup
+            // The JIT flow now uses whereNull('deleted_at') guards, so any soft-deleted
+            // records will be ignored even if they exist
         }
     }
 

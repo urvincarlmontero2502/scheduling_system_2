@@ -475,15 +475,25 @@ class AuthController extends Controller
                     ->whereNull('deleted_at')
                     ->first();
             } catch (\Exception $e) {
-                // Column might not exist yet — fall back to email-only lookup
-                $user = null;
+                // deleted_at column might not exist — fall back to simple lookup
+                try {
+                    $user = User::where('google_id', $googleUserId)->first();
+                } catch (\Exception $e2) {
+                    $user = null;
+                }
             }
 
             // If not found by Google ID, try to find by email
             if (!$user && $googleEmail) {
-                $user = User::where('email', $googleEmail)
-                    ->whereNull('deleted_at')
-                    ->first();
+                try {
+                    $user = User::where('email', $googleEmail)
+                        ->whereNull('deleted_at')
+                        ->first();
+                } catch (\Exception $e) {
+                    // deleted_at column might not exist — fall back to simple lookup
+                    $user = User::where('email', $googleEmail)->first();
+                }
+            }
                 if ($user) {
                     // Link Google ID to existing user (if column exists)
                     try {
