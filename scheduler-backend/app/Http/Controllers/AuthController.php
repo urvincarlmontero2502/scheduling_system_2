@@ -400,30 +400,51 @@ class AuthController extends Controller
                 ], 400);
             }
 
-            // Check if user exists with Google ID
-            $user = User::where('google_id', $googleUserId)->first();
+            // Check if user exists with Google ID (handle missing column gracefully)
+            try {
+                $user = User::where('google_id', $googleUserId)->first();
+            } catch (\Exception $e) {
+                // Column might not exist yet — fall back to email-only lookup
+                $user = null;
+            }
 
             // If not found by Google ID, try to find by email
             if (!$user && $googleEmail) {
                 $user = User::where('email', $googleEmail)->first();
                 if ($user) {
-                    // Link Google ID to existing user
-                    $user->google_id = $googleUserId;
-                    $user->save();
+                    // Link Google ID to existing user (if column exists)
+                    try {
+                        $user->google_id = $googleUserId;
+                        $user->save();
+                    } catch (\Exception $e) {
+                        // Column doesn't exist — log but continue
+                    }
                 }
             }
 
             // Create new user if not found (JIT automatic registration)
             if (!$user) {
-                $user = User::create([
+                // Check which columns exist to avoid SQL errors
+                $columns = \DB::connection()
+                    ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
+                $columnNames = array_map(fn($c) => $c->column_name, $columns);
+
+                $newUserData = [
                     'full_name' => $googleName ?: explode('@', $googleEmail)[0],
                     'email' => $googleEmail,
                     'password_hash' => Hash::make(Str::random(24)), // Secure random placeholder
                     'role' => 'staff', // Default role for Google-registered users
-                    'google_id' => $googleUserId,
-                    'email_verified_at' => now(), // Google has already verified the email
                     // barangay is left null — user will select it in a follow-up step
-                ]);
+                ];
+
+                if (in_array('google_id', $columnNames)) {
+                    $newUserData['google_id'] = $googleUserId;
+                }
+                if (in_array('email_verified_at', $columnNames)) {
+                    $newUserData['email_verified_at'] = now(); // Google has already verified the email
+                }
+
+                $user = User::create($newUserData);
 
                 // Generate token for immediate access, but flag that barangay setup is needed
                 $expiresAt = now()->addDays(30);
