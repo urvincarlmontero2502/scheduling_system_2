@@ -145,7 +145,6 @@ export default function Login() {
           Connects to your Laravel API at{" "}
           <code className="font-mono">/api/login</code>
         </p>
-      </div>
 
         {/* Forgot Password Modal */}
         <ForgotPasswordModal

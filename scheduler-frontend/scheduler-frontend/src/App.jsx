@@ -31,7 +31,6 @@ export default function App() {
             {/* ⚡ 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
             <Route path="account-settings" element={<AccountSettings />} />
-          <Route path="account-settings" element={<AccountSettings />} />
           </Route>
           {/* Public routes */}
           <Route path="/verify-email-change" element={<VerifyEmailChange />} />
