@@ -73,7 +73,7 @@ export default function Login() {
 
         <form
           onSubmit={handleSubmit}
-          className="border border-line rounded-lg bg-white p-6">
+          className="border border-line rounded-lg bg-white p-6 pb-8">
           <label className="mb-1.5 block text-[13px] font-medium text-steel">
             Email
           </label>
@@ -153,7 +153,7 @@ export default function Login() {
           </button>
 
           {/* Divider */}
-          <div className="mb-4 flex items-center gap-2">
+          <div className="my-6 flex items-center gap-2">
             <div className="flex-1 border-t border-line"></div>
             <span className="text-[11px] text-steel">Or continue with</span>
             <div className="flex-1 border-t border-line"></div>
@@ -163,12 +163,30 @@ export default function Login() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="mb-4 flex w-full items-center justify-center gap-2 rounded-md border border-line bg-white py-2 text-[13px] font-medium text-ink transition hover:bg-paper">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.24c0-.76-.06-1.46-.18-2.12H12v4.2h5.92a5.06 5.06 0 0 1-1.34 3.27l-.01-.01c2.1 1.57 3.57 3.9 3.57 6.55 0 4.67-3.81 8.48-8.48 8.48-3.4 0-6.28-1.36-8.45-3.6l-.01.01C3.53 19.65 1.5 16.75 1.5 13.18 1.5 9.25 4.87 5.87 9.44 5.87c2.3 0 4.35.86 5.89 2.25l.01-.01.01.01c.82 1.18 1.28 2.6 1.28 4.12 0 3.02-2.45 5.47-5.65 5.47-2.17 0-4.07-1.22-4.96-2.9l-.01-.01C4.56 15.57 3.5 13.97 3.5 12.18c0-3.03 2.45-5.48 5.48-5.48 2.1 0 3.98.83 5.38 2.17l.01-.01.01.01c.82 1.18 1.28 2.6 1.28 4.12 0 3.02-2.45 5.47-5.65 5.47-2.17 0-4.07-1.22-4.96-2.9" fill="#4285F4"/>
-              <path d="M23.524 10.078a11.333 11.333 0 0 0 0-2.382c-.06-.25-.3-.39-.53-.32a47.45 47.45 0 0 0-5.886 1.46 1.5 1.5 0 0 0-.97.89c-.15.31-.13.66.05.95.18.3.43.53.73.59a32.42 32.42 0 0 0 5.35 0c.3-.06.55-.29.73-.59.15-.3.17-.65.05-.95" fill="#34A853"/>
-              <path d="M12 24c2.45 0 4.71-.75 6.48-2.05l-.01-.01c-1.22-.83-2.74-1.33-4.36-1.33h-.01c-1.61 0-3.14.5-4.35 1.33C5.37 22.72 7.5 24 10.1 24c.73 0 1.44-.08 2.13-.24.01-.02.02-.04.02-.07" fill="#FBBC05"/>
-              <path d="M5.52 10.12c-.18-.36-.44-.66-.77-.89a12.4 12.4 0 0 0 0 7.22h.01a10.47 10.47 0 0 0 5.32 4.67c.2.07.41.1.62.08.34-.04.58-.35.54-.69-.04-.34-.34-.57-.68-.55-.23.01-.47.05-.7.15-1.57.7-3.1-.06-3.88-1.38-.12-.18-.11-.39-.02-.59Z" fill="#EA4335"/>
+            className="flex w-full items-center justify-center gap-3 rounded-md border border-line bg-white px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-paper">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              flex-none
+            >
+              <path
+                d="M22.2563 9.93318C21.9197 8.10691 21.0248 6.43879 19.7162 5.13369C18.4075 3.82859 16.7388 2.94087 14.8747 2.58919C13.0106 2.24751 11.0066 2.34865 9.10629 2.91458C7.20596 3.48052 5.45158 4.61123 4.0401 6.08142C2.62862 7.55161 1.59489 9.32425 1.04876 11.2811C0.502634 13.2379 0.474876 15.3257 0.966835 17.3068C1.45879 19.2879 2.54953 21.0992 4.14165 22.517C5.73377 23.9348 7.76231 24.9028 10.0663 25.3083C12.3703 25.7138 14.8545 25.5328 17.3161 24.7925C18.9774 24.2842 20.4737 23.4186 21.6799 22.2615C22.8861 21.1044 23.7567 19.6926 24.2058 18.1447C24.6549 16.5968 24.6616 14.9629 24.2252 13.3818C23.7888 11.8007 22.9218 10.3272 22.2563 9.93318ZM12 23.3148C9.34786 23.3148 6.99587 22.3473 5.31098 20.6215C3.6261 18.8957 2.71337 16.4729 2.71337 13.7769C2.71337 11.0809 3.6261 8.65814 5.31098 6.9323C6.99587 5.2065 9.34786 4.239 12 4.239C14.6521 4.239 17.0042 5.2065 18.689 6.9323C20.3739 8.65814 21.2866 11.0809 21.2866 13.7769C21.2866 16.4729 20.3739 18.8957 18.689 20.6215C17.0042 22.3473 14.6521 23.3148 12 23.3148ZM10.0459 17.3326L6.96522 14.2519C6.64231 13.929 6.64231 13.4189 6.96522 13.096C7.28813 12.7731 7.79822 12.7731 8.12113 13.096L11.2018 16.1767L15.8789 11.5323C16.2018 11.2094 16.7119 11.2094 17.0348 11.5323C17.3577 11.8552 17.3577 12.3653 17.0348 12.6882L11.6445 17.7965C11.4838 17.9572 11.2405 18.0375 10.9972 18.0375C10.7539 18.0375 10.5106 17.9572 10.35 17.6954C10.2546 17.5618 10.1642 17.4413 10.0459 17.3326Z"
+                fill="url(#google-color)"
+              />
+              <defs>
+                <linearGradient id="google-color" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#EA4335" />
+                  <stop offset="20%" stopColor="#EA4335" />
+                  <stop offset="20%" stopColor="#FBBC05" />
+                  <stop offset="40%" stopColor="#FBBC05" />
+                  <stop offset="40%" stopColor="#4285F4" />
+                  <stop offset="60%" stopColor="#4285F4" />
+                  <stop offset="60%" stopColor="#34A853" />
+                  <stop offset="100%" stopColor="#34A853" />
+                </linearGradient>
+              </defs>
             </svg>
             Sign in with Google
           </button>
