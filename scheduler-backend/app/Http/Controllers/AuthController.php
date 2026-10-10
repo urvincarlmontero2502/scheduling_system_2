@@ -494,14 +494,13 @@ class AuthController extends Controller
                     $user = User::where('email', $googleEmail)->first();
                 }
             }
-                if ($user) {
-                    // Link Google ID to existing user (if column exists)
-                    try {
-                        $user->google_id = $googleUserId;
-                        $user->save();
-                    } catch (\Exception $e) {
-                        // Column doesn't exist — log but continue
-                    }
+            if ($user) {
+                // Link Google ID to existing user (if column exists)
+                try {
+                    $user->google_id = $googleUserId;
+                    $user->save();
+                } catch (\Exception $e) {
+                    // Column doesn't exist — log but continue
                 }
             }
 
