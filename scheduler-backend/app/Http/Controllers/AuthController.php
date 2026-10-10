@@ -119,8 +119,8 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        // Temporary delete account endpoint via POST /user
-        if ($request->input('delete_account') === true) {
+        // Delete account trigger — handle both boolean and string formats
+        if ($request->input('delete_account') === true || $request->input('delete_account') === '1' || $request->input('delete_account') === 'true') {
             return $this->destroyUser($request);
         }
 
@@ -152,19 +152,32 @@ class AuthController extends Controller
         }
 
         try {
-            // Delete all of the user's tokens first (so they can't make more requests)
+            // Use transaction to ensure atomicity — either everything deletes or nothing does
+            DB::beginTransaction();
+
+            // 1. Delete all of the user's tokens first (so they can't make more requests)
             $user->tokens()->delete();
 
-            // Hard delete the user record — completely removes from database
-            // This allows re-registration via JIT flow on next Google OAuth login
+            // 2. Hard delete the user record — completely removes from database
+            //    This allows re-registration via JIT flow on next Google OAuth login
             $user->delete();
+
+            // 3. Verify the deletion actually worked
+            $remaining = User::where('user_id', $user->user_id)->count();
+            if ($remaining > 0) {
+                throw new \Exception('Failed to delete user record from database (row still exists after delete call).');
+            }
+
+            DB::commit();
 
             return response()->json([
                 'message' => 'Account deleted successfully.',
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             \Log::error('Account deletion error: ' . $e->getMessage(), [
-                'user_id' => $user->user_id,
+                'user_id' => $user->user_id ?? 'unknown',
+                'user_email' => $user->email ?? 'unknown',
                 'trace' => $e->getTraceAsString(),
             ]);
 
