@@ -21,6 +21,9 @@ class AuthController extends Controller
             'remember_me' => ['nullable', 'boolean'],
         ]);
 
+        $rememberMe = $credentials['remember_me'] ?? false;
+        unset($credentials['remember_me']);
+
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
@@ -30,7 +33,7 @@ class AuthController extends Controller
         $user = User::where('email', $credentials['email'])->firstOrFail();
 
         // Adjust token expiration based on remember_me
-        $expiresAt = $credentials['remember_me']
+        $expiresAt = $rememberMe
             ? now()->addDays(30)   // 30 days when "Remember me" is checked
             : now()->addHours(12); // 12 hours otherwise
 
