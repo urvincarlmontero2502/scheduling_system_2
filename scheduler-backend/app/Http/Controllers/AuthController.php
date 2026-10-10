@@ -587,4 +587,3 @@ class AuthController extends Controller
         return response()->json($barangay, 201);
     }
 }
-}
