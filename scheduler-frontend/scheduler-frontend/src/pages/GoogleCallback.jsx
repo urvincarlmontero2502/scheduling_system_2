@@ -53,6 +53,9 @@ export default function GoogleCallback() {
           err.response?.data?.message ||
             "Google authentication failed. Please try again."
         );
+        if (err.response?.data?.error_detail) {
+          console.error("Error details:", err.response.data.error_detail);
+        }
         localStorage.setItem("google_auth_success", "false");
         setTimeout(() => navigate("/login"), 3000);
       });
