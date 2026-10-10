@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/email', [AuthController::class, 'updateEmail']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
+    Route::post('/user/profile-image', [AuthController::class, 'updateProfileImage']);
 
     // Dashboard
     Route::get('/dashboard/stats', [BookingController::class, 'stats']);
@@ -68,4 +70,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])
         ->middleware('admin');
+
+    // Asset / Media Uploads
+    Route::post('/uploads', [UploadController::class, 'upload'])
+        ->middleware('admin');
+    Route::delete('/uploads', [UploadController::class, 'delete'])
+        ->middleware('admin');
+    Route::get('/uploads/{path}', [UploadController::class, 'getFile'])
+        ->where('path', '.*');
 });

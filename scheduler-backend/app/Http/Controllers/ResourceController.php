@@ -23,7 +23,8 @@ class ResourceController extends Controller
                 'id' => $r->resource_id,
                 'name' => $r->name,
                 'type' => $r->type,
-                'image' => $r->image ? asset('storage/' . $r->image) : null,
+                'image' => $r->image ? Storage::disk('assets')->url($r->image) : null,
+                'image_url' => $r->image ? Storage::disk('assets')->url($r->image) : null,
                 'available' => $r->status === 'available',
                 'status' => $r->status,
                 'is_maintenance' => $r->status === 'maintenance',
@@ -50,7 +51,9 @@ class ResourceController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('resources', 'public');
+            $subdir = $validated['type'] === 'facility' ? 'facilities' : 'vehicles';
+            $filename = \Illuminate\Support\Str::uuid() . '.' . $request->file('image')->getClientOriginalExtension();
+            $imagePath = $request->file('image')->storeAs($subdir, $filename, 'assets');
         }
 
         // Create the parent resource record
@@ -93,9 +96,11 @@ class ResourceController extends Controller
         if ($request->hasFile('image')) {
             // Delete old image if a new one is uploaded
             if ($resource->image) {
-                Storage::disk('public')->delete($resource->image);
+                Storage::disk('assets')->delete($resource->image);
             }
-            $imagePath = $request->file('image')->store('resources', 'public');
+            $subdir = $validated['type'] === 'facility' ? 'facilities' : 'vehicles';
+            $filename = \Illuminate\Support\Str::uuid() . '.' . $request->file('image')->getClientOriginalExtension();
+            $imagePath = $request->file('image')->storeAs($subdir, $filename, 'assets');
         }
 
         $updateData = [
@@ -132,7 +137,7 @@ class ResourceController extends Controller
 
         // Delete image file from storage if it exists
         if ($resource->image) {
-            Storage::disk('public')->delete($resource->image);
+            Storage::disk('assets')->delete($resource->image);
         }
 
         // Cascade deletes child details automatically if configured in DB,

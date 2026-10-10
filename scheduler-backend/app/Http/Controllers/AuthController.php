@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -127,6 +128,38 @@ class AuthController extends Controller
         $user->update(array_filter($validated));
 
         return response()->json($user);
+    }
+
+    /**
+     * Upload or update the user's profile picture.
+     */
+    public function updateProfileImage(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+        ]);
+
+        // Delete old profile image if it exists
+        if ($user->profile_image) {
+            $oldPath = str_replace('/storage/uploads/', '', $user->profile_image);
+            Storage::disk('assets')->delete($oldPath);
+        }
+
+        // Generate unique filename
+        $filename = Str::uuid() . '.' . $request->file('image')->getClientOriginalExtension();
+        $path = $request->file('image')->storeAs('profiles', $filename, 'assets');
+
+        $url = Storage::disk('assets')->url($path);
+
+        $user->profile_image = $url;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Profile image updated successfully.',
+            'profile_image' => $url,
+        ]);
     }
 
     /**

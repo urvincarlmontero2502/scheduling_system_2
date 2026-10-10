@@ -13,8 +13,10 @@ class User extends Authenticatable
     protected $primaryKey = 'user_id';
     public $timestamps = false;
 
-    protected $fillable = ['full_name', 'email', 'password_hash', 'role', 'department', 'barangay', 'pending_email', 'email_verification_token', 'email_verification_sent_at', 'google_id'];
+    protected $fillable = ['full_name', 'email', 'password_hash', 'role', 'department', 'barangay', 'pending_email', 'email_verification_token', 'email_verification_sent_at', 'google_id', 'profile_image'];
     protected $hidden = ['password_hash'];
+
+    protected $appends = ['profile_image_url'];
 
     public function getAuthPassword()
     {
@@ -29,5 +31,39 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * Resolve profile image URL with fallback to generated avatar.
+     */
+    public function getProfileImageUrlAttribute(): string
+    {
+        if ($this->profile_image) {
+            if (filter_var($this->profile_image, FILTER_VALIDATE_URL)) {
+                return $this->profile_image;
+            }
+            return asset('storage/' . $this->profile_image);
+        }
+
+        $initials = $this->getInitials();
+        $colors = ['blue', 'green', 'purple', 'red', 'orange'];
+        $color = $colors[crc32($this->full_name ?? $this->email) % count($colors)];
+
+        return sprintf(
+            'https://ui-avatars.com/api/?name=%s&background=%s&size=64&font-bold=true',
+            urlencode($initials),
+            $color
+        );
+    }
+
+    private function getInitials(): string
+    {
+        $name = $this->full_name ?? $this->email;
+        $words = explode(' ', $name);
+        $initials = '';
+        foreach ($words as $word) {
+            $initials .= strtoupper(substr($word, 0, 1));
+        }
+        return $initials ?: 'U';
     }
 }
