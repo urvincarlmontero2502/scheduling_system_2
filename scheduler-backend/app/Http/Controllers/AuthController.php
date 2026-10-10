@@ -18,6 +18,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'remember_me' => ['nullable', 'boolean'],
         ]);
 
         if (!Auth::attempt($credentials)) {
@@ -27,11 +28,74 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $credentials['email'])->firstOrFail();
-        $token = $user->createToken('spa-token')->plainTextToken;
+
+        // Adjust token expiration based on remember_me
+        $expiresAt = $credentials['remember_me']
+            ? now()->addDays(30)   // 30 days when "Remember me" is checked
+            : now()->addHours(12); // 12 hours otherwise
+
+        $token = $user->createToken('spa-token', ['*'], $expiresAt)->plainTextToken;
 
         return response()->json([
             'token' => $token,
             'user' => $user,
+            'expires_at' => $expiresAt->toDateTimeString(),
+        ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (!$user) {
+            // Don't reveal whether the email exists
+            return response()->json([
+                'message' => 'If an account with that email exists, a password reset link has been sent.',
+            ]);
+        }
+
+        // Generate a 6-digit verification code (valid for 15 minutes)
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Store in password_resets table (Laravel's built-in broker uses this)
+        DB::table('password_resets')->updateOrInsert(
+            ['email' => $validated['email']],
+            [
+                'email' => $validated['email'],
+                'token' => $code,
+                'created_at' => now(),
+            ]
+        );
+
+        // Send the code via email (if mail is configured)
+        try {
+            Mail::raw(
+                "You recently requested a password reset for your Scheduler account.
+
+" .
+                "Your verification code is: " . $code . "
+
+" .
+                "This code will expire in 15 minutes.
+
+" .
+                "If you did not request this, you can safely ignore this email.",
+                function ($message) use ($validated) {
+                    $message->to($validated['email'])
+                        ->subject('Your Password Reset Code');
+                }
+            );
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password reset email: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'If an account with that email exists, a password reset link has been sent.',
+            'reset_code' => $code, // For dev/testing; remove in production
         ]);
     }
 

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CalendarClock, Eye, EyeOff } from "lucide-react";
+import { CalendarClock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -10,8 +11,10 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // State for eye toggle
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const from = location.state?.from?.pathname || "/";
 
@@ -20,13 +23,20 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
-      await signIn({ email, password });
+      await signIn({ email, password, remember_me: rememberMe });
       navigate(from, { replace: true });
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Could not sign in. Check your email and password.",
-      );
+      // Handle rate limiting (HTTP 429)
+      if (err.response?.status === 429) {
+        setError(
+          "Too many login attempts. Please wait a few minutes before trying again."
+        );
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Could not sign in. Check your email and password.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -58,6 +68,7 @@ export default function Login() {
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mb-4 w-full rounded-md border border-line px-3 py-2 text-[14px] outline-none focus:border-brand"
@@ -71,6 +82,7 @@ export default function Login() {
             <input
               type={showPassword ? "text" : "password"}
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-md border border-line px-3 py-2 pr-10 text-[14px] outline-none focus:border-brand"
@@ -84,15 +96,48 @@ export default function Login() {
             </button>
           </div>
 
+          {/* Remember Me + Forgot Password row */}
+          <div className="mb-4 flex items-center justify-between">
+            <label className="flex items-center gap-2 text-[13px] text-steel">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-line text-brand focus:ring-brand"
+              />
+              Remember me
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(true)}
+              className="text-[12px] font-medium text-brand hover:underline">
+              Forgot password?
+            </button>
+          </div>
+
+          {/* Error Alert */}
           {error && (
-            <p className="mb-4 text-[13px] text-status-rejected">{error}</p>
+            <div className="mb-4 flex items-start gap-2 rounded-md border border-status-rejected/20 bg-status-rejected/10 px-3 py-2">
+              <AlertCircle
+                size={16}
+                className="mt-0.5 flex-shrink-0 text-status-rejected"
+              />
+              <p className="text-[12.5px] text-status-rejected">{error}</p>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md bg-brand py-2 text-[14px] font-medium text-white transition hover:bg-brand-dark disabled:opacity-60">
-            {submitting ? "Signing in…" : "Sign in"}
+            className="w-full rounded-md bg-brand py-2 text-[14px] font-medium text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60">
+            {submitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Signing in…
+              </div>
+            ) : (
+              "Sign in"
+            )}
           </button>
         </form>
 
@@ -100,6 +145,13 @@ export default function Login() {
           Connects to your Laravel API at{" "}
           <code className="font-mono">/api/login</code>
         </p>
+      </div>
+
+        {/* Forgot Password Modal */}
+        <ForgotPasswordModal
+          isOpen={showForgotModal}
+          onClose={() => setShowForgotModal(false)}
+        />
       </div>
     </div>
   );

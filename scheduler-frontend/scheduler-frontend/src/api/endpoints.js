@@ -2,6 +2,7 @@ import client from "./client";
 
 // --- Auth -------------------------------------------------------------
 export const login = (credentials) => client.post("/login", credentials);
+export const forgotPassword = (email) => client.post("/forgot-password", { email });
 export const logout = () => client.post("/logout");
 export const fetchCurrentUser = () => client.get("/user");
 export const updateUser = (payload) => client.put("/user", payload);

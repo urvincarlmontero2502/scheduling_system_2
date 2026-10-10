@@ -20,6 +20,16 @@ return new class extends Migration
             }
         });
 
+        // password_resets table (Laravel standard, for forgot password)
+        if (!Schema::hasTable("password_resets")) {
+            Schema::create("password_resets", function (Blueprint $table) {
+                $table->id("id");
+                $table->string("email")->index();
+                $table->string("token");
+                $table->timestamp("created_at")->nullable();
+            });
+        }
+
         // Audit log table for email change attempts
         if (!Schema::hasTable("email_change_logs")) {
             Schema::create("email_change_logs", function (Blueprint $table) {
@@ -39,6 +49,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists("email_change_logs");
+        Schema::dropIfExists("password_resets");
 
         Schema::table("users", function (Blueprint $table) {
             if (Schema::hasColumn("users", "pending_email")) {

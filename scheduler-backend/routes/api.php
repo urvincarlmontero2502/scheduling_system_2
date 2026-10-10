@@ -22,7 +22,8 @@ Route::get('/health', function () {
     ]);
 });
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
 Route::post('/verify-email-change', [AuthController::class, 'verifyEmailChange']);
 
 Route::middleware('auth:sanctum')->group(function () {
