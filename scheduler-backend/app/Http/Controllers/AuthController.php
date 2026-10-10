@@ -144,6 +144,12 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json([
+                'message' => 'Authentication required.',
+            ], 401);
+        }
+
         try {
             // Delete all of the user's tokens first (so they can't make more requests)
             $user->tokens()->delete();
@@ -152,9 +158,6 @@ class AuthController extends Controller
             // This prevents JIT re-registration with the same email
             $user->deleted_at = now();
             $user->save();
-
-            // Clear the session if using session driver
-            Auth::logout();
 
             return response()->json([
                 'message' => 'Account deleted successfully.',
