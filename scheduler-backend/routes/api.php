@@ -99,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'update']);
+    Route::delete('/user', [AuthController::class, 'destroyUser']);
     Route::put('/user/email', [AuthController::class, 'updateEmail']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
     Route::post('/user/profile-image', [AuthController::class, 'updateProfileImage']);

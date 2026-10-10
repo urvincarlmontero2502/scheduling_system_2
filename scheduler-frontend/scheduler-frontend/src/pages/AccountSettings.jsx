@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
 import {
@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Camera,
   X,
+  Trash2,
 } from "lucide-react";
 
 export default function AccountSettings() {
@@ -36,6 +37,9 @@ export default function AccountSettings() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const fileInputRef = useRef(null);
 
   // Resolve the current profile image URL
@@ -205,6 +209,35 @@ export default function AccountSettings() {
   };
 
   const userRole = user?.role || "staff";
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== user?.email) {
+      setDeleteError("Please type your email exactly to confirm account deletion.");
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await api.deleteAccount();
+      // Clear all local storage and redirect to login
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      localStorage.removeItem("auth_expires_at");
+      localStorage.setItem("google_auth_success", "false");
+      // Redirect to login
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("Failed to delete account:", err);
+      setDeleteError(
+        err.response?.data?.message ||
+          "Failed to delete account. Please try again."
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="pb-12">
@@ -466,6 +499,53 @@ export default function AccountSettings() {
                 </button>
               </form>
             </div>
+          </div>
+
+          {/* Delete Account Section */}
+          <div className="rounded-xl border border-status-rejected/20 bg-status-rejected/5 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <Trash2 size={20} className="text-status-rejected" />
+              <h2 className="text-[14px] font-semibold text-status-rejected">
+                Delete Account
+              </h2>
+            </div>
+            <p className="text-[13px] text-steel mb-4">
+              This action cannot be undone. All your data will be permanently
+              deleted. Type your email to confirm.
+            </p>
+
+            {deleteError && (
+              <div className="flex items-start gap-2 rounded-lg border border-status-rejected/20 bg-status-rejected/10 px-4 py-2.5 mb-3">
+                <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-status-rejected" />
+                <p className="text-[12.5px] text-status-rejected">{deleteError}</p>
+              </div>
+            )}
+
+            <input
+              type="email"
+              value={deleteConfirm}
+              onChange={(e) => {
+                setDeleteConfirm(e.target.value);
+                setDeleteError("");
+              }}
+              placeholder="Type your email to confirm"
+              className="w-full rounded-lg border border-status-rejected/30 px-3 py-2 text-[13px] text-ink outline-none focus:border-status-rejected mb-3"
+            />
+
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleting || !deleteConfirm}
+              className="w-full rounded-lg bg-status-rejected py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-status-rejected/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Deleting Account...
+                </div>
+              ) : (
+                "Delete My Account"
+              )}
+            </button>
           </div>
 
           {/* Error/Success Messages */}

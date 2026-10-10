@@ -132,6 +132,40 @@ class AuthController extends Controller
     }
 
     /**
+     * Delete the authenticated user's account (temporary).
+     * Deletes the user and all associated tokens.
+     */
+    public function destroyUser(Request $request)
+    {
+        $user = $request->user();
+
+        try {
+            // Delete all of the user's tokens
+            $user->tokens()->delete();
+
+            // Delete the user record
+            $user->delete();
+
+            // Clear the session if using session driver
+            Auth::logout();
+
+            return response()->json([
+                'message' => 'Account deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Account deletion error: ' . $e->getMessage(), [
+                'user_id' => $user->user_id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete account. Please try again.',
+                'error_detail' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Upload or update the user's profile picture.
      */
     public function updateProfileImage(Request $request)
