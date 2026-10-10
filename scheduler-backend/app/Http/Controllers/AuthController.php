@@ -318,6 +318,12 @@ class AuthController extends Controller
         $clientId = config('services.google.client_id');
         $redirectUri = config('services.google.redirect');
 
+        if (!$clientId) {
+            return response()->json([
+                'message' => 'Google OAuth is not configured. GOOGLE_CLIENT_ID is missing.',
+            ], 400);
+        }
+
         $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
