@@ -13,7 +13,7 @@ class User extends Authenticatable
     protected $primaryKey = 'user_id';
     public $timestamps = false;
 
-    protected $fillable = ['full_name', 'email', 'password_hash', 'role', 'department', 'barangay', 'pending_email', 'email_verification_token', 'email_verification_sent_at'];
+    protected $fillable = ['full_name', 'email', 'password_hash', 'role', 'department', 'barangay', 'pending_email', 'email_verification_token', 'email_verification_sent_at', 'google_id'];
     protected $hidden = ['password_hash'];
 
     public function getAuthPassword()

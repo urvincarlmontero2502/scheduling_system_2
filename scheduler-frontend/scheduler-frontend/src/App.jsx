@@ -10,6 +10,7 @@ import BookingHistory from "./pages/BookingHistory"; // ⚡ 1. Import it here
 import Resources from "./pages/Resources";
 import AccountSettings from "./pages/AccountSettings";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
+import GoogleCallback from "./pages/GoogleCallback";
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           </Route>
           {/* Public routes */}
           <Route path="/verify-email-change" element={<VerifyEmailChange />} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

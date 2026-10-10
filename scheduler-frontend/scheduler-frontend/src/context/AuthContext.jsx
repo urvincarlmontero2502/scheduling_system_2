@@ -31,11 +31,65 @@ export function AuthProvider({ children }) {
 
   async function signIn(credentials) {
     const res = await api.login(credentials)
-    const { token, user: signedInUser } = res.data
+    const { token, user: signedInUser, expires_at } = res.data
     localStorage.setItem('auth_token', token)
     localStorage.setItem('auth_user', JSON.stringify(signedInUser))
+    if (expires_at) {
+      localStorage.setItem('auth_expires_at', expires_at)
+    }
     setUser(signedInUser)
     return signedInUser
+  }
+
+  async function signInWithGoogle() {
+    // Step 1: Get the Google OAuth redirect URL
+    const redirectRes = await api.getGoogleRedirect()
+    const redirectUrl = redirectRes.data.redirect
+
+    // Step 2: Open the Google OAuth popup
+    const width = 500
+    const height = 600
+    const left = window.screen.width / 2 - width / 2
+    const top = window.screen.height / 2 - height / 2
+
+    const popup = window.open(
+      redirectUrl,
+      'google_oauth',
+      `width=${width},height=${height},left=${left},top=${top}`
+    )
+
+    if (!popup) {
+      throw new Error('Popup was blocked. Please allow popups and try again.')
+    }
+
+    // Step 3: Poll for the auth_token in localStorage (set by callback page)
+    return new Promise((resolve, reject) => {
+      let checks = 0
+      const maxChecks = 120 // 60 seconds at 500ms intervals
+
+      const timer = setInterval(() => {
+        const token = localStorage.getItem('auth_token')
+        const user = localStorage.getItem('auth_user')
+        const googleAuth = localStorage.getItem('google_auth_success')
+
+        if (googleAuth === 'true' && token && user) {
+          clearInterval(timer)
+          localStorage.removeItem('google_auth_success')
+          setUser(JSON.parse(user))
+          resolve(JSON.parse(user))
+        } else if (googleAuth === 'false' || popup.closed) {
+          // Error or popup closed
+          clearInterval(timer)
+          localStorage.removeItem('google_auth_success')
+          reject(new Error('Google authentication was cancelled or failed.'))
+        } else if (checks >= maxChecks) {
+          clearInterval(timer)
+          reject(new Error('Google authentication timed out.'))
+        } else {
+          checks++
+        }
+      }, 500)
+    })
   }
 
   async function signOut() {
@@ -58,7 +112,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signInWithGoogle, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

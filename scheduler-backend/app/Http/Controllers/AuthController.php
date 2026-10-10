@@ -276,4 +276,119 @@ class AuthController extends Controller
             'message' => 'Password updated successfully.',
         ]);
     }
+
+    /**
+     * Redirect to Google OAuth.
+     */
+    public function redirectToGoogle()
+    {
+        $clientId = config('services.google.client_id');
+        $redirectUri = config('services.google.redirect');
+
+        $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'openid email profile',
+            'access_type' => 'offline',
+            'prompt' => 'consent',
+        ]);
+
+        return response()->json(['redirect' => $url]);
+    }
+
+    /**
+     * Handle the Google OAuth callback.
+     */
+    public function handleGoogleCallback(Request $request)
+    {
+        $code = $request->input('code');
+
+        if (!$code) {
+            return response()->json([
+                'message' => 'Authorization code not provided.',
+            ], 400);
+        }
+
+        try {
+            // Get access token from Google using the code
+            $http = \Illuminate\Support\Facades\Http::asForm();
+            $tokenResponse = $http->post('https://oauth2.googleapis.com/token', [
+                'client_id' => config('services.google.client_id'),
+                'client_secret' => config('services.google.client_secret'),
+                'redirect_uri' => config('services.google.redirect'),
+                'grant_type' => 'authorization_code',
+                'code' => $code,
+            ]);
+
+            if ($tokenResponse->failed()) {
+                return response()->json([
+                    'message' => 'Failed to obtain access token from Google.',
+                ], 400);
+            }
+
+            $accessToken = $tokenResponse->json('access_token');
+
+            // Fetch user info from Google
+            $userInfoResponse = \Illuminate\Support\Facades\Http::withToken($accessToken)
+                ->get('https://www.googleapis.com/oauth2/v2/userinfo');
+
+            if ($userInfoResponse->failed()) {
+                return response()->json([
+                    'message' => 'Failed to retrieve user info from Google.',
+                ], 400);
+            }
+
+            $googleUser = $userInfoResponse->json();
+            $googleUserId = $googleUser['id'] ?? null;
+            $googleEmail = $googleUser['email'] ?? null;
+            $googleName = $googleUser['name'] ?? '';
+            $googleAvatar = $googleUser['picture'] ?? null;
+
+            if (!$googleEmail) {
+                return response()->json([
+                    'message' => 'Could not retrieve email from Google.',
+                ], 400);
+            }
+
+            // Check if user exists with Google ID
+            $user = User::where('google_id', $googleUserId)->first();
+
+            // If not found by Google ID, try to find by email
+            if (!$user && $googleEmail) {
+                $user = User::where('email', $googleEmail)->first();
+                if ($user) {
+                    // Link Google ID to existing user
+                    $user->google_id = $googleUserId;
+                    $user->save();
+                }
+            }
+
+            // Create new user if not found
+            if (!$user) {
+                $user = User::create([
+                    'full_name' => $googleName ?: explode('@', $googleEmail)[0],
+                    'email' => $googleEmail,
+                    'password_hash' => null,
+                    'role' => 'staff',
+                    'google_id' => $googleUserId,
+                ]);
+            }
+
+            // Generate API token with 30-day expiry
+            $expiresAt = now()->addDays(30);
+            $token = $user->createToken('spa-token', ['*'], $expiresAt)->plainTextToken;
+
+            return response()->json([
+                'token' => $token,
+                'user' => $user,
+                'expires_at' => $expiresAt->toDateTimeString(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Google authentication failed. Please try again.',
+            ], 500);
+        }
+    }
 }

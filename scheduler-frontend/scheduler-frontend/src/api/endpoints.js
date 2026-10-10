@@ -2,6 +2,8 @@ import client from "./client";
 
 // --- Auth -------------------------------------------------------------
 export const login = (credentials) => client.post("/login", credentials);
+export const getGoogleRedirect = () => client.get("/auth/google");
+export const googleCallback = (code) => client.post("/auth/google/callback", { code });
 export const forgotPassword = (email) => client.post("/forgot-password", { email });
 export const logout = () => client.post("/logout");
 export const fetchCurrentUser = () => client.get("/user");

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -39,6 +39,18 @@ export default function Login() {
       }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setError("");
+    try {
+      await signInWithGoogle();
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(
+        "Google sign-in failed. Please try again."
+      );
     }
   }
 
@@ -139,12 +151,28 @@ export default function Login() {
               "Sign in"
             )}
           </button>
-        </form>
 
-        <p className="mt-4 text-center text-[12px] text-steel">
-          Connects to your Laravel API at{" "}
-          <code className="font-mono">/api/login</code>
-        </p>
+          {/* Divider */}
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex-1 border-t border-line"></div>
+            <span className="text-[11px] text-steel">Or continue with</span>
+            <div className="flex-1 border-t border-line"></div>
+          </div>
+
+          {/* Google Sign-In Button */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="mb-4 flex w-full items-center justify-center gap-2 rounded-md border border-line bg-white py-2 text-[13px] font-medium text-ink transition hover:bg-paper">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.24c0-.76-.06-1.46-.18-2.12H12v4.2h5.92a5.06 5.06 0 0 1-1.34 3.27l-.01-.01c2.1 1.57 3.57 3.9 3.57 6.55 0 4.67-3.81 8.48-8.48 8.48-3.4 0-6.28-1.36-8.45-3.6l-.01.01C3.53 19.65 1.5 16.75 1.5 13.18 1.5 9.25 4.87 5.87 9.44 5.87c2.3 0 4.35.86 5.89 2.25l.01-.01.01.01c.82 1.18 1.28 2.6 1.28 4.12 0 3.02-2.45 5.47-5.65 5.47-2.17 0-4.07-1.22-4.96-2.9l-.01-.01C4.56 15.57 3.5 13.97 3.5 12.18c0-3.03 2.45-5.48 5.48-5.48 2.1 0 3.98.83 5.38 2.17l.01-.01.01.01c.82 1.18 1.28 2.6 1.28 4.12 0 3.02-2.45 5.47-5.65 5.47-2.17 0-4.07-1.22-4.96-2.9" fill="#4285F4"/>
+              <path d="M23.524 10.078a11.333 11.333 0 0 0 0-2.382c-.06-.25-.3-.39-.53-.32a47.45 47.45 0 0 0-5.886 1.46 1.5 1.5 0 0 0-.97.89c-.15.31-.13.66.05.95.18.3.43.53.73.59a32.42 32.42 0 0 0 5.35 0c.3-.06.55-.29.73-.59.15-.3.17-.65.05-.95" fill="#34A853"/>
+              <path d="M12 24c2.45 0 4.71-.75 6.48-2.05l-.01-.01c-1.22-.83-2.74-1.33-4.36-1.33h-.01c-1.61 0-3.14.5-4.35 1.33C5.37 22.72 7.5 24 10.1 24c.73 0 1.44-.08 2.13-.24.01-.02.02-.04.02-.07" fill="#FBBC05"/>
+              <path d="M5.52 10.12c-.18-.36-.44-.66-.77-.89a12.4 12.4 0 0 0 0 7.22h.01a10.47 10.47 0 0 0 5.32 4.67c.2.07.41.1.62.08.34-.04.58-.35.54-.69-.04-.34-.34-.57-.68-.55-.23.01-.47.05-.7.15-1.57.7-3.1-.06-3.88-1.38-.12-.18-.11-.39-.02-.59Z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+        </form>
 
         {/* Forgot Password Modal */}
         <ForgotPasswordModal

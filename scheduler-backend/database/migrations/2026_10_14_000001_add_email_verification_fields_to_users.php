@@ -18,6 +18,9 @@ return new class extends Migration
             if (!Schema::hasColumn("users", "email_verification_sent_at")) {
                 $table->timestamp("email_verification_sent_at")->nullable();
             }
+            if (!Schema::hasColumn("users", "google_id")) {
+                $table->string("google_id")->nullable()->index();
+            }
         });
 
         // password_resets table (Laravel standard, for forgot password)
