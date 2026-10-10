@@ -157,7 +157,7 @@ class AuthController extends Controller
 
             // Hard delete the user record — completely removes from database
             // This allows re-registration via JIT flow on next Google OAuth login
-            $user->forceDelete();
+            $user->delete();
 
             return response()->json([
                 'message' => 'Account deleted successfully.',
