@@ -23,6 +23,7 @@ Route::get('/health', function () {
 });
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-email-change', [AuthController::class, 'verifyEmailChange']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -31,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/email', [AuthController::class, 'updateEmail']);
+    Route::put('/user/password', [AuthController::class, 'updatePassword']);
 
     // Dashboard
     Route::get('/dashboard/stats', [BookingController::class, 'stats']);

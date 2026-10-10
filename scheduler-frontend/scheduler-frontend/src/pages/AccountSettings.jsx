@@ -5,6 +5,7 @@ import {
   Save,
   User,
   Mail,
+  MailOpen,
   Phone,
   MapPin,
   Building,
@@ -38,6 +39,7 @@ export default function AccountSettings() {
     email_confirmation: "",
   });
   const [emailLoading, setEmailLoading] = useState(false);
+  const [verificationPending, setVerificationPending] = useState(false);
 
   const hasChanges = () => {
     return (
@@ -110,24 +112,42 @@ export default function AccountSettings() {
 
     try {
       const res = await api.changeEmail(emailForm);
-      const updatedUser = res.data.user || res.data;
-      localStorage.setItem("auth_user", JSON.stringify(updatedUser));
-      refreshUser();
-      setFormData((prev) => ({ ...prev, email: updatedUser.email }));
-      setOriginalData((prev) => ({ ...prev, email: updatedUser.email }));
-      setEmailForm({
-        current_password: "",
-        email: "",
-        email_confirmation: "",
-      });
-      setSuccess(res.data.message || "Email updated successfully!");
+      const response = res.data;
+
+      if (response.verification_required) {
+        // Email change initiated — verification email sent
+        setVerificationPending(true);
+        setSuccess(
+          response.message ||
+            "A verification email has been sent to your new address. Please check your inbox and click the confirmation link to complete the change."
+        );
+        // Clear the form fields
+        setEmailForm({
+          current_password: "",
+          email: "",
+          email_confirmation: "",
+        });
+      } else {
+        // Email changed instantly (fallback for non-verification flows)
+        const updatedUser = response.user || response;
+        localStorage.setItem("auth_user", JSON.stringify(updatedUser));
+        refreshUser();
+        setFormData((prev) => ({ ...prev, email: updatedUser.email }));
+        setOriginalData((prev) => ({ ...prev, email: updatedUser.email }));
+        setEmailForm({
+          current_password: "",
+          email: "",
+          email_confirmation: "",
+        });
+        setSuccess(response.message || "Email updated successfully!");
+      }
     } catch (err) {
       console.error("Failed to update email:", err);
       setError(
         err.response?.data?.message ||
           err.response?.data?.data?.current_password?.[0] ||
           err.response?.data?.data?.email?.[0] ||
-          "Failed to update email. Please try again.",
+          "Failed to update email. Please try again."
       );
     } finally {
       setEmailLoading(false);
@@ -381,10 +401,17 @@ export default function AccountSettings() {
 
           {success && (
             <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5">
-              <CheckCircle
-                size={16}
-                className="mt-0.5 flex-shrink-0 text-green-600"
-              />
+              {verificationPending ? (
+                <MailOpen
+                  size={16}
+                  className="mt-0.5 flex-shrink-0 text-green-600"
+                />
+              ) : (
+                <CheckCircle
+                  size={16}
+                  className="mt-0.5 flex-shrink-0 text-green-600"
+                />
+              )}
               <p className="text-[12.5px] text-green-700">{success}</p>
             </div>
           )}

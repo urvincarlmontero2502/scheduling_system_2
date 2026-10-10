@@ -6,6 +6,8 @@ export const logout = () => client.post("/logout");
 export const fetchCurrentUser = () => client.get("/user");
 export const updateUser = (payload) => client.put("/user", payload);
 export const changeEmail = (payload) => client.put("/user/email", payload);
+export const verifyEmailChange = (token) => client.post("/verify-email-change", { token });
+export const updatePassword = (payload) => client.put("/user/password", payload);
 
 // --- Bookings -----------------------------------------------------------
 export const fetchBookings = (params) => client.get("/bookings", { params });

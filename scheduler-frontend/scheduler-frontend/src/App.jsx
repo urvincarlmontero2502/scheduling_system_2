@@ -9,6 +9,7 @@ import Bookings from "./pages/Bookings";
 import BookingHistory from "./pages/BookingHistory"; // ⚡ 1. Import it here
 import Resources from "./pages/Resources";
 import AccountSettings from "./pages/AccountSettings";
+import VerifyEmailChange from "./pages/VerifyEmailChange";
 
 export default function App() {
   return (
@@ -30,7 +31,10 @@ export default function App() {
             {/* ⚡ 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
             <Route path="account-settings" element={<AccountSettings />} />
+          <Route path="account-settings" element={<AccountSettings />} />
           </Route>
+          {/* Public routes */}
+          <Route path="/verify-email-change" element={<VerifyEmailChange />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
