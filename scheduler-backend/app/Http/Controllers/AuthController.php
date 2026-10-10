@@ -435,9 +435,13 @@ class AuthController extends Controller
                 'expires_at' => $expiresAt->toDateTimeString(),
             ]);
         } catch (\Exception $e) {
-            \Log::error('Google OAuth error: ' . $e->getMessage());
+            \Log::error('Google OAuth error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'code' => $e->getCode(),
+            ]);
             return response()->json([
                 'message' => 'Google authentication failed. Please try again.',
+                'error_detail' => $e->getMessage(),
             ], 500);
         }
     }
