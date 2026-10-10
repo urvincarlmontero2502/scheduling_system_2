@@ -471,7 +471,9 @@ class AuthController extends Controller
 
             // Check if user exists with Google ID (handle missing column gracefully)
             try {
-                $user = User::where('google_id', $googleUserId)->first();
+                $user = User::where('google_id', $googleUserId)
+                    ->whereNull('deleted_at')
+                    ->first();
             } catch (\Exception $e) {
                 // Column might not exist yet — fall back to email-only lookup
                 $user = null;
@@ -479,7 +481,9 @@ class AuthController extends Controller
 
             // If not found by Google ID, try to find by email
             if (!$user && $googleEmail) {
-                $user = User::where('email', $googleEmail)->first();
+                $user = User::where('email', $googleEmail)
+                    ->whereNull('deleted_at')
+                    ->first();
                 if ($user) {
                     // Link Google ID to existing user (if column exists)
                     try {
