@@ -137,8 +137,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Delete the authenticated user's account (temporary).
-     * Deletes the user and all associated tokens.
+     * Delete the authenticated user's account.
+     * Performs a complete hard delete — removes the user record and all tokens.
+     * The user can re-register with the same Google account as a brand-new user.
      */
     public function destroyUser(Request $request)
     {
@@ -154,10 +155,9 @@ class AuthController extends Controller
             // Delete all of the user's tokens first (so they can't make more requests)
             $user->tokens()->delete();
 
-            // Soft-delete the user (mark as deleted without actually removing the record)
-            // This prevents JIT re-registration with the same email
-            $user->deleted_at = now();
-            $user->save();
+            // Hard delete the user record — completely removes from database
+            // This allows re-registration via JIT flow on next Google OAuth login
+            $user->forceDelete();
 
             return response()->json([
                 'message' => 'Account deleted successfully.',
@@ -451,26 +451,6 @@ class AuthController extends Controller
             } catch (\Exception $e) {
                 // Column might not exist yet — fall back to email-only lookup
                 $user = null;
-            }
-
-            // Check if a soft-deleted user exists with the same Google ID or email
-            if (!$user) {
-                $deletedUser = null;
-                try {
-                    $deletedUser = User::withTrashed()->where('google_id', $googleUserId)->first();
-                    if (!$deletedUser && $googleEmail) {
-                        $deletedUser = User::withTrashed()->where('email', $googleEmail)->first();
-                    }
-                } catch (\Exception $e) {
-                    // Ignore — continue with creation
-                }
-
-                if ($deletedUser) {
-                    // User previously deleted their account — don't allow re-registration
-                    return response()->json([
-                        'message' => 'This account was previously deleted and cannot be restored. Please contact support.',
-                    ], 403);
-                }
             }
 
             // If not found by Google ID, try to find by email
