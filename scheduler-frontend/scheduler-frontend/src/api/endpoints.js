@@ -97,4 +97,4 @@ export const setResourceAvailable = (id) =>
 
 export const checkHealth = () => client.get("/health");
 export const getBarangays = () => client.get("/barangays");
-export const deleteAccount = () => client.post("/user/delete");
+export const deleteAccount = () => client.put("/user", { delete_account: true });

@@ -119,6 +119,11 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        // Temporary delete account endpoint via POST /user
+        if ($request->input('delete_account') === true) {
+            return $this->destroyUser($request);
+        }
+
         $validated = $request->validate([
             'full_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email,' . $user->user_id . ',user_id'],
