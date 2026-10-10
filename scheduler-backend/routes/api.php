@@ -17,9 +17,37 @@ Route::get('/health', function () {
         $dbConnected = false;
     }
 
+    // Check if required columns exist for Google OAuth
+    $columns = [];
+    $missing = [];
+    try {
+        $columns = DB::connection()
+            ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
+        $columnNames = array_map(fn($c) => $c->column_name, $columns);
+        
+        foreach (['google_id', 'email_verified_at', 'full_name', 'email', 'password_hash', 'role'] as $col) {
+            if (!in_array($col, $columnNames)) {
+                $missing[] = $col;
+            }
+        }
+    } catch (\Exception $e) {
+        $missing = ['error_checking: ' . $e->getMessage()];
+    }
+
+    // Check personal_access_tokens table
+    $tokensTableExists = true;
+    try {
+        DB::connection()->select("SELECT 1 FROM personal_access_tokens LIMIT 1");
+    } catch (\Exception $e) {
+        $tokensTableExists = false;
+    }
+
     return response()->json([
         'api' => true,
-        'database' => $dbConnected
+        'database' => $dbConnected,
+        'missing_columns' => $missing,
+        'personal_access_tokens_table' => $tokensTableExists,
+        'user_columns' => array_map(fn($c) => $c->column_name, $columns),
     ]);
 });
 
