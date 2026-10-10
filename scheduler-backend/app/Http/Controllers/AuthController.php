@@ -145,11 +145,13 @@ class AuthController extends Controller
         $user = $request->user();
 
         try {
-            // Delete all of the user's tokens
+            // Delete all of the user's tokens first (so they can't make more requests)
             $user->tokens()->delete();
 
-            // Delete the user record
-            $user->delete();
+            // Soft-delete the user (mark as deleted without actually removing the record)
+            // This prevents JIT re-registration with the same email
+            $user->deleted_at = now();
+            $user->save();
 
             // Clear the session if using session driver
             Auth::logout();
@@ -446,6 +448,26 @@ class AuthController extends Controller
             } catch (\Exception $e) {
                 // Column might not exist yet — fall back to email-only lookup
                 $user = null;
+            }
+
+            // Check if a soft-deleted user exists with the same Google ID or email
+            if (!$user) {
+                $deletedUser = null;
+                try {
+                    $deletedUser = User::withTrashed()->where('google_id', $googleUserId)->first();
+                    if (!$deletedUser && $googleEmail) {
+                        $deletedUser = User::withTrashed()->where('email', $googleEmail)->first();
+                    }
+                } catch (\Exception $e) {
+                    // Ignore — continue with creation
+                }
+
+                if ($deletedUser) {
+                    // User previously deleted their account — don't allow re-registration
+                    return response()->json([
+                        'message' => 'This account was previously deleted and cannot be restored. Please contact support.',
+                    ], 403);
+                }
             }
 
             // If not found by Google ID, try to find by email
