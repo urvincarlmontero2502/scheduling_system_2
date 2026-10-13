@@ -96,11 +96,11 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-xl bg-white shadow-xl"
+        className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+        <div className="flex items-center justify-between border-b border-line px-4 sm:px-6 py-4">
           <div>
             <h2 className="text-[17px] font-semibold text-ink">Booking Details</h2>
             <p className="text-[12px] text-steel mt-0.5">
@@ -117,7 +117,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {/* Resource & Status */}
           <div className="flex items-center justify-between">
             <div>
@@ -233,10 +233,13 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
         </div>
 
         {/* Footer - Actions */}
-        <div className="border-t border-line px-6 py-4 flex justify-end gap-2">
+        <div
+          className="border-t border-line px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-end gap-2"
+          style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+        >
           <button
             onClick={onClose}
-            className="px-4 py-2 text-[13px] font-medium text-steel hover:bg-gray-50 rounded-lg border border-line"
+            className="w-full sm:w-auto h-11 px-4 py-2.5 text-[13px] font-medium text-steel hover:bg-gray-50 rounded-lg border border-line"
           >
             Close
           </button>
@@ -244,23 +247,21 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
             <>
               <button
                 onClick={handleReject}
-                className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition"
+                className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition"
               >
                 <X size={14} /> Reject
               </button>
               <button
                 onClick={handleApprove}
-                className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition"
+                className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition"
               >
                 <Check size={14} /> Approve
               </button>
             </>
           ) : (
             <button
-              onClick={() => {
-                if (onApprove) onApprove(bookingId);
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-steel bg-gray-100 rounded-lg"
+              onClick={() => {}}
+              className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-steel bg-gray-100 rounded-lg"
               disabled
             >
               <FileText size={14} /> No actions available
