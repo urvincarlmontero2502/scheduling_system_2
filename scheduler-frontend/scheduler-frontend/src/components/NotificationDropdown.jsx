@@ -6,14 +6,30 @@ import { useNotifications } from "../context/NotificationContext"
 // Simple time-ago formatter (no external deps)
 const timeAgo = (date) => {
   if (!date) return ""
-  const now = new Date()
-  const then = new Date(date)
-  const diffMs = now - then
-  const diffMin = Math.floor(diffMs / 60000)
-  const diffHr = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHr / 24)
+  // Handle both Unix timestamps (seconds), ISO-8601, and MySQL datetime (space-separated)
+  let then;
+  if (typeof date === "number") {
+    // If timestamp is in seconds (13 digits or less), multiply by 1000
+    then = new Date(date < 1e12 ? date * 1000 : date);
+  } else if (typeof date === "string") {
+    // Convert MySQL datetime (space) to ISO-8601 (T) for reliable parsing
+    const isoDate = date.replace(" ", "T");
+    then = new Date(isoDate);
+  } else {
+    then = new Date(date);
+  }
 
-  if (diffMin < 1) return "just now"
+  if (isNaN(then.getTime())) return ""
+
+  const now = new Date()
+  const diffMs = now - then
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHr = Math.floor(diffMs / 3600000)
+  const diffDay = Math.floor(diffMs / 86400000)
+
+  if (diffSec < 5) return "just now"
+  if (diffSec < 60) return `${diffSec} sec${diffSec > 1 ? "s" : ""} ago`
   if (diffMin < 60) return `${diffMin} min${diffMin > 1 ? "s" : ""} ago`
   if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? "s" : ""} ago`
   if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? "s" : ""} ago`
