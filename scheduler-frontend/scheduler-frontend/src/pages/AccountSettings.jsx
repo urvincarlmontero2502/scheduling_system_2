@@ -291,7 +291,6 @@ export default function AccountSettings() {
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
-                capture="user"
                 onChange={handleImageUpload}
                 className="hidden"
               />
