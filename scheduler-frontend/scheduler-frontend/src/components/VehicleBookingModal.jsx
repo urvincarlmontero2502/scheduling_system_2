@@ -619,7 +619,7 @@ export default function VehicleBookingModal({
                     <span className="font-medium text-ink">{conflict.end_date}</span>
                     {conflict.start_time && conflict.end_time && (
                       <span className="block">
-                        ({conflict.start_time} – {conflict.end_time})
+                        ({formatSlotLabel(conflict.start_time, conflict.end_time)})
                       </span>
                     )}
                   </p>
