@@ -131,6 +131,7 @@ export function NotificationProvider({ children }) {
         deleteNotification,
         toggleDropdown,
         closeDropdown,
+        dropdownOpen,
       }}
     >
       {children}
