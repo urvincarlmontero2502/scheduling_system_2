@@ -125,9 +125,8 @@ export default function BookingHistory() {
 
   const historyBookings = bookings.filter((booking) => {
     const status = (booking.status || "").toLowerCase();
-
     return (
-      status === "completed" || status === "rejected" || status === "cancelled"
+      status === "completed" || status === "rejected" || status === "cancelled" || status === "approved"
     );
   });
 
@@ -477,6 +476,7 @@ export default function BookingHistory() {
             className="rounded-lg border border-line bg-white px-3 py-2.5 text-[13px] outline-none">
             <option value="all">All History</option>
             <option value="completed">Completed</option>
+            <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
           </select>
