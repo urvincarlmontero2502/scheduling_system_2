@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
+import BookingDetailModal from "../components/BookingDetailModal";
 import {
   readCache,
   writeCache,
@@ -197,6 +198,7 @@ export default function Bookings() {
   const [barangayFilter, setBarangayFilter] = useState("all");
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectBooking, setRejectBooking] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const canModerate = user?.role === "admin";
 
   useEffect(() => {
@@ -835,7 +837,8 @@ export default function Bookings() {
               return (
                 <div
                   key={bookingId}
-                  className="overflow-hidden rounded-xl border border-line bg-white shadow-sm flex flex-col"
+                  onClick={() => setSelectedBooking(b)}
+                  className="cursor-pointer overflow-hidden rounded-xl border border-line bg-white shadow-sm transition-shadow hover:shadow-md flex flex-col"
                 >
                   {/* Resource + Status header */}
                   <div className="flex justify-between items-start gap-2 p-2.5">
@@ -906,7 +909,7 @@ export default function Bookings() {
 
                   {/* Action Buttons */}
                   {canModerate && isPendingItem && (
-                    <div className="mt-auto flex gap-2 p-2 pt-0">
+                    <div className="mt-auto flex gap-2 p-2 pt-0" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() =>
                           handleStatusChange(bookingId, "approved")
@@ -947,6 +950,23 @@ export default function Bookings() {
             setRejectBooking(null);
           }}
         />
-      )}</div>
-    );
+      )}
+
+      {/* Booking Detail Modal */}
+      {selectedBooking && (
+        <BookingDetailModal
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+          onApprove={(id) => {
+            handleStatusChange(id, "approved");
+            setSelectedBooking(null);
+          }}
+          onReject={(id, reason) => {
+            handleStatusChange(id, "rejected", reason);
+            setSelectedBooking(null);
+          }}
+        />
+      )}
+    </div>
+  );
 }
