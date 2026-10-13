@@ -185,6 +185,8 @@ export default function FacilityBookingModal({
   });
 
   // Approved bookings of this resource that overlap the chosen dates and times
+  // A 30-minute buffer (BUFFER_MINUTES) is enforced after each booking ends
+  const BUFFER_MINUTES = 30;
   const toMins = (t) => {
     const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (!m) return null;
@@ -209,7 +211,9 @@ export default function FacilityBookingModal({
           const bs = toMins(b.start_time);
           const be = toMins(b.end_time);
           if ([ns, ne, bs, be].some((v) => v === null)) return true;
-          return Math.max(ns, bs) < Math.min(ne, be);
+          // Buffer: new booking cannot start within BUFFER_MINUTES
+          // after an existing booking ends
+          return Math.max(ns, bs) < Math.min(ne, be + BUFFER_MINUTES);
         })
       : null;
 
@@ -396,7 +400,10 @@ export default function FacilityBookingModal({
     formData.full_name.trim() &&
     formData.cell_number.length === 11 &&
     formData.address.trim() &&
-    !conflict;
+    !conflict &&
+    (!formData.attendees ||
+      !selectedFacility?.capacity ||
+      parseInt(formData.attendees) <= parseInt(selectedFacility.capacity));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -612,6 +619,15 @@ export default function FacilityBookingModal({
                 {selectedFacility?.capacity && (
                   <p className="mt-0.5 text-[10.5px] text-steel">
                     Facility capacity: {selectedFacility.capacity}
+                  </p>
+                )}
+                {formData.attendees &&
+                  selectedFacility?.capacity &&
+                  parseInt(formData.attendees) >
+                    parseInt(selectedFacility.capacity) && (
+                  <p className="mt-0.5 text-[10.5px] text-rose-600">
+                    Expected attendees exceed facility capacity. Please
+                    select a larger facility.
                   </p>
                 )}
               </div>

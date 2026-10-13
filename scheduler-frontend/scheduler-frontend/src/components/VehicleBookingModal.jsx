@@ -185,6 +185,8 @@ export default function VehicleBookingModal({
   });
 
   // Approved bookings of this resource that overlap the chosen dates and times
+  // A 30-minute buffer (BUFFER_MINUTES) is enforced after each booking ends
+  const BUFFER_MINUTES = 30;
   const toMins = (t) => {
     const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (!m) return null;
@@ -209,7 +211,9 @@ export default function VehicleBookingModal({
           const bs = toMins(b.start_time);
           const be = toMins(b.end_time);
           if ([ns, ne, bs, be].some((v) => v === null)) return true;
-          return Math.max(ns, bs) < Math.min(ne, be);
+          // Buffer: new booking cannot start within BUFFER_MINUTES
+          // after an existing booking ends
+          return Math.max(ns, bs) < Math.min(ne, be + BUFFER_MINUTES);
         })
       : null;
 
