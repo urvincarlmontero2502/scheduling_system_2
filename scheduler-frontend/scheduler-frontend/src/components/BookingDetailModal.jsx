@@ -1,4 +1,4 @@
-import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin } from "lucide-react";
+import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin, CheckCircle, XCircle } from "lucide-react";
 
 // Helper to format date
 function formatDate(dateStr) {
@@ -29,9 +29,9 @@ function formatTime(timeStr) {
 }
 
 const STATUS_CONFIG = {
-  pending: { label: "Pending", className: "bg-amber-100 text-amber-800", icon: "⏳" },
-  approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800", icon: "✅" },
-  rejected: { label: "Rejected", className: "bg-rose-100 text-rose-800", icon: "❌" },
+  pending: { label: "Pending", className: "bg-amber-100 text-amber-800", icon: <Clock size={16} /> },
+  approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800", icon: <CheckCircle size={16} /> },
+  rejected: { label: "Rejected", className: "bg-rose-100 text-rose-800", icon: <XCircle size={16} /> },
 };
 
 export default function BookingDetailModal({ booking, onClose, onApprove, onReject }) {

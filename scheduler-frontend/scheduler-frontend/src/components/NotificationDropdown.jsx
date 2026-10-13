@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { X, CheckCheck, Trash2 } from "lucide-react"
+import { X, CheckCheck, Trash2, Clock, CheckCircle, XCircle, Wrench, FileText } from "lucide-react"
 import { useNotifications } from "../context/NotificationContext"
 
 // Simple time-ago formatter (no external deps)
@@ -93,15 +93,15 @@ export default function NotificationDropdown({ open, onClose }) {
   const getTypeIcon = (type) => {
     switch (type) {
       case "BOOKING_APPROVED":
-        return "🟢"
+        return <CheckCircle size={18} className="text-emerald-500" />
       case "BOOKING_REJECTED":
-        return "🔴"
+        return <XCircle size={18} className="text-rose-500" />
       case "MAINTENANCE_ALERT":
-        return "🛠️"
+        return <Wrench size={18} className="text-gray-500" />
       case "BOOKING_SUBMITTED":
-        return "📋"
+        return <FileText size={18} className="text-amber-500" />
       default:
-        return "🔔"
+        return <Clock size={18} className="text-steel" />
     }
   }
 
@@ -171,9 +171,9 @@ export default function NotificationDropdown({ open, onClose }) {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <span className="text-lg" role="img" aria-label={notif.type || "notification"}>
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center">
                         {getTypeIcon(notif.type)}
-                      </span>
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-ink">
                           {notif.title}

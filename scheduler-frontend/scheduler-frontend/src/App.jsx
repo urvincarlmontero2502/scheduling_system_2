@@ -7,7 +7,7 @@ import Login from "./pages/Login";
 import Overview from "./pages/Overview";
 import Calendar from "./pages/Calendar";
 import Bookings from "./pages/Bookings";
-import BookingHistory from "./pages/BookingHistory"; // ⚡ 1. Import it here
+import BookingHistory from "./pages/BookingHistory"; // 1. Import it here
 import Resources from "./pages/Resources";
 import AccountSettings from "./pages/AccountSettings";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
@@ -32,7 +32,7 @@ export default function App() {
             <Route path="calendar" element={<Calendar />} />
             <Route path="bookings" element={<Bookings />} />
             <Route path="booking-history" element={<BookingHistory />} />{" "}
-            {/* ⚡ 2. Add the route here */}
+            {/* 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
             <Route path="account-settings" element={<AccountSettings />} />
           </Route>

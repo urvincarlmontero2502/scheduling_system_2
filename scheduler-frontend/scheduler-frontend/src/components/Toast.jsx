@@ -49,10 +49,10 @@ function ToastContainer({ toasts, onDismiss }) {
   };
 
   const iconBy = {
-    success: "✓",
-    error: "!",
-    info: "ℹ",
-    warning: "⚠",
+    success: "Success",
+    error: "Error",
+    info: "Info",
+    warning: "Warning",
   };
 
   return (
