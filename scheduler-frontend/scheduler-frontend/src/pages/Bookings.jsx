@@ -367,6 +367,45 @@ export default function Bookings() {
     }
   }
 
+  async function handleDeleteAll() {
+    if (filteredBookings.length === 0) {
+      toast.info("No bookings to delete.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete all ${filteredBookings.length} booking(s) matching the current filter? This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    const ids = filteredBookings.map((b) => b.id || b.booking_id);
+    const prevBookings = [...bookings];
+
+    // Optimistically remove matching bookings from state + cache
+    const updated = bookings.filter(
+      (b) => !ids.includes(b.id || b.booking_id),
+    );
+    setBookings(updated);
+    writeCache(CACHE_KEYS.BOOKINGS, updated);
+
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          api.deleteBooking
+            ? api.deleteBooking(id)
+            : api.updateBookingStatus(id, "deleted"),
+        ),
+      );
+      toast.success(`${filteredBookings.length} booking(s) deleted successfully`);
+      window.dispatchEvent(new Event("cacheInvalidated"));
+    } catch {
+      // Revert on failure
+      setBookings(prevBookings);
+      writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
+      toast.error("Failed to delete some bookings. Please try again.");
+    }
+  }
+
   // Count metrics for tabs
   const pendingCount = requests.filter(
     (b) => (b.status || "").toLowerCase() === "pending",
@@ -592,6 +631,14 @@ export default function Bookings() {
               className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition shadow-sm"
             >
               <Trash2 size={14} /> Delete All Approved ({approvedCount})
+            </button>
+          )}
+          {canModerate && filteredBookings.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition shadow-sm"
+            >
+              <Trash2 size={14} /> Delete All ({filteredBookings.length})
             </button>
           )}
         </div>
