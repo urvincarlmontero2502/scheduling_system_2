@@ -23,6 +23,8 @@ class BookingRequest extends Model
         'address',
         'status',
         'is_special_event',
+        'attendees',
+        'priority',
     ];
 
     protected function casts(): array

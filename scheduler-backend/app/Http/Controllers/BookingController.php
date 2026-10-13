@@ -17,6 +17,14 @@ use Exception;
 
 class BookingController extends Controller
 {
+    /**
+     * Mandatory buffer/turnaround time in minutes after each booking
+     * before the next reservation can begin on the same resource.
+     * Applies to both vehicle (inspection, refueling, driver rest)
+     * and facility (sanitation, setup) resources.
+     */
+    const BUFFER_MINUTES = 30;
+
     /*
     |--------------------------------------------------------------------------
     | Dashboard Statistics
@@ -80,6 +88,8 @@ class BookingController extends Controller
                     'time' => ($b->start_time && $b->end_time) ? "{$b->start_time} - {$b->end_time}" : 'All Day',
                     'status' => $b->status,
                     'is_special_event' => $b->is_special_event ?? false,
+                    'attendees' => $b->attendees,
+                    'priority' => $b->priority ?? 'normal',
                 ];
             });
 
@@ -118,6 +128,7 @@ class BookingController extends Controller
         return response()->json([
             'date' => $date,
             'available_slots' => $slots,
+            'buffer_minutes' => self::BUFFER_MINUTES,
         ]);
     }
 
@@ -185,6 +196,17 @@ class BookingController extends Controller
                     'nullable',
                     'in:pending,approved,rejected'
                 ],
+
+                'attendees' => [
+                    'nullable',
+                    'integer',
+                    'min:1',
+                ],
+
+                'priority' => [
+                    'nullable',
+                    'in:normal,high',
+                ],
             ]);
 
             $user = $request->user();
@@ -202,6 +224,25 @@ class BookingController extends Controller
                 $validated['resource_id']
                 ?? $validated['item_id']
                 ?? null;
+
+            // --- Capacity Matching ---
+            // If the user specified an attendee count, validate it against
+            // the resource capacity (facilities only).
+            if (isset($validated['attendees']) && $resourceId) {
+                $resource = Resource::find($resourceId);
+                if ($resource && $resource->type === 'facility') {
+                    $facilityDetail = $resource->facilityDetails;
+                    $capacity = $facilityDetail ? $facilityDetail->capacity : null;
+                    if ($capacity && $validated['attendees'] > $capacity) {
+                        return response()->json([
+                            'message' => 'The selected facility cannot accommodate the specified number of attendees.',
+                            'capacity' => (int) $capacity,
+                            'attendees' => (int) $validated['attendees'],
+                            'resource_id' => $resourceId,
+                        ], 422);
+                    }
+                }
+            }
 
             // Block requests that overlap an already approved booking
             $conflict = $this->findApprovedConflict(
@@ -235,6 +276,7 @@ class BookingController extends Controller
                         'purpose' => $conflict->purpose,
                     ],
                     'suggested_slots' => $suggestedSlots,
+                    'buffer_minutes' => self::BUFFER_MINUTES,
                 ], 409);
             }
 
@@ -256,6 +298,8 @@ class BookingController extends Controller
                 'cell_number' => $validated['cell_number'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'status' => $validated['status'] ?? 'pending',
+                'attendees' => $validated['attendees'] ?? null,
+                'priority' => $validated['priority'] ?? 'normal',
             ]);
 
             // Notify administrators of new pending booking request
@@ -410,6 +454,8 @@ class BookingController extends Controller
     /**
      * Find an approved booking of the same resource that overlaps
      * the given dates AND daily time window (missing times = all day).
+     * Includes a mandatory buffer period (BUFFER_MINUTES) after each
+     * booking end before the next booking can start.
      */
     private function findApprovedConflict(
         $resourceId,
@@ -441,7 +487,11 @@ class BookingController extends Controller
                 return $c;
             }
 
-            if (max($newStart, $s) < min($newEnd, $e)) {
+            // Buffer: a new booking cannot start within BUFFER_MINUTES
+            // after an existing booking ends (turnaround period)
+            $bufferedEnd = $e + self::BUFFER_MINUTES;
+
+            if (max($newStart, $s) < min($newEnd, $bufferedEnd)) {
                 return $c;
             }
         }
@@ -465,7 +515,8 @@ class BookingController extends Controller
 
     /**
      * Find available time slots on a given date that are long enough
-     * for the requested duration.
+     * for the requested duration. Each approved booking's end time is
+     * extended by BUFFER_MINUTES to enforce turnaround/padding windows.
      */
     private function findAvailableSlots($resourceId, $date, $reqStartMins = null, $reqEndMins = null)
     {
@@ -508,9 +559,10 @@ class BookingController extends Controller
             }
 
             // Clamp to the requested date's boundaries
+            // Extend end by BUFFER_MINUTES for mandatory turnaround window
             $intervals[] = [
                 max($dayStart, $bStartMins),
-                min($dayEnd, $bEndMins),
+                min($dayEnd, $bEndMins + self::BUFFER_MINUTES),
             ];
         }
 

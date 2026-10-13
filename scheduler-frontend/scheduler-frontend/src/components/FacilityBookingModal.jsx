@@ -75,6 +75,8 @@ export default function FacilityBookingModal({
     full_name: "",
     cell_number: "",
     address: "",
+    attendees: "",
+    priority: "normal",
     start_time_changed: false,
   });
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
@@ -497,6 +499,19 @@ export default function FacilityBookingModal({
                   className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                 />
               </div>
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                  Priority
+                </label>
+                <select
+                  value={formData.priority}
+                  onChange={(e) => update("priority", e.target.value)}
+                  className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="high">High Priority</option>
+                </select>
+              </div>
             </div>
             {/* RIGHT: calendar + form */}
             <div className="space-y-2.5">
@@ -581,6 +596,25 @@ export default function FacilityBookingModal({
                   className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                 />
               </div>
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                  <User size={13} className="text-brand" /> Expected
+                  Attendees
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="e.g., 25"
+                  value={formData.attendees}
+                  onChange={(e) => update("attendees", e.target.value)}
+                  className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                />
+                {selectedFacility?.capacity && (
+                  <p className="mt-0.5 text-[10.5px] text-steel">
+                    Facility capacity: {selectedFacility.capacity}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
@@ -600,6 +634,10 @@ export default function FacilityBookingModal({
                         ({conflict.start_time} – {conflict.end_time})
                       </span>
                     )}
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-steel">
+                    A 30-minute buffer is enforced after each booking for
+                    turnaround and preparation.
                   </p>
                   {(conflict.purpose || conflict.full_name) && (
                     <p className="mt-0.5 text-[10.5px] text-steel">

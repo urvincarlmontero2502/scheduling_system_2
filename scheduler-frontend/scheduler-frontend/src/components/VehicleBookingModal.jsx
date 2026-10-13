@@ -76,6 +76,7 @@ export default function VehicleBookingModal({
     full_name: "",
     cell_number: "",
     address: "",
+    priority: "normal",
     start_time_changed: false,
   });
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
@@ -500,6 +501,19 @@ export default function VehicleBookingModal({
                     className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                   />
                 </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                    Priority
+                  </label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => update("priority", e.target.value)}
+                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="high">High Priority</option>
+                  </select>
+                </div>
               </div>
             </div>
             {/* RIGHT: calendar + form */}
@@ -604,6 +618,10 @@ export default function VehicleBookingModal({
                         ({conflict.start_time} – {conflict.end_time})
                       </span>
                     )}
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-steel">
+                    A 30-minute buffer is enforced after each booking for
+                    turnaround and preparation.
                   </p>
                   {(conflict.purpose || conflict.full_name) && (
                     <p className="mt-0.5 text-[10.5px] text-steel">
