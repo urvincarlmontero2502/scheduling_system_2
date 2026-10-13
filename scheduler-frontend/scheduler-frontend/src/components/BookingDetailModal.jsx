@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin, CheckCircle, XCircle } from "lucide-react";
 
 // Helper to format date
@@ -36,6 +37,9 @@ const STATUS_CONFIG = {
 
 export default function BookingDetailModal({ booking, onClose, onApprove, onReject }) {
   if (!booking) return null;
+
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectInput, setShowRejectInput] = useState(false);
 
   const bookingId = booking.id || booking.booking_id;
   const resourceName =
@@ -87,7 +91,18 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
   };
 
   const handleReject = () => {
-    if (onReject) onReject(bookingId, "Rejected from details view");
+    if (!rejectionReason.trim()) return;
+    if (onReject) onReject(bookingId, rejectionReason);
+  };
+
+  const handleRejectClick = () => {
+    setShowRejectInput(true);
+    setRejectionReason("");
+  };
+
+  const handleCancelReject = () => {
+    setShowRejectInput(false);
+    setRejectionReason("");
   };
 
   return (
@@ -246,7 +261,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
           {isPending ? (
             <>
               <button
-                onClick={handleReject}
+                onClick={handleRejectClick}
                 className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition"
               >
                 <X size={14} /> Reject
@@ -268,6 +283,53 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
             </button>
           )}
         </div>
+
+        {/* Rejection Reason Modal */}
+        {showRejectInput && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+            onClick={handleCancelReject}
+          >
+            <div
+              className="w-[95vw] max-w-md rounded-xl bg-white p-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="mb-3 text-[15px] font-semibold text-ink">
+                Reason for Rejection
+              </h3>
+              <p className="mb-3 text-[12.5px] text-steel">
+                Please provide a reason for rejecting this booking request.
+              </p>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter rejection reason..."
+                className="w-full rounded-lg border border-line px-3 py-2.5 text-[13px] text-ink outline-none focus:border-rose-500"
+                rows={4}
+              />
+              {!rejectionReason.trim() && (
+                <p className="mt-2 text-[11.5px] text-rose-600">
+                  Rejection reason is required.
+                </p>
+              )}
+              <div className="mt-4 flex gap-2 justify-end">
+                <button
+                  onClick={handleCancelReject}
+                  className="h-10 px-4 py-2 text-[13px] font-medium text-steel hover:bg-gray-50 rounded-lg border border-line"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReject}
+                  disabled={!rejectionReason.trim()}
+                  className="h-10 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X size={14} /> Confirm Rejection
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
