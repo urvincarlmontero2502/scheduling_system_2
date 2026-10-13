@@ -13,6 +13,13 @@ import {
 import * as api from "../api/endpoints";
 import StatusBadge from "../components/StatusBadge";
 import { Skeleton } from "../components/Skeleton";
+import { useToast } from "../components/Toast";
+import { useAuth } from "../context/AuthContext";
+import {
+  readCache,
+  writeCache,
+  CACHE_KEYS,
+} from "../utils/cache";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -97,6 +104,9 @@ export default function BookingHistory() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const toast = useToast();
+  const { user } = useAuth();
+  const canModerate = user?.role === "admin";
 
   // New state variables for bulk print selection
   const [printMode, setPrintMode] = useState("month"); // 'month' or 'year'
@@ -173,6 +183,45 @@ export default function BookingHistory() {
       }
     } catch (err) {
       alert(err.response?.data?.message || "Failed to delete booking.");
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (filteredBookings.length === 0) {
+      toast.info("No bookings to delete.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete all ${filteredBookings.length} booking(s) matching the current filter? This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    const ids = filteredBookings.map((b) => b.id || b.booking_id);
+    const prevBookings = [...bookings];
+
+    // Optimistically remove matching bookings from state + cache
+    const updated = bookings.filter(
+      (b) => !ids.includes(b.id || b.booking_id),
+    );
+    setBookings(updated);
+    writeCache(CACHE_KEYS.BOOKINGS, updated);
+
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          api.deleteBooking
+            ? api.deleteBooking(id)
+            : api.updateBookingStatus(id, "deleted"),
+        ),
+      );
+      toast.success(`${filteredBookings.length} booking(s) deleted successfully`);
+      window.dispatchEvent(new Event("cacheInvalidated"));
+    } catch {
+      // Revert on failure
+      setBookings(prevBookings);
+      writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
+      toast.error("Failed to delete some bookings. Please try again.");
     }
   }
 
@@ -480,6 +529,15 @@ export default function BookingHistory() {
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
           </select>
+
+          {canModerate && filteredBookings.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition shadow-sm"
+            >
+              <Trash2 size={14} /> Delete All ({filteredBookings.length})
+            </button>
+          )}
         </div>
 
         {/* History Table */}
