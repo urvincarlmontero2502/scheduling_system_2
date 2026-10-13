@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
@@ -199,6 +200,8 @@ export default function Bookings() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectBooking, setRejectBooking] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const canModerate = user?.role === "admin";
 
   useEffect(() => {
@@ -244,6 +247,29 @@ export default function Bookings() {
       window.removeEventListener("bookingUpdated", handler);
     };
   }, []);
+
+  // Auto-open booking detail modal when arriving from a notification click
+  useEffect(() => {
+    const bookingIdParam = searchParams.get("bookingId")
+    if (!bookingIdParam) return
+
+    const findAndOpen = () => {
+      const match = bookings.find(
+        (b) => String(b.id || b.booking_id) === String(bookingIdParam)
+      )
+      if (match) {
+        setSelectedBooking(match)
+      }
+    }
+
+    if (bookings.length > 0) {
+      findAndOpen()
+    } else {
+      // Wait for bookings to load from API
+      const timer = setTimeout(findAndOpen, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, bookings])
 
   async function handleStatusChange(id, status, reason = "") {
     const targetBooking = bookings.find(
@@ -956,14 +982,19 @@ export default function Bookings() {
       {selectedBooking && (
         <BookingDetailModal
           booking={selectedBooking}
-          onClose={() => setSelectedBooking(null)}
+          onClose={() => {
+            setSelectedBooking(null);
+            navigate("/bookings", { replace: true });
+          }}
           onApprove={(id) => {
             handleStatusChange(id, "approved");
             setSelectedBooking(null);
+            navigate("/bookings", { replace: true });
           }}
           onReject={(id, reason) => {
             handleStatusChange(id, "rejected", reason);
             setSelectedBooking(null);
+            navigate("/bookings", { replace: true });
           }}
         />
       )}

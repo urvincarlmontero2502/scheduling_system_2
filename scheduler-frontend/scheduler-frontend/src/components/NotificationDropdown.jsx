@@ -34,10 +34,14 @@ export default function NotificationDropdown({ open, onClose }) {
   const navigate = useNavigate()
 
   // Handle clicking a notification item: mark as read, close, navigate to bookings
-  const handleNotificationClick = async (id) => {
+  const handleNotificationClick = async (id, bookingId) => {
     await handleMarkAsRead(id)
     onClose()
-    navigate("/bookings")
+    if (bookingId) {
+      navigate(`/bookings?bookingId=${bookingId}`)
+    } else {
+      navigate("/bookings")
+    }
   }
 
   // Close on Escape
@@ -161,7 +165,7 @@ export default function NotificationDropdown({ open, onClose }) {
                 return (
                   <li
                     key={id}
-                    onClick={() => handleNotificationClick(id)}
+                    onClick={() => handleNotificationClick(id, notif.booking_id)}
                     className={`group cursor-pointer px-4 py-3 transition-colors hover:bg-slate-50 ${
                       isUnread ? "bg-brand-light/30" : ""
                     }`}
