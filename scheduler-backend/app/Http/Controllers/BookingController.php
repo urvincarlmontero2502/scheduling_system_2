@@ -381,12 +381,19 @@ class BookingController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function destroy(Request $request, BookingRequest $booking)
+    public function destroy(Request $request, $id)
     {
         try {
             $user = $request->user();
             if (!$user) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            $booking = BookingRequest::find($id);
+            if (!$booking) {
+                return response()->json([
+                    'message' => 'Booking already deleted or not found.'
+                ], 404);
             }
 
             $booking->delete();

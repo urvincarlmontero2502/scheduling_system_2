@@ -167,7 +167,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/bookings/{booking}/status', [BookingController::class, 'updateStatus'])
         ->middleware('admin');
 
-    Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])
+    Route::delete('/bookings/{id}', [BookingController::class, 'destroy'])
         ->middleware('admin');
 
     // Asset / Media Uploads
