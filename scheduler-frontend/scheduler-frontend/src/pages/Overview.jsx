@@ -8,7 +8,9 @@ import {
   invalidateCache,
   CACHE_KEYS,
 } from "../utils/cache";
-import { Building2, Car, Search, Filter, Calendar, Wrench } from "lucide-react";
+import { Building2, Car, Search, Filter, Calendar, Wrench, Bell } from "lucide-react";
+import NotificationBell from "../components/NotificationBell";
+import { useNotifications } from "../context/NotificationContext";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
@@ -57,15 +59,7 @@ export default function Overview() {
     return !(cached && cached.length > 0);
   });
 
-  const [apiStatus, setApiStatus] = useState(() => {
-    const cached = readCache(CACHE_KEYS.HEALTH);
-    return cached?.api ?? null;
-  });
-  const [dbStatus, setDbStatus] = useState(() => {
-    const cached = readCache(CACHE_KEYS.HEALTH);
-    return cached?.database ?? null;
-  });
-
+  const { toggleDropdown } = useNotifications();
   const [selectedResource, setSelectedResource] = useState(null);
   const [mainFilter, setMainFilter] = useState("all");
   const [vehicleSubFilter, setVehicleSubFilter] = useState("all");
@@ -99,21 +93,6 @@ export default function Overview() {
     } else {
       setLoading(true);
     }
-
-    // Background health check (parallel with data fetch)
-    api.checkHealth?.()
-      .then((res) => {
-        if (!isMounted) return;
-        const healthData = res.data || {};
-        setApiStatus(healthData?.api ?? true);
-        setDbStatus(healthData?.database ?? true);
-        writeCache(CACHE_KEYS.HEALTH, healthData);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setApiStatus(false);
-        setDbStatus(false);
-      });
 
     // Background: fetch fresh data in parallel (no waterfall)
     Promise.all([
@@ -409,51 +388,9 @@ export default function Overview() {
           </p>
         </div>
 
-        {/* API & DB Status Indicators + Notification Bell */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 text-[12px] font-medium text-steel">
-            <span className="relative flex h-2.5 w-2.5">
-              {apiStatus === null ? (
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400 animate-pulse" />
-              ) : apiStatus ? (
-                <>
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                </>
-              ) : (
-                <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-              )}
-            </span>
-            <span>
-              {apiStatus === null
-                ? "Checking API..."
-                : apiStatus
-                  ? "API Connected"
-                  : "API Offline"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 text-[12px] font-medium text-steel">
-            <span className="relative flex h-2.5 w-2.5">
-              {dbStatus === null ? (
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400 animate-pulse" />
-              ) : dbStatus ? (
-                <>
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                </>
-              ) : (
-                <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-              )}
-            </span>
-            <span>
-              {dbStatus === null
-                ? "Checking DB..."
-                : dbStatus
-                  ? "Database Connected"
-                  : "Database Error"}
-            </span>
-          </div>
+        {/* Notification Bell */}
+        <div className="md:ml-auto">
+          <NotificationBell onClick={toggleDropdown} />
         </div>
       </header>
 

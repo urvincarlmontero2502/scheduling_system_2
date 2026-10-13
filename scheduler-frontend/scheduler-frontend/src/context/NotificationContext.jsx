@@ -13,6 +13,7 @@ export function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return
@@ -104,6 +105,14 @@ export function NotificationProvider({ children }) {
     setUnreadCount(notifications.filter(n => !n.is_read).length)
   }, [notifications])
 
+  const toggleDropdown = useCallback(() => {
+    setDropdownOpen(prev => !prev)
+  }, [])
+
+  const closeDropdown = useCallback(() => {
+    setDropdownOpen(false)
+  }, [])
+
   // Recalculate unread count whenever notifications change
   useEffect(() => {
     refreshUnreadCount()
@@ -120,6 +129,8 @@ export function NotificationProvider({ children }) {
         markAsRead,
         markAllAsRead,
         deleteNotification,
+        toggleDropdown,
+        closeDropdown,
       }}
     >
       {children}

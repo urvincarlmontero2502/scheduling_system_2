@@ -14,6 +14,7 @@ import {
   Loader,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import NotificationBell from "../components/NotificationBell";
 import NotificationDropdown from "../components/NotificationDropdown";
 
@@ -43,7 +44,7 @@ export default function DashboardLayout() {
   const [open, setOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+  const { toggleDropdown, closeDropdown, dropdownOpen } = useNotifications();
 
   // Close the mobile menu when the page changes
   useEffect(() => {
@@ -105,7 +106,7 @@ export default function DashboardLayout() {
         <p className="text-[16px] font-bold">Scheduler</p>
         {/* Notification Bell (mobile only) */}
         <div className="ml-auto md:hidden">
-          <NotificationBell onClick={() => setNotifDropdownOpen(!notifDropdownOpen)} />
+          <NotificationBell onClick={toggleDropdown} />
         </div>
       </header>
 
@@ -265,8 +266,8 @@ export default function DashboardLayout() {
 
       {/* Notification Dropdown */}
       <NotificationDropdown
-        open={notifDropdownOpen}
-        onClose={() => setNotifDropdownOpen(false)}
+        open={dropdownOpen}
+        onClose={closeDropdown}
       />
 
       {/* Main content */}
