@@ -144,7 +144,13 @@ export default function BookingHistory() {
     const status = (booking.status || "").toLowerCase();
 
     const resource =
-      booking.resource || booking.resource_name || booking.item_name || "";
+      typeof booking.resource === "object"
+        ? booking.resource?.name ||
+          booking.resource?.resource_name ||
+          booking.resource_name ||
+          booking.item_name ||
+          ""
+        : booking.resource || booking.resource_name || booking.item_name || "";
 
     const requester =
       booking.full_name ||
@@ -228,16 +234,24 @@ export default function BookingHistory() {
   function handlePrint(booking) {
     const bookingId = booking.id || booking.booking_id;
     const resource =
-      booking.resource ||
-      booking.resource_name ||
-      booking.item_name ||
-      "Resource";
+      typeof booking.resource === "object"
+        ? booking.resource?.name ||
+          booking.resource?.resource_name ||
+          booking.resource_name ||
+          booking.item_name ||
+          "Resource"
+        : booking.resource ||
+          booking.resource_name ||
+          booking.item_name ||
+          "Resource";
     const requester =
-      booking.full_name ||
-      booking.requester ||
-      booking.user_name ||
-      booking.user?.full_name ||
-      "Unknown Requestor";
+      typeof booking.full_name === "string"
+        ? booking.full_name
+        : typeof booking.requester === "string"
+          ? booking.requester
+          : typeof booking.user_name === "string"
+            ? booking.user_name
+            : booking.user?.full_name || "Unknown Requestor";
     const barangay = booking.barangay || booking.user?.barangay || "Poblacion";
     const cellNumber =
       booking.cell_number || booking.contact || booking.phone || "N/A";
@@ -610,17 +624,25 @@ export default function BookingHistory() {
                     const bookingId = booking.id || booking.booking_id;
 
                     const requester =
-                      booking.full_name ||
-                      booking.requester ||
-                      booking.user_name ||
-                      booking.user?.full_name ||
-                      "Unknown";
+                      typeof booking.full_name === "string"
+                        ? booking.full_name
+                        : typeof booking.requester === "string"
+                          ? booking.requester
+                          : typeof booking.user_name === "string"
+                            ? booking.user_name
+                            : booking.user?.full_name || "Unknown";
 
                     const resource =
-                      booking.resource ||
-                      booking.resource_name ||
-                      booking.item_name ||
-                      "Resource";
+                      typeof booking.resource === "object"
+                        ? booking.resource?.name ||
+                          booking.resource?.resource_name ||
+                          booking.resource_name ||
+                          booking.item_name ||
+                          "Resource"
+                        : booking.resource ||
+                          booking.resource_name ||
+                          booking.item_name ||
+                          "Resource";
 
                     return (
                       <tr key={bookingId} className="hover:bg-gray-50">

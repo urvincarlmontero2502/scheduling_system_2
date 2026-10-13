@@ -395,7 +395,9 @@ export default function Bookings() {
     const searchText = search.toLowerCase();
     if (searchText) {
       const resource =
-        b.resource || b.resource_name || b.item_name || "";
+        typeof b.resource === "object"
+          ? b.resource?.name || b.resource?.resource_name || b.resource_name || b.item_name || ""
+          : b.resource || b.resource_name || b.item_name || "";
       const fullName =
         b.full_name || b.requester || b.user_name || b.user?.full_name || "";
       const purpose = b.purpose || b.reason || b.description || "";
