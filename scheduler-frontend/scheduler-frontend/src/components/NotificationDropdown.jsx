@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { X, CheckCheck, Trash2 } from "lucide-react"
 import { useNotifications } from "../context/NotificationContext"
 
@@ -30,6 +31,14 @@ export default function NotificationDropdown({ open, onClose }) {
     deleteNotification,
   } = useNotifications()
   const dropdownRef = useRef(null)
+  const navigate = useNavigate()
+
+  // Handle clicking a notification item: mark as read, close, navigate to bookings
+  const handleNotificationClick = async (id) => {
+    await handleMarkAsRead(id)
+    onClose()
+    navigate("/bookings")
+  }
 
   // Close on Escape
   useEffect(() => {
@@ -152,7 +161,8 @@ export default function NotificationDropdown({ open, onClose }) {
                 return (
                   <li
                     key={id}
-                    className={`px-4 py-3 transition-colors ${
+                    onClick={() => handleNotificationClick(id)}
+                    className={`group cursor-pointer px-4 py-3 transition-colors hover:bg-slate-50 ${
                       isUnread ? "bg-brand-light/30" : ""
                     }`}
                   >
