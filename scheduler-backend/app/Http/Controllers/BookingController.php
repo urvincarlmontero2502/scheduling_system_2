@@ -45,153 +45,49 @@ class BookingController extends Controller
 
     public function index(Request $request)
     {
-        $query = BookingRequest::with([
-            'resource',
-            'user'
-        ]);
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
 
-        $bookings = $query
-            ->latest('booking_id')
-            ->get();
+            $query = BookingRequest::with([
+                'resource',
+                'user'
+            ]);
 
-        $formatted = $bookings->map(function ($b) {
+            $bookings = $query
+                ->latest('booking_id')
+                ->get();
 
-            return [
-                /*
-                |--------------------------------------------------------------------------
-                | Basic Information
-                |--------------------------------------------------------------------------
-                */
+            $formatted = $bookings->map(function ($b) {
+                return [
+                    'id' => $b->booking_id,
+                    'resource_id' => $b->resource_id,
+                    'resource' => $b->resource->name ?? 'Unknown Resource',
+                    'full_name' => $b->full_name && $b->full_name !== ($b->user->name ?? null) ? $b->full_name : '—',
+                    'requester' => $b->full_name && $b->full_name !== ($b->user->name ?? null) ? $b->full_name : '—',
+                    'barangay' => $b->user->barangay ?? $b->user->name ?? 'Poblacion',
+                    'cell_number' => $b->cell_number ?? 'N/A',
+                    'where_do_you_live' => $b->address ?? 'N/A',
+                    'address' => $b->address ?? 'N/A',
+                    'purpose' => $b->purpose ?? 'No purpose provided',
+                    'start_date' => \Carbon\Carbon::parse($b->start_date)->toDateString(),
+                    'end_date' => \Carbon\Carbon::parse($b->end_date)->toDateString(),
+                    'date' => \Carbon\Carbon::parse($b->start_date)->toDateString() . ' to ' . \Carbon\Carbon::parse($b->end_date)->toDateString(),
+                    'start_time' => $b->start_time,
+                    'end_time' => $b->end_time,
+                    'time' => ($b->start_time && $b->end_time) ? "{$b->start_time} - {$b->end_time}" : 'All Day',
+                    'status' => $b->status,
+                    'is_special_event' => $b->is_special_event ?? false,
+                ];
+            });
 
-                'id' => $b->booking_id,
-
-                'resource_id' => $b->resource_id,
-
-                'resource' =>
-                    $b->resource->name ??
-                    'Unknown Resource',
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Requestor Information
-                |--------------------------------------------------------------------------
-                */
-
-                'full_name' =>
-                    $b->full_name &&
-                    $b->full_name !== ($b->user->name ?? null)
-                        ? $b->full_name
-                        : '—',
-
-                'requester' =>
-                    $b->full_name &&
-                    $b->full_name !== ($b->user->name ?? null)
-                        ? $b->full_name
-                        : '—',
-
-                'barangay' =>
-                    $b->user->barangay ??
-                    $b->user->name ??
-                    'Poblacion',
-
-                'cell_number' =>
-                    $b->cell_number ??
-                    'N/A',
-
-                'where_do_you_live' =>
-                    $b->address ??
-                    'N/A',
-
-                'address' =>
-                    $b->address ??
-                    'N/A',
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Booking Information
-                |--------------------------------------------------------------------------
-                */
-
-                'purpose' =>
-                    $b->purpose ??
-                    'No purpose provided',
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | IMPORTANT:
-                | Separate start and end dates.
-                |
-                | These are needed for:
-                | - Specific Date filtering
-                | - Monthly filtering
-                | - Yearly filtering
-                | - Multi-day bookings
-                |--------------------------------------------------------------------------
-                */
-
-                'start_date' =>
-                    Carbon::parse(
-                        $b->start_date
-                    )->toDateString(),
-
-                'end_date' =>
-                    Carbon::parse(
-                        $b->end_date
-                    )->toDateString(),
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Keep combined date for existing frontend components
-                |--------------------------------------------------------------------------
-                */
-
-                'date' =>
-                    Carbon::parse(
-                        $b->start_date
-                    )->toDateString()
-                    . ' to ' .
-                    Carbon::parse(
-                        $b->end_date
-                    )->toDateString(),
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Time
-                |--------------------------------------------------------------------------
-                */
-
-                'start_time' =>
-                    $b->start_time,
-
-                'end_time' =>
-                    $b->end_time,
-
-                'time' =>
-                    ($b->start_time && $b->end_time)
-                        ? "{$b->start_time} - {$b->end_time}"
-                        : 'All Day',
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Status
-                |--------------------------------------------------------------------------
-                */
-
-                'status' =>
-                    $b->status,
-
-                'is_special_event' =>
-                    $b->is_special_event ?? false,
-            ];
-        });
-
-        return response()->json($formatted);
+            return response()->json($formatted);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to fetch bookings: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to fetch bookings.'], 500);
+        }
     }
 
     /*
@@ -233,178 +129,160 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'resource_id' => [
-                'nullable',
-                'exists:resources,resource_id'
-            ],
+        try {
+            $validated = $request->validate([
+                'resource_id' => [
+                    'nullable',
+                    'exists:resources,resource_id'
+                ],
 
-            'item_id' => [
-                'nullable',
-                'exists:resources,resource_id'
-            ],
+                'item_id' => [
+                    'nullable',
+                    'exists:resources,resource_id'
+                ],
 
-            'full_name' => [
-                'nullable',
-                'string'
-            ],
+                'full_name' => [
+                    'nullable',
+                    'string'
+                ],
 
-            'start_date' => [
-                'required',
-                'date'
-            ],
+                'start_date' => [
+                    'required',
+                    'date'
+                ],
 
-            'end_date' => [
-                'required',
-                'date',
-                'after_or_equal:start_date'
-            ],
+                'end_date' => [
+                    'required',
+                    'date',
+                    'after_or_equal:start_date'
+                ],
 
-            'start_time' => [
-                'nullable',
-                'string'
-            ],
+                'start_time' => [
+                    'nullable',
+                    'string'
+                ],
 
-            'end_time' => [
-                'nullable',
-                'string'
-            ],
+                'end_time' => [
+                    'nullable',
+                    'string'
+                ],
 
-            'purpose' => [
-                'nullable',
-                'string'
-            ],
+                'purpose' => [
+                    'nullable',
+                    'string'
+                ],
 
-            'cell_number' => [
-                'nullable',
-                'string'
-            ],
+                'cell_number' => [
+                    'nullable',
+                    'string'
+                ],
 
-            'address' => [
-                'nullable',
-                'string'
-            ],
-            'status' => [
-                'nullable',
-                'in:pending,approved,rejected'
-            ],
-        ]);
+                'address' => [
+                    'nullable',
+                    'string'
+                ],
+                'status' => [
+                    'nullable',
+                    'in:pending,approved,rejected'
+                ],
+            ]);
 
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Determine Resource ID
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Determine Resource ID
+            |--------------------------------------------------------------------------
+            */
 
-        $resourceId =
-            $validated['resource_id']
-            ?? $validated['item_id']
-            ?? null;
+            $resourceId =
+                $validated['resource_id']
+                ?? $validated['item_id']
+                ?? null;
 
-        // Block requests that overlap an already approved booking
-        $conflict = $this->findApprovedConflict(
-            $resourceId,
-            $validated['start_date'],
-            $validated['end_date'],
-            $validated['start_time'] ?? null,
-            $validated['end_time'] ?? null
-        );
-
-        if ($conflict) {
-            $suggestedSlots = $this->findAvailableSlots(
+            // Block requests that overlap an already approved booking
+            $conflict = $this->findApprovedConflict(
                 $resourceId,
                 $validated['start_date'],
-                $validated['end_time']
-                    ? $this->timeToMinutes($validated['start_time'])
-                    : null,
-                $validated['end_time']
-                    ? $this->timeToMinutes($validated['end_time'])
-                    : null
+                $validated['end_date'],
+                $validated['start_time'] ?? null,
+                $validated['end_time'] ?? null
             );
 
-            return response()->json([
-                'message' => 'This resource is already booked (approved) for the selected date and time.',
-                'conflicting_booking' => [
-                    'start_date' => $conflict->start_date,
-                    'end_date' => $conflict->end_date,
-                    'start_time' => $conflict->start_time,
-                    'end_time' => $conflict->end_time,
-                    'full_name' => $conflict->full_name,
-                    'purpose' => $conflict->purpose,
-                ],
-                'suggested_slots' => $suggestedSlots,
-            ], 409);
-        }
+            if ($conflict) {
+                $suggestedSlots = $this->findAvailableSlots(
+                    $resourceId,
+                    $validated['start_date'],
+                    $validated['end_time']
+                        ? $this->timeToMinutes($validated['start_time'])
+                        : null,
+                    $validated['end_time']
+                        ? $this->timeToMinutes($validated['end_time'])
+                        : null
+                );
 
+                return response()->json([
+                    'message' => 'This resource is already booked (approved) for the selected date and time.',
+                    'conflicting_booking' => [
+                        'start_date' => $conflict->start_date,
+                        'end_date' => $conflict->end_date,
+                        'start_time' => $conflict->start_time,
+                        'end_time' => $conflict->end_time,
+                        'full_name' => $conflict->full_name,
+                        'purpose' => $conflict->purpose,
+                    ],
+                    'suggested_slots' => $suggestedSlots,
+                ], 409);
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Create Booking
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Create Booking
+            |--------------------------------------------------------------------------
+            */
 
-        $booking = BookingRequest::create([
-
-            'user_id' =>
-                $request->user()->user_id,
-
-            'resource_id' =>
-                $resourceId,
-
-            'full_name' =>
-                $validated['full_name']
-                ?? $request->user()->full_name,
-
-            'purpose' =>
-                $validated['purpose'] ?? null,
-
-            'start_date' =>
-                $validated['start_date'],
-
-            'end_date' =>
-                $validated['end_date'],
-
-            'start_time' =>
-                $validated['start_time'] ?? null,
-
-            'end_time' =>
-                $validated['end_time'] ?? null,
-
-            'cell_number' =>
-                $validated['cell_number'] ?? null,
-
-            'address' =>
-                $validated['address'] ?? null,
-
-            'status' =>
-                $validated['status'] ?? 'pending',
-        ]);
-
-        // Notify administrators of new pending booking request
-        $admins = User::where('role', 'admin')->get();
-        $resource = $booking->resource;
-        $resourceName = $resource ? $resource->name : 'Unknown';
-        $requesterName = $booking->full_name ?? ($request->user()->full_name ?? 'Unknown');
-
-        foreach ($admins as $admin) {
-            Notification::create([
-                'booking_id' => $booking->booking_id,
-                'user_id' => $admin->user_id,
-                'type' => 'BOOKING_REQUEST',
-                'title' => 'New Booking Request',
-                'message' => "{$requesterName} requested '{$resourceName}' ({$booking->start_date} to {$booking->end_date}).",
-                'is_read' => false,
+            $booking = BookingRequest::create([
+                'user_id' => $user->user_id,
+                'resource_id' => $resourceId,
+                'full_name' => $validated['full_name'] ?? $user->full_name,
+                'purpose' => $validated['purpose'] ?? null,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'start_time' => $validated['start_time'] ?? null,
+                'end_time' => $validated['end_time'] ?? null,
+                'cell_number' => $validated['cell_number'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'status' => $validated['status'] ?? 'pending',
             ]);
-        }
 
-        return response()->json(
-            $booking->load([
-                'resource',
-                'user'
-            ]),
-            201
-        );
+            // Notify administrators of new pending booking request
+            $admins = User::where('role', 'admin')->get();
+            $resource = $booking->resource;
+            $resourceName = $resource ? $resource->name : 'Unknown';
+            $requesterName = $booking->full_name ?? ($user->full_name ?? 'Unknown');
+
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'booking_id' => $booking->booking_id,
+                    'user_id' => $admin->user_id,
+                    'type' => 'BOOKING_REQUEST',
+                    'title' => 'New Booking Request',
+                    'message' => "{$requesterName} requested '{$resourceName}' ({$booking->start_date} to {$booking->end_date}).",
+                    'is_read' => false,
+                ]);
+            }
+
+            return response()->json(
+                $booking->load(['resource', 'user']),
+                201
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create booking: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to create booking. Please try again.'], 500);
+        }
     }
 
 
@@ -418,118 +296,82 @@ class BookingController extends Controller
         Request $request,
         BookingRequest $booking
     ) {
-        $validated = $request->validate([
-            'status' => [
-                'required',
-                'in:approved,rejected'
-            ],
-
-            'remarks' => [
-                'nullable',
-                'string'
-            ],
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Update Booking Status
-        |--------------------------------------------------------------------------
-        */
-
-        if ($validated['status'] === 'approved') {
-            $conflict = $this->findApprovedConflict(
-                $booking->resource_id,
-                Carbon::parse($booking->start_date)->toDateString(),
-                Carbon::parse($booking->end_date)->toDateString(),
-                $booking->start_time,
-                $booking->end_time,
-                $booking->booking_id
-            );
-
-            if ($conflict) {
-                return response()->json([
-                    'message' => 'This resource is already booked (approved) for that date and time.',
-                ], 422);
-            }
-        }
-
-        $booking->update([
-            'status' =>
-                $validated['status']
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Save Approval Record
-        |--------------------------------------------------------------------------
-        */
-
-        Approval::create([
-            'booking_id' =>
-                $booking->booking_id,
-
-            'admin_id' =>
-                $request->user()->user_id,
-
-            'action' =>
-                $validated['status'],
-
-            'remarks' =>
-                $validated['remarks'] ?? null,
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Notification
-        |--------------------------------------------------------------------------
-        */
-
-        Notification::create([
-            'booking_id' =>
-                $booking->booking_id,
-
-            'user_id' =>
-                $booking->user_id,
-
-            'message' =>
-                "Your booking request has been {$validated['status']}.",
-
-            'is_read' =>
-                false,
-
-            'type' =>
-                $validated['status'] === 'approved'
-                    ? 'BOOKING_APPROVED'
-                    : 'BOOKING_REJECTED',
-
-            'title' =>
-                $validated['status'] === 'approved'
-                    ? 'Booking Approved'
-                    : 'Booking Rejected',
-        ]);
-
-        // Send email notification to the requesting user
         try {
-            $requester = User::find($booking->user_id);
-            $resource = $booking->resource;
-            $resourceName = $resource ? $resource->name : 'Unknown Resource';
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
 
-            if ($requester && $requester->email) {
-                if ($validated['status'] === 'approved') {
-                    Mail::to($requester->email)->send(new BookingApproved($booking, $requester));
-                } else {
-                    Mail::to($requester->email)->send(new BookingRejected($booking, $requester));
+            $validated = $request->validate([
+                'status' => [
+                    'required',
+                    'in:approved,rejected'
+                ],
+
+                'remarks' => [
+                    'nullable',
+                    'string'
+                ],
+            ]);
+
+            if ($validated['status'] === 'approved') {
+                $conflict = $this->findApprovedConflict(
+                    $booking->resource_id,
+                    Carbon::parse($booking->start_date)->toDateString(),
+                    Carbon::parse($booking->end_date)->toDateString(),
+                    $booking->start_time,
+                    $booking->end_time,
+                    $booking->booking_id
+                );
+
+                if ($conflict) {
+                    return response()->json([
+                        'message' => 'This resource is already booked (approved) for that date and time.',
+                    ], 422);
                 }
             }
-        } catch (Exception $e) {
-            Log::warning('Failed to send booking status email: ' . $e->getMessage());
+
+            $booking->update([
+                'status' => $validated['status']
+            ]);
+
+            Approval::create([
+                'booking_id' => $booking->booking_id,
+                'admin_id' => $user->user_id,
+                'action' => $validated['status'],
+                'remarks' => $validated['remarks'] ?? null,
+            ]);
+
+            Notification::create([
+                'booking_id' => $booking->booking_id,
+                'user_id' => $booking->user_id,
+                'message' => "Your booking request has been {$validated['status']}.",
+                'is_read' => false,
+                'type' => $validated['status'] === 'approved' ? 'BOOKING_APPROVED' : 'BOOKING_REJECTED',
+                'title' => $validated['status'] === 'approved' ? 'Booking Approved' : 'Booking Rejected',
+            ]);
+
+            try {
+                $requester = User::find($booking->user_id);
+                $resource = $booking->resource;
+                $resourceName = $resource ? $resource->name : 'Unknown Resource';
+
+                if ($requester && $requester->email) {
+                    if ($validated['status'] === 'approved') {
+                        Mail::to($requester->email)->send(new BookingApproved($booking, $requester));
+                    } else {
+                        Mail::to($requester->email)->send(new BookingRejected($booking, $requester));
+                    }
+                }
+            } catch (Exception $e) {
+                Log::warning('Failed to send booking status email: ' . $e->getMessage());
+            }
+
+            return response()->json($booking);
+        } catch (\Exception $e) {
+            Log::error('Failed to update booking status: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to update booking status.'], 500);
         }
-
-
-        return response()->json($booking);
     }
 
 
@@ -539,14 +381,23 @@ class BookingController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function destroy(BookingRequest $booking)
+    public function destroy(Request $request, BookingRequest $booking)
     {
-        $booking->delete();
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
 
-        return response()->json([
-            'message' =>
-                'Booking deleted successfully.'
-        ]);
+            $booking->delete();
+
+            return response()->json([
+                'message' => 'Booking deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to delete booking: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to delete booking.'], 500);
+        }
     }
 
     /**
