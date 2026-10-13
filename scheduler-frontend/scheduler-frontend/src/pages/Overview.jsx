@@ -13,9 +13,6 @@ import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
 import { SkeletonStatCard, SkeletonResourceCard } from "../components/Skeleton";
-import NotificationBell from "../components/NotificationBell";
-import NotificationDropdown from "../components/NotificationDropdown";
-import { useNotifications } from "../context/NotificationContext";
 
 /** Status badge configuration */
 const STATUS_VARIANTS = {
@@ -70,7 +67,6 @@ export default function Overview() {
   });
 
   const [selectedResource, setSelectedResource] = useState(null);
-  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [mainFilter, setMainFilter] = useState("all");
   const [vehicleSubFilter, setVehicleSubFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -458,10 +454,6 @@ export default function Overview() {
                   : "Database Error"}
             </span>
           </div>
-          {/* Notification Bell (desktop only) */}
-          <div className="hidden md:block">
-            <NotificationBell onClick={() => setNotifDropdownOpen(!notifDropdownOpen)} />
-          </div>
         </div>
       </header>
 
@@ -848,12 +840,6 @@ export default function Overview() {
           })
         }
         selectedVehicle={selectedResource}
-      />
-
-      {/* Notification Dropdown */}
-      <NotificationDropdown
-        open={notifDropdownOpen}
-        onClose={() => setNotifDropdownOpen(false)}
       />
     </div>
   );

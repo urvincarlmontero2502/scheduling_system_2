@@ -10,6 +10,7 @@ import {
   MapPin,
   Building,
   Lock,
+  Shield,
   AlertCircle,
   CheckCircle,
   Camera,
@@ -35,12 +36,14 @@ export default function AccountSettings() {
     email: user?.email || "",
     barangay: user?.barangay || "",
     department: user?.department || "",
+    role: user?.role || "staff",
   });
   const [originalData, setOriginalData] = useState({
     full_name: user?.full_name || user?.name || "",
     email: user?.email || "",
     barangay: user?.barangay || "",
     department: user?.department || "",
+    role: user?.role || "staff",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -416,6 +419,32 @@ export default function AccountSettings() {
                     placeholder="Enter your department"
                     disabled={profileLoading}
                   />
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-[12.5px] font-medium text-ink">
+                  <Shield size={13} className="text-steel" />
+                  Role
+                </label>
+                {profileLoading ? (
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                ) : (
+                  <select
+                    value={formData.role || "staff"}
+                    onChange={(e) => handleChange("role", e.target.value)}
+                    className="w-full rounded-lg border border-line px-3 py-2 text-[13px] text-ink outline-none focus:border-brand"
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                    <option value="user">User</option>
+                  </select>
+                )}
+                {formData.role === "admin" && (
+                  <p className="mt-1 text-[11.5px] text-steel">
+                    Admin role grants full access to resource management, booking
+                    approvals, and audit features.
+                  </p>
                 )}
               </div>
             </div>

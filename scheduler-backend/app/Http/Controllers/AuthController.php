@@ -136,6 +136,7 @@ class AuthController extends Controller
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email,' . $user->user_id . ',user_id'],
             'barangay' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
+            'role' => ['nullable', 'string', 'in:admin,user,staff'],
         ]);
 
         $user->update(array_filter($validated));
