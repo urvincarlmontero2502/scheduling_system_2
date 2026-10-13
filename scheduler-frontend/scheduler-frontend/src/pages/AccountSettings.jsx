@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { SkeletonAvatar, SkeletonText, Skeleton } from "../components/Skeleton";
+import { compressImageFile } from "../utils/imageCompression";
 
 export default function AccountSettings() {
   const { user, signIn, refreshUser } = useAuth();
@@ -130,9 +131,9 @@ export default function AccountSettings() {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("Image file is too large. Maximum size is 5MB.");
+    // Validate file size — allow up to 10MB before compression
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("Image file is too large. Maximum size is 10MB.");
       return;
     }
 
@@ -140,10 +141,13 @@ export default function AccountSettings() {
     setUploadError("");
     setUploadSuccess("");
 
-    const formData = new FormData();
-    formData.append("image", file);
-
     try {
+      // Compress the image client-side to reduce upload size
+      const compressedFile = await compressImageFile(file, 1200, 0.85);
+
+      const formData = new FormData();
+      formData.append("image", compressedFile);
+
       const res = await api.updateProfileImage(formData);
       setUploadSuccess("Profile picture updated successfully!");
       // Refresh the user data to get the new image URL

@@ -15,9 +15,8 @@ export const forgotPassword = (email) => client.post("/forgot-password", { email
 export const logout = () => client.post("/logout");
 export const fetchCurrentUser = () => client.get("/user");
 export const updateUser = (payload) => client.put("/user", payload);
-export const updateProfileImage = (formData) => client.post("/user/profile-image", formData, {
-  headers: { "Content-Type": "multipart/form-data" },
-});
+export const updateProfileImage = (formData) =>
+  client.post("/user/profile-image", formData);
 export const changeEmail = (payload) => client.put("/user/email", payload);
 export const verifyEmailChange = (token) => client.post("/verify-email-change", { token });
 export const updatePassword = (payload) => client.put("/user/password", payload);
@@ -27,9 +26,7 @@ export const uploadAsset = (file, assetType) => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("asset_type", assetType);
-  return client.post("/uploads", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  return client.post("/uploads", formData);
 };
 
 export const deleteAsset = (path, assetType) =>

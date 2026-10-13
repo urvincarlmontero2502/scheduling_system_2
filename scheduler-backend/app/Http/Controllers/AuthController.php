@@ -208,7 +208,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'image' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
         ]);
 
         // Delete old profile image if it exists
