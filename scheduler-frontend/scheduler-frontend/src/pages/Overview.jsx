@@ -207,8 +207,9 @@ export default function Overview() {
   const resourceType = selectedResource?.type?.toLowerCase();
 
   return (
-    <div>
-      <header className="flex flex-col gap-3 border-b border-line bg-white px-4 sm:px-6 py-4 md:flex-row md:justify-between">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Top Header Banner */}
+      <header className="w-full bg-white rounded-xl p-6 shadow-sm border border-line flex items-center justify-between">
         <div>
           <h1 className="text-[17px] font-semibold">
             Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
@@ -224,7 +225,7 @@ export default function Overview() {
       </header>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {STATS_ITEMS.map((stat) => (
           <div
             key={stat.label}
@@ -241,7 +242,7 @@ export default function Overview() {
       </div>
 
       {/* Main Content Area */}
-      <div className="px-4 sm:px-6 pb-6 space-y-6">
+      <div className="space-y-6">
         {/* Filter Navigation Block */}
         <div className="border-b border-line pb-4 space-y-3">
           {/* Main Filter Navigation Buttons */}
@@ -283,7 +284,7 @@ export default function Overview() {
           </div>
 
           {/* Search and Availability Filter */}
-          <div className="mt-1 flex flex-wrap items-center gap-3">
+          <div className="mb-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="relative flex-1 min-w-[200px]">
               <Search
                 size={14}
@@ -369,7 +370,7 @@ export default function Overview() {
         {/* Facilities Section (Shown if mainFilter is 'all' or 'facility') */}
         {(mainFilter === "all" || mainFilter === "facility") && (
           <div>
-            <h2 className="text-[15px] font-semibold text-ink flex items-center gap-2 mb-3">
+            <h2 className="text-[15px] font-semibold text-ink flex items-center gap-2 mb-4">
               <Building2 size={18} className="text-brand" /> Facilities Overview
               ({facilities.length})
             </h2>
@@ -387,7 +388,7 @@ export default function Overview() {
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
-                    className="flex flex-col h-full cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
+                    className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
                     <div className="h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
@@ -402,7 +403,7 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-3">
+                    <div className="flex-1 flex flex-col p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
                           {item.name}
@@ -422,12 +423,14 @@ export default function Overview() {
                       <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
                         {item.description || "No description available"}
                       </p>
-                      <button
-                        onClick={() => handleOpenBooking(item)}
-                        className="mt-auto w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
-                      >
-                        Request Booking
-                      </button>
+                      <div className="w-full mt-auto pt-2">
+                        <button
+                          onClick={() => handleOpenBooking(item)}
+                          className="w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
+                        >
+                          Request Booking
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -439,7 +442,7 @@ export default function Overview() {
         {/* Vehicles Section (Shown if mainFilter is 'all' or 'vehicle') */}
         {(mainFilter === "all" || mainFilter === "vehicle") && (
           <div>
-            <h2 className="text-[15px] font-semibold text-ink flex items-center gap-2 mb-3">
+            <h2 className="text-[15px] font-semibold text-ink flex items-center gap-2 mb-4">
               <Car size={18} className="text-brand" /> Vehicles Overview (
               {filteredVehicles.length})
             </h2>
@@ -457,7 +460,7 @@ export default function Overview() {
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
-                    className="flex flex-col h-full cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
+                    className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
                     <div className="h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
@@ -472,7 +475,7 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-3">
+                    <div className="flex-1 flex flex-col p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
                           {item.name}
@@ -492,12 +495,14 @@ export default function Overview() {
                       <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
                         {item.description || "No description available"}
                       </p>
-                      <button
-                        onClick={() => handleOpenBooking(item)}
-                        className="mt-auto w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
-                      >
-                        Request Booking
-                      </button>
+                      <div className="w-full mt-auto pt-2">
+                        <button
+                          onClick={() => handleOpenBooking(item)}
+                          className="w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
+                        >
+                          Request Booking
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
