@@ -4,8 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { Search, Filter, Building2, Car, Image as ImageIcon } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
-import { useNotifications } from "../context/NotificationContext";
-import NotificationBell from "../components/NotificationBell";
 import VehicleBookingModal from "../components/VehicleBookingModal";
 
 export default function Overview() {
@@ -14,7 +12,6 @@ export default function Overview() {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const { toggleDropdown } = useNotifications();
   const [selectedResource, setSelectedResource] = useState(null);
   const [mainFilter, setMainFilter] = useState("all"); // "all" | "facility" | "vehicle"
   const [vehicleSubFilter, setVehicleSubFilter] = useState("all"); // "all" | "heavy" | "ambulance" | "service"
@@ -217,11 +214,6 @@ export default function Overview() {
             Here's what's happening with facility and vehicle bookings. Click
             any resource below to make a request.
           </p>
-        </div>
-
-        {/* Notification Bell */}
-        <div className="md:ml-auto">
-          <NotificationBell onClick={toggleDropdown} />
         </div>
       </header>
 
