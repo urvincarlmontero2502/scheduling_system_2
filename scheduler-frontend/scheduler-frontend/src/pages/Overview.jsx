@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
-import { Search, Filter, Building2, Car, Image as ImageIcon } from "lucide-react";
+import { Search, Building2, Car, Image as ImageIcon } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
@@ -234,71 +234,68 @@ export default function Overview() {
 
       {/* Main Content Area */}
       <div className="space-y-4">
-        {/* Search Bar at Top */}
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
-          />
-          <input
-            type="text"
-            placeholder="Search resources..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
-          />
+        {/* Combined Top Row: Status Dropdown Left, Search Right */}
+        <div className="flex items-center gap-2 w-full">
+          <select
+            value={availabilityFilter}
+            onChange={(e) => setAvailabilityFilter(e.target.value)}
+            className="w-auto shrink-0 text-xs py-2 px-2.5 rounded-lg border border-line bg-white"
+          >
+            <option value="all">All Status</option>
+            <option value="available">Available Only</option>
+            <option value="booked">Booked Only</option>
+          </select>
+          <div className="relative flex-1 min-w-0">
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
+            />
+            <input
+              type="text"
+              placeholder="Search resources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 min-w-0 text-xs py-2 px-3 rounded-lg border border-line bg-white outline-none focus:border-brand"
+            />
+          </div>
         </div>
 
-        {/* Category Pills + Status Dropdown */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex overflow-x-auto gap-2 py-1 no-scrollbar whitespace-nowrap">
-            <button
-              onClick={() => {
-                setMainFilter("all");
-                setVehicleSubFilter("all");
-              }}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
-                mainFilter === "all"
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-white border border-line text-steel hover:bg-paper"
-              }`}>
-              All Resources ({resources.length})
-            </button>
-            <button
-              onClick={() => {
-                setMainFilter("facility");
-              }}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
-                mainFilter === "facility"
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-white border border-line text-steel hover:bg-paper"
-              }`}>
-              Facilities ({facilities.length})
-            </button>
-            <button
-              onClick={() => {
-                setMainFilter("vehicle");
-              }}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
-                mainFilter === "vehicle"
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-white border border-line text-steel hover:bg-paper"
-              }`}>
-              Vehicles ({vehicles.length})
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Filter size={14} className="text-steel" />
-            <span className="text-[12px] text-steel">Show:</span>
-            <select
-              value={availabilityFilter}
-              onChange={(e) => setAvailabilityFilter(e.target.value)}
-              className="h-10 rounded-lg border border-line bg-white px-2 text-[12.5px] text-steel outline-none focus:border-brand">
-              <option value="all">All Status</option>
-              <option value="available">Available Only</option>
-              <option value="booked">Booked Only</option>
-            </select>
-          </div>
+        {/* Category Filter Pills */}
+        <div className="flex overflow-x-auto gap-2 py-1 no-scrollbar whitespace-nowrap w-full">
+          <button
+            onClick={() => {
+              setMainFilter("all");
+              setVehicleSubFilter("all");
+            }}
+            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              mainFilter === "all"
+                ? "bg-brand text-white shadow-sm"
+                : "bg-white border border-line text-steel hover:bg-paper"
+            }`}>
+            All Resources ({resources.length})
+          </button>
+          <button
+            onClick={() => {
+              setMainFilter("facility");
+            }}
+            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              mainFilter === "facility"
+                ? "bg-brand text-white shadow-sm"
+                : "bg-white border border-line text-steel hover:bg-paper"
+            }`}>
+            Facilities ({facilities.length})
+          </button>
+          <button
+            onClick={() => {
+              setMainFilter("vehicle");
+            }}
+            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              mainFilter === "vehicle"
+                ? "bg-brand text-white shadow-sm"
+                : "bg-white border border-line text-steel hover:bg-paper"
+            }`}>
+            Vehicles ({vehicles.length})
+          </button>
         </div>
 
         {(searchQuery || availabilityFilter !== "all") && (
@@ -378,7 +375,7 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="h-20 sm:h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
+                    <div className="h-20 sm:h-24 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -394,7 +391,7 @@ export default function Overview() {
                     </div>
                     <div className="flex-1 flex flex-col p-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2">
                           {item.name}
                         </h3>
                         <span
@@ -450,7 +447,7 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="h-20 sm:h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
+                    <div className="h-20 sm:h-24 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -466,7 +463,7 @@ export default function Overview() {
                     </div>
                     <div className="flex-1 flex flex-col p-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2">
                           {item.name}
                         </h3>
                         <span
