@@ -5,9 +5,12 @@ import { Search, Filter, Building2, Car, Image as ImageIcon } from "lucide-react
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
+import NotificationBell from "../components/NotificationBell";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function Overview() {
   const { user } = useAuth();
+  const { toggleDropdown, bellRef } = useNotifications();
   const [stats, setStats] = useState({ pending: 0, approved: 0 });
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -214,6 +217,9 @@ export default function Overview() {
             Here's what's happening with facility and vehicle bookings. Click
             any resource below to make a request.
           </p>
+        </div>
+        <div className="hidden items-center md:flex">
+          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
         </div>
       </header>
 

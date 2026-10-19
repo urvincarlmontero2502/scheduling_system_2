@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarClock,
@@ -44,8 +44,7 @@ export default function DashboardLayout() {
   const [open, setOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const { toggleDropdown, closeDropdown, dropdownOpen } = useNotifications();
-  const bellRef = useRef(null);
+  const { toggleDropdown, closeDropdown, dropdownOpen, bellRef } = useNotifications();
 
   // Close the mobile menu when the page changes
   useEffect(() => {
@@ -111,12 +110,7 @@ export default function DashboardLayout() {
         </div>
       </header>
 
-      {/* Desktop top header with notification bell (top-right) */}
-      <header className="hidden w-full shrink-0 items-center justify-end gap-3 border-b border-line bg-white px-6 py-4 mb-6 md:flex">
-        <div ref={bellRef}>
-          <NotificationBell onClick={toggleDropdown} />
-        </div>
-      </header>
+      {/* Desktop top header — Bell is now inline in page headers (e.g., Overview.jsx) */}
 
       {/* Dim background behind the mobile menu */}
       {open && (
