@@ -276,7 +276,7 @@ export default function DashboardLayout() {
       />
 
       {/* Main content */}
-        <div className="min-w-0 flex-1 overflow-auto [overflow-x:clip]">
+        <div className="min-w-0 flex-1 overflow-auto [overflow-x:clip] md:ml-64">
           <Outlet />
         </div>
       </div>
