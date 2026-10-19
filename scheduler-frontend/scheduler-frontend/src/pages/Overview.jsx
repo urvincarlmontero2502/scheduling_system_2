@@ -235,11 +235,11 @@ export default function Overview() {
       {/* Main Content Area */}
       <div className="space-y-4">
         {/* Combined Top Row: Status Dropdown Left, Search Right */}
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
           <select
             value={availabilityFilter}
             onChange={(e) => setAvailabilityFilter(e.target.value)}
-            className="w-auto shrink-0 text-xs py-2 px-2.5 rounded-lg border border-line bg-white"
+            className="w-[130px] shrink-0 text-xs py-2 px-2.5 rounded-lg border border-line bg-white"
           >
             <option value="all">All Status</option>
             <option value="available">Available Only</option>
@@ -255,7 +255,7 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 min-w-0 text-xs py-2 px-3 rounded-lg border border-line bg-white outline-none focus:border-brand"
+              className="flex-1 min-w-0 text-xs py-2 pl-9 pr-3 rounded-lg border border-line bg-white outline-none focus:border-brand"
             />
           </div>
         </div>
@@ -391,7 +391,7 @@ export default function Overview() {
                     </div>
                     <div className="flex-1 flex flex-col p-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2">
+                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[32px]">
                           {item.name}
                         </h3>
                         <span
@@ -406,7 +406,7 @@ export default function Overview() {
                           {item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
+                      <p className="mt-1 text-[11px] sm:text-xs text-gray-600 line-clamp-2 overflow-hidden">
                         {item.description || "No description available"}
                       </p>
                       <div className="w-full mt-auto pt-2">
@@ -463,7 +463,7 @@ export default function Overview() {
                     </div>
                     <div className="flex-1 flex flex-col p-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2">
+                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[32px]">
                           {item.name}
                         </h3>
                         <span
@@ -478,7 +478,7 @@ export default function Overview() {
                           {item.unit_name || item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
+                      <p className="mt-1 text-[11px] sm:text-xs text-gray-600 line-clamp-2 overflow-hidden">
                         {item.description || "No description available"}
                       </p>
                       <div className="w-full mt-auto pt-2">
