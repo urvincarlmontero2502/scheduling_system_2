@@ -382,13 +382,13 @@ export default function Overview() {
                   : "No facilities found."}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {facilities.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
-                    <div className="h-20 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line sm:h-36">
+                    <div className="h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -396,13 +396,13 @@ export default function Overview() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex flex-col items-center text-steel gap-1 bg-gray-100/70">
-                          <ImageIcon size={16} className="text-gray-400 sm:size-6" />
-                          <span className="text-[10px]">No image provided</span>
+                        <div className="flex flex-col items-center text-steel gap-1">
+                          <ImageIcon size={20} className="text-gray-400" />
+                          <span className="text-xs">No image provided</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-2 sm:p-3">
+                    <div className="flex-1 flex flex-col p-3">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
                           {item.name}
@@ -452,13 +452,13 @@ export default function Overview() {
                   : "No vehicles found in this category."}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filteredVehicles.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
-                    <div className="h-20 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line sm:h-36">
+                    <div className="h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -466,13 +466,13 @@ export default function Overview() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex flex-col items-center text-steel gap-1 bg-gray-100/70">
-                          <ImageIcon size={16} className="text-gray-400 sm:size-6" />
-                          <span className="text-[10px]">No image provided</span>
+                        <div className="flex flex-col items-center text-steel gap-1">
+                          <ImageIcon size={20} className="text-gray-400" />
+                          <span className="text-xs">No image provided</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-2 sm:p-3">
+                    <div className="flex-1 flex flex-col p-3">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
                           {item.name}

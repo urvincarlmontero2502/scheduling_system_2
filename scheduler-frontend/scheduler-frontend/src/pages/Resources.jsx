@@ -605,7 +605,7 @@ export default function Resources() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[20px] font-semibold text-ink">
-          Facilities & Fleet
+        Facilities &amp; Vehicles
         </h1>
         {isAdmin && (
           <button
