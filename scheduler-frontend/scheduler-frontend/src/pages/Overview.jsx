@@ -207,9 +207,9 @@ export default function Overview() {
   const resourceType = selectedResource?.type?.toLowerCase();
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 space-y-4 max-w-7xl mx-auto">
       {/* Top Header Banner */}
-      <header className="w-full bg-white rounded-xl p-6 shadow-sm border border-line flex items-center justify-between">
+      <header className="w-full bg-white rounded-xl p-4 px-6 shadow-sm border border-line flex items-center justify-between">
         <div>
           <h1 className="text-[17px] font-semibold">
             Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
@@ -242,9 +242,9 @@ export default function Overview() {
       </div>
 
       {/* Main Content Area */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Filter Navigation Block */}
-        <div className="border-b border-line pb-4 space-y-3">
+        <div className="border-b border-line pb-3 space-y-2">
           {/* Main Filter Navigation Buttons */}
           <div className="flex items-center gap-2">
             <button
@@ -383,13 +383,13 @@ export default function Overview() {
                   : "No facilities found."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {facilities.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
+                    <div className="h-20 sm:h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -403,9 +403,9 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-4 space-y-2">
+                    <div className="flex-1 flex flex-col p-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-1">
                           {item.name}
                         </h3>
                         <span
@@ -414,19 +414,19 @@ export default function Overview() {
                           {item.available ? "Available" : "Booked"}
                         </span>
                       </div>
-                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
                         Capacity:{" "}
                         <span className="font-medium text-ink">
                           {item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
                         {item.description || "No description available"}
                       </p>
                       <div className="w-full mt-auto pt-2">
                         <button
                           onClick={() => handleOpenBooking(item)}
-                          className="w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
+                          className="w-full py-1.5 px-2 text-xs font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
                         >
                           Request Booking
                         </button>
@@ -455,13 +455,13 @@ export default function Overview() {
                   : "No vehicles found in this category."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {filteredVehicles.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
+                    <div className="h-20 sm:h-28 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -475,9 +475,9 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-4 space-y-2">
+                    <div className="flex-1 flex flex-col p-3 space-y-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-1">
                           {item.name}
                         </h3>
                         <span
@@ -486,19 +486,19 @@ export default function Overview() {
                           {item.available ? "Available" : "Booked"}
                         </span>
                       </div>
-                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
                         Unit Details:{" "}
                         <span className="font-medium text-ink">
                           {item.unit_name || item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
                         {item.description || "No description available"}
                       </p>
                       <div className="w-full mt-auto pt-2">
                         <button
                           onClick={() => handleOpenBooking(item)}
-                          className="w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
+                          className="w-full py-1.5 px-2 text-xs font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
                         >
                           Request Booking
                         </button>

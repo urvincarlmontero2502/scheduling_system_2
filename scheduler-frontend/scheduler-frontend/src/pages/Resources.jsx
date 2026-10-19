@@ -456,7 +456,7 @@ export default function Resources() {
         className="group flex flex-col h-full overflow-hidden rounded-xl border border-line bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
       >
         {/* Thumbnail with status badge overlay */}
-        <div className="relative h-20 sm:h-36 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line">
+        <div className="relative h-20 sm:h-28 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line">
           {item.image ? (
             <img
               src={item.image}
@@ -509,10 +509,10 @@ export default function Resources() {
           </span>
         </div>
 
-        <div className="flex flex-col flex-1 p-2.5">
+        <div className="flex flex-col flex-1 p-3 space-y-1.5">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-[13px] font-semibold text-ink line-clamp-1">
+              <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-1">
                 {item.name}
               </h3>
               {isMaintenance && (
@@ -556,7 +556,7 @@ export default function Resources() {
             )}
           </div>
 
-          <p className="mt-1.5 min-h-[2.5rem] text-[11px] text-steel">
+          <p className="mt-1.5 min-h-[2.5rem] text-[11px] sm:text-xs text-steel">
             {item.type === "vehicle" ? "Unit Details:" : "Capacity:"}{" "}
             <span className="font-medium text-ink">
               {item.type === "facility"
@@ -566,7 +566,7 @@ export default function Resources() {
                   : "N/A"}
             </span>
           </p>
-          <p className="mt-1 text-[10px] text-steel line-clamp-2">
+          <p className="mt-1 text-[11px] sm:text-xs text-steel line-clamp-2">
             {item.description || "No description provided."}
           </p>
         </div>
@@ -576,21 +576,21 @@ export default function Resources() {
           {isMaintenance ? (
             <button
               disabled
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-gray-200 text-gray-500 py-1.5 text-[10px] font-medium cursor-not-allowed opacity-60"
+              className="w-full flex items-center justify-center gap-1 rounded-md bg-gray-200 text-gray-500 py-1.5 px-2 text-xs font-medium cursor-not-allowed opacity-60"
             >
               <Wrench size={10} /> Under Maintenance
             </button>
           ) : isAdmin ? (
             <button
               onClick={() => handleOpenRequestModal(item, true)}
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand text-white hover:bg-brand-dark py-1.5 text-[10px] font-medium transition"
+              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand text-white hover:bg-brand-dark py-1.5 px-2 text-xs font-medium transition"
             >
               <Calendar size={10} /> Book
             </button>
           ) : (
             <button
               onClick={() => handleOpenRequestModal(item)}
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-1.5 text-[10px] font-medium transition"
+              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-1.5 px-2 text-xs font-medium transition"
             >
               <Calendar size={10} /> Request
             </button>
@@ -601,9 +601,9 @@ export default function Resources() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-[20px] font-semibold text-ink">
         Facilities &amp; Vehicles
         </h1>
@@ -618,7 +618,7 @@ export default function Resources() {
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-4">
+      <div className="relative mb-3">
         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel" />
         <input
           type="text"
@@ -639,7 +639,7 @@ export default function Resources() {
       </div>
 
       {/* Segmented Control / Tab Filter */}
-      <div className="mb-6 flex flex-wrap gap-1 overflow-x-auto whitespace-nowrap rounded-lg bg-gray-100 p-1 border border-line">
+      <div className="mb-4 flex flex-wrap gap-1 overflow-x-auto whitespace-nowrap rounded-lg bg-gray-100 p-1 border border-line">
         <button
           onClick={() => handleTabClick("all")}
           className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium transition ${
@@ -684,7 +684,7 @@ export default function Resources() {
 
       {/* Resource Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonResourceCard key={`skeleton-${i}`} />
           ))}
@@ -702,7 +702,7 @@ export default function Resources() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
           {displayedItems.map(renderResourceCard)}
         </div>
       )}
