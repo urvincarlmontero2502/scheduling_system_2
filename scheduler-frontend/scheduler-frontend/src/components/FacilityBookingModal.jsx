@@ -635,21 +635,21 @@ export default function FacilityBookingModal({
                     className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                   />
                 </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                    <Home size={13} className="text-brand" /> Address
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="123 Street Name, City"
+                    value={formData.address}
+                    onChange={(e) => update("address", e.target.value)}
+                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                  <Home size={13} className="text-brand" /> Where do you live
-                  (Address)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="123 Street Name, City"
-                  value={formData.address}
-                  onChange={(e) => update("address", e.target.value)}
-                  className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
-                />
-              </div>
+              {/* Attendees */}
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
                   <User size={13} className="text-brand" /> Expected
