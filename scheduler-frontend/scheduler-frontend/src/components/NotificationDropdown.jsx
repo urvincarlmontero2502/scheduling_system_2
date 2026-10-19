@@ -158,19 +158,18 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-line">
         <h3 className="text-sm font-semibold text-ink">Notifications</h3>
-        <div className="flex items-center gap-2">
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              className="rounded-lg p-1 text-steel hover:bg-paper hover:text-ink"
-              title="Mark all as read"
-            >
-              <CheckCheck size={16} />
-            </button>
-          )}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleMarkAllRead}
+            className="text-xs font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            title="Mark all as read"
+          >
+            <CheckCheck size={14} />
+            <span>Mark all as read</span>
+          </button>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-steel hover:bg-paper hover:text-ink"
+            className="text-steel hover:text-ink"
             title="Close"
           >
             <X size={16} />
@@ -179,7 +178,7 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
       </div>
 
       {/* Body */}
-      <div className="max-h-[80vh] overflow-y-auto">
+      <div className="max-h-[70vh] overflow-y-auto">
         {loading && notifications.length === 0 ? (
           <div className="p-4 text-center text-sm text-steel">
             Loading notifications...
@@ -261,7 +260,7 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
         />
         <div
           ref={dropdownRef}
-          className="fixed inset-x-4 top-16 z-50 mx-auto max-w-sm rounded-xl border border-line bg-white shadow-xl"
+          className="fixed inset-x-3 top-16 z-50 mx-auto max-w-md rounded-xl border border-line bg-white shadow-xl"
           style={{
             maxHeight: "calc(100vh - 4rem)",
           }}
@@ -273,15 +272,12 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
     )
   }
 
-  // Desktop: portal anchored below the bell, opening to the left
-  const bellRect = anchorEl?.current?.getBoundingClientRect()
-
+  // Desktop: fallback if bell ref not available
   if (!bellRect) {
-    // Fallback positioning if anchor not found — bottom-right corner of viewport
     return createPortal(
       <div
         ref={dropdownRef}
-        className="fixed z-50 mt-2 w-96 max-w-[calc(100vw-2rem)] origin-top-right rounded-xl border border-line bg-white shadow-xl"
+        className="fixed z-50 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-xl border border-line bg-white shadow-xl"
         style={{
           top: "calc(64px + 1rem)",
           right: "1rem",
@@ -299,24 +295,13 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const bellBottom = bellRect.bottom + window.scrollY
   const clampedTop = Math.max(16, Math.min(bellBottom + 8, window.innerHeight - 32))
 
-  // The bell's right edge in viewport coordinates (where we want the panel's right edge)
-  const bellRightViewport = bellRect.right
-
-  // Calculate left position: panel right edge = bell right edge
-  // left = bellRightViewport - panelWidth
-  const panelWidth = Math.min(384, window.innerWidth - 32) // w-96 = 384px, capped with margins
-  const panelLeft = bellRightViewport - panelWidth
-
-  // If panel would go off the left edge, align left instead (left = 16)
-  const clampedLeft = Math.max(16, panelLeft)
-
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-50 mt-2 w-96 max-w-[calc(100vw-2rem)] origin-top-right rounded-xl border border-line bg-white shadow-xl"
+      className="fixed z-50 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96 origin-top-right rounded-xl border border-line bg-white shadow-xl"
       style={{
         top: `${clampedTop}px`,
-        left: `${clampedLeft}px`,
+        right: `${window.innerWidth - bellRect.right - 8}px`,
         maxHeight: `calc(100vh - ${clampedTop + 16}px)`,
       }}
     >
