@@ -447,9 +447,9 @@ export default function FacilityBookingModal({
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4"
       onClick={onClose}>
       <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl"
+        className="w-[95%] max-w-5xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
           <div>
             <h2 className="text-[15px] font-semibold text-ink">
               {isDirectUse ? "Direct Allocation" : "Request Booking"}: {selectedFacility.name}
@@ -462,11 +462,11 @@ export default function FacilityBookingModal({
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-5 py-4 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="p-6 grid grid-cols-1 gap-8 md:grid-cols-12">
             {/* LEFT: image + details */}
-            <div className="space-y-3">
-              <div className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
+            <div className="md:col-span-5 space-y-4">
+              <div className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
                 {selectedFacility.image &&
                 selectedFacility.image.trim() !== "" ? (
                   <img
@@ -524,7 +524,7 @@ export default function FacilityBookingModal({
               </div>
             </div>
             {/* RIGHT: calendar + form */}
-            <div className="space-y-2.5">
+            <div className="md:col-span-7 space-y-4">
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink">
                   <CalendarIcon size={14} className="text-brand" /> Select Date
@@ -663,7 +663,7 @@ export default function FacilityBookingModal({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
+          <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0 bg-white">
             {conflict && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <div className="rounded-lg border border-status-rejected/30 bg-status-rejected/5 px-3 py-2.5">
