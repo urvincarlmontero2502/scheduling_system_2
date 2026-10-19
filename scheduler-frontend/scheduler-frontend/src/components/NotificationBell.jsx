@@ -1,12 +1,14 @@
+import { forwardRef } from "react"
 import { Bell } from "lucide-react"
 import { useNotifications } from "../context/NotificationContext"
 
-export default function NotificationBell({ onClick }) {
+const NotificationBell = forwardRef(function NotificationBell({ onClick }, ref) {
   const { unreadCount } = useNotifications()
 
   return (
     <button
       type="button"
+      ref={ref}
       aria-label="Notifications"
       onClick={onClick}
       className="relative flex h-10 w-10 items-center justify-center rounded-full text-steel transition hover:bg-paper hover:text-ink"
@@ -21,4 +23,6 @@ export default function NotificationBell({ onClick }) {
       )}
     </button>
   )
-}
+})
+
+export default NotificationBell

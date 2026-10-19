@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarClock,
@@ -45,6 +45,7 @@ export default function DashboardLayout() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { toggleDropdown, closeDropdown, dropdownOpen } = useNotifications();
+  const bellRef = useRef(null);
 
   // Close the mobile menu when the page changes
   useEffect(() => {
@@ -132,7 +133,7 @@ export default function DashboardLayout() {
             <p className="text-[16px] font-bold leading-tight">Scheduler</p>
           </div>
           <div className="ml-auto hidden md:flex">
-            <NotificationBell onClick={toggleDropdown} />
+            <NotificationBell ref={bellRef} onClick={toggleDropdown} />
           </div>
           <button
             onClick={() => setOpen(false)}
@@ -271,6 +272,7 @@ export default function DashboardLayout() {
       <NotificationDropdown
         open={dropdownOpen}
         onClose={closeDropdown}
+        anchorEl={bellRef}
       />
 
       {/* Main content */}
