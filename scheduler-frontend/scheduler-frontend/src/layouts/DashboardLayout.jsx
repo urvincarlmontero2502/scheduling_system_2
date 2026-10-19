@@ -88,7 +88,7 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-paper md:flex">
       {/* Mobile top bar */}
       <header
         className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden"
@@ -123,7 +123,7 @@ export default function DashboardLayout() {
 
       {/* Sidebar: slide-out on mobile, fixed column on desktop */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-80 max-w-[90vw] flex-col transition-transform duration-200 md:sticky md:top-0 md:h-screen md:flex md:flex-col md:w-64 md:justify-between md:border-r md:border-gray-200 md:bg-white md:z-30 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-line bg-white transition-transform duration-200 md:sticky md:top-0 md:z-20 md:h-screen md:w-64 md:shrink-0 md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}>
         <div className="flex items-center justify-between gap-3 px-6 py-6">
@@ -274,9 +274,11 @@ export default function DashboardLayout() {
       />
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-y-auto">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="flex-1 p-4 md:p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
