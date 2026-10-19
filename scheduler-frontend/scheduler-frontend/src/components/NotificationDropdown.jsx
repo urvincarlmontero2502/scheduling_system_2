@@ -38,7 +38,6 @@ const timeAgo = (date) => {
 export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const {
     notifications,
-    unreadCount,
     loading,
     markAsRead,
     markAllAsRead,
@@ -274,7 +273,9 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
     )
   }
 
-  // Desktop: fallback if bell ref not available
+  // Desktop: compute bell position for dropdown anchoring
+  const bellRect = anchorEl?.current?.getBoundingClientRect()
+
   if (!bellRect) {
     return createPortal(
       <div
