@@ -164,7 +164,7 @@ export default function NotificationDropdown({ open, onClose }) {
         </div>
 
         {/* Body */}
-        <div className="max-h-80 overflow-y-auto">
+        <div className="max-h-96 overflow-y-auto">
           {loading && notifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-steel">
               Loading notifications...
@@ -183,7 +183,7 @@ export default function NotificationDropdown({ open, onClose }) {
                     key={id}
                     onClick={() => handleNotificationClick(id, notif.booking_id)}
                     className={`group cursor-pointer px-4 py-3 transition-colors hover:bg-slate-50 ${
-                      isUnread ? "bg-brand-light/30" : ""
+                      isUnread ? "bg-brand-light/40" : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
