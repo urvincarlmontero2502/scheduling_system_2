@@ -382,13 +382,13 @@ export default function Overview() {
                   : "No facilities found."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {facilities.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
-                    <div className="h-36 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line">
+                    <div className="h-28 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line sm:h-40">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -397,33 +397,37 @@ export default function Overview() {
                         />
                       ) : (
                         <div className="flex flex-col items-center text-steel gap-1 bg-gray-100/70">
-                          <ImageIcon size={24} className="text-gray-400" />
-                          <span className="text-[11px]">No image provided</span>
+                          <ImageIcon size={20} className="text-gray-400 sm:size-6" />
+                          <span className="text-[10px] sm:text-[11px]">No image provided</span>
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between">
-                        <h3 className="text-[14px] font-semibold text-ink">
+                    <div className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-[13px] sm:text-[14px] font-semibold text-ink">
                           {item.name}
                         </h3>
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${item.available ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-medium ${item.available ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"
+                        }`}>
                           {item.available ? "Available" : "Booked"}
                         </span>
                       </div>
-                      <p className="mt-2 text-[13px] text-steel">
+                      <p className="mt-2 text-[12px] sm:text-[13px] text-steel">
                         Capacity:{" "}
                         <span className="font-medium text-ink">
                           {item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 text-[12.5px] text-steel truncate">
+                      <p className="mt-1 text-[11px] sm:text-[12.5px] text-steel truncate">
                         Description: {item.description || "None"}
                       </p>
-                      <div className="mt-3 text-[12px] font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
-                        Click to request booking &rarr;
-                      </div>
+                      <button
+                        onClick={() => handleOpenBooking(item)}
+                        className="w-full mt-3 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg text-center transition-colors"
+                      >
+                        Click to request booking →
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -448,13 +452,13 @@ export default function Overview() {
                   : "No vehicles found in this category."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredVehicles.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
-                    <div className="h-36 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line">
+                    <div className="h-28 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line sm:h-40">
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -463,33 +467,37 @@ export default function Overview() {
                         />
                       ) : (
                         <div className="flex flex-col items-center text-steel gap-1 bg-gray-100/70">
-                          <ImageIcon size={24} className="text-gray-400" />
-                          <span className="text-[11px]">No image provided</span>
+                          <ImageIcon size={20} className="text-gray-400 sm:size-6" />
+                          <span className="text-[10px] sm:text-[11px]">No image provided</span>
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between">
-                        <h3 className="text-[14px] font-semibold text-ink">
+                    <div className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-[13px] sm:text-[14px] font-semibold text-ink">
                           {item.name}
                         </h3>
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${item.available ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-medium ${item.available ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"
+                        }`}>
                           {item.available ? "Available" : "Booked"}
                         </span>
                       </div>
-                      <p className="mt-2 text-[13px] text-steel">
+                      <p className="mt-2 text-[12px] sm:text-[13px] text-steel">
                         Unit Details:{" "}
                         <span className="font-medium text-ink">
                           {item.unit_name || item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 text-[12.5px] text-steel truncate">
+                      <p className="mt-1 text-[11px] sm:text-[12.5px] text-steel truncate">
                         Description: {item.description || "None"}
                       </p>
-                      <div className="mt-3 text-[12px] font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
-                        Click to request booking &rarr;
-                      </div>
+                      <button
+                        onClick={() => handleOpenBooking(item)}
+                        className="w-full mt-3 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg text-center transition-colors"
+                      >
+                        Click to request booking →
+                      </button>
                     </div>
                   </div>
                 ))}
