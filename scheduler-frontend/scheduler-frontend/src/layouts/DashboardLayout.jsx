@@ -122,7 +122,7 @@ export default function DashboardLayout() {
       )}
 
       {/* Sidebar + main content row (desktop) */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-x-hidden overflow-y-visible">
         {/* Sidebar: slide-out on mobile, fixed column on desktop */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-80 max-w-[90vw] flex-col border-r border-line bg-white transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-64 md:max-w-none md:translate-x-0 ${
@@ -143,7 +143,7 @@ export default function DashboardLayout() {
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-3">
+        <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-3 md:h-[calc(100vh-8rem)]">
           {visibleItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}

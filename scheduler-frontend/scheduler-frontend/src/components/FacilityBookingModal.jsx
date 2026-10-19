@@ -6,6 +6,7 @@ import {
   MapPin,
   User,
   Phone,
+  Mail,
   Home,
   ChevronLeft,
   ChevronRight,
@@ -76,6 +77,7 @@ export default function FacilityBookingModal({
     middle_name: "",
     last_name: "",
     cell_number: "",
+    email: "",
     address: "",
     attendees: "",
     priority: "normal",
@@ -401,6 +403,7 @@ export default function FacilityBookingModal({
     formData.purpose.trim() &&
     (formData.first_name.trim() || formData.last_name.trim()) &&
     formData.cell_number.length === 11 &&
+    formData.email &&
     formData.address.trim() &&
     !conflict &&
     (!formData.attendees ||
@@ -615,6 +618,19 @@ export default function FacilityBookingModal({
                         .slice(0, 11);
                       update("cell_number", value);
                     }}
+                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                    <Mail size={13} className="text-brand" /> Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g., juan.cruz@example.com"
+                    value={formData.email || ""}
+                    onChange={(e) => update("email", e.target.value)}
                     className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                   />
                 </div>
