@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Building2, Car, Image as ImageIcon } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import { useNotifications } from "../context/NotificationContext";
