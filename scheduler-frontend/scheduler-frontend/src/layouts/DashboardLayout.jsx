@@ -112,7 +112,7 @@ export default function DashboardLayout() {
       </header>
 
       {/* Desktop top header with notification bell (top-right) */}
-      <header className="hidden w-full shrink-0 items-center justify-end gap-3 border-b border-line bg-white px-4 py-2 md:flex">
+      <header className="hidden w-full shrink-0 items-center justify-end gap-3 border-b border-line bg-white px-6 py-4 mb-6 md:flex">
         <div ref={bellRef}>
           <NotificationBell onClick={toggleDropdown} />
         </div>
