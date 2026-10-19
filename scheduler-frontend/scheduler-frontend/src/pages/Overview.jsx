@@ -218,7 +218,7 @@ export default function Overview() {
             any resource below to make a request.
           </p>
         </div>
-        <div className="hidden items-center md:flex">
+        <div className="flex items-center">
           <NotificationBell ref={bellRef} onClick={toggleDropdown} />
         </div>
       </header>
