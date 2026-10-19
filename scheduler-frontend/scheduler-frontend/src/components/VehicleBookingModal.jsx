@@ -73,7 +73,9 @@ export default function VehicleBookingModal({
     end_time: "17:00",
     destination: "",
     purpose: "",
-    full_name: "",
+    first_name: "",
+    middle_name: "",
+    last_name: "",
     cell_number: "",
     address: "",
     priority: "normal",
@@ -397,7 +399,7 @@ export default function VehicleBookingModal({
     formData.start_date &&
     formData.end_date &&
     formData.purpose.trim() &&
-    formData.full_name.trim() &&
+    (formData.first_name.trim() || formData.last_name.trim()) &&
     formData.cell_number.length === 11 &&
     formData.address.trim() &&
     !conflict;
@@ -410,6 +412,7 @@ export default function VehicleBookingModal({
       item_id: selectedVehicle.resource_id || selectedVehicle.id,
       type: "vehicle",
       ...formData,
+      full_name: `${formData.first_name}${formData.middle_name ? " " + formData.middle_name : ""} ${formData.last_name}`.trim(),
       status: isDirectUse ? "approved" : "pending",
     };
 
@@ -556,18 +559,45 @@ export default function VehicleBookingModal({
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                    <User size={13} className="text-brand" /> Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="John Doe"
-                    value={formData.full_name}
-                    onChange={(e) => update("full_name", e.target.value)}
-                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
-                  />
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                      <User size={13} className="text-brand" /> First Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Juan"
+                      value={formData.first_name}
+                      onChange={(e) => update("first_name", e.target.value)}
+                      className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[12px] font-medium text-ink">
+                      Middle Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="M (initial)"
+                      value={formData.middle_name}
+                      onChange={(e) => update("middle_name", e.target.value)}
+                      className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[12px] font-medium text-ink">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Cruz"
+                      value={formData.last_name}
+                      onChange={(e) => update("last_name", e.target.value)}
+                      className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
