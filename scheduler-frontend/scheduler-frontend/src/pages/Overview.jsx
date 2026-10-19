@@ -207,29 +207,21 @@ export default function Overview() {
   const resourceType = selectedResource?.type?.toLowerCase();
 
   return (
-    <div className="p-4 space-y-4 max-w-7xl mx-auto">
-      {/* Top Header Banner */}
-      <header className="w-full bg-white rounded-xl p-4 px-6 shadow-sm border border-line flex items-center justify-between">
-        <div>
-          <h1 className="text-[17px] font-semibold">
-            Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-          </h1>
-          <p className="text-[13px] text-steel">
-            Here's what's happening with facility and vehicle bookings. Click
-            any resource below to make a request.
-          </p>
-        </div>
-        <div className="hidden items-start md:flex">
-          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
-        </div>
-      </header>
+    <div className="p-4 md:p-6 w-full max-w-full">
+      {/* Top Bar: Welcome text left, Notification Bell right */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-[17px] font-semibold">
+          Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
+        </h1>
+        <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+      </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         {STATS_ITEMS.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-lg border border-line bg-white p-4 shadow-sm">
+            className="p-3 sm:p-4 bg-white rounded-xl border border-line shadow-sm">
             <p className={`font-mono text-[28px] font-semibold ${stat.tone}`}>
               {stat.value}
             </p>
@@ -243,8 +235,8 @@ export default function Overview() {
 
       {/* Main Content Area */}
       <div className="space-y-4">
-        {/* Filter Navigation Block */}
-        <div className="border-b border-line pb-3 space-y-2">
+        {/* Inline Filters: Category pills left, search/dropdown right */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 my-4">
           {/* Main Filter Navigation Buttons */}
           <div className="flex items-center gap-2">
             <button
@@ -284,8 +276,8 @@ export default function Overview() {
           </div>
 
           {/* Search and Availability Filter */}
-          <div className="mb-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative flex-1 min-w-[200px]">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative">
               <Search
                 size={14}
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
@@ -311,61 +303,62 @@ export default function Overview() {
               </select>
             </div>
           </div>
-          {(searchQuery || availabilityFilter !== "all") && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setAvailabilityFilter("all");
-              }}
-              className="mt-1 text-[12px] text-brand hover:underline">
-              Clear filters
-            </button>
-          )}
-          {/* Sub-category pills for vehicles (Shown below buttons when viewing Vehicles) */}
-          {mainFilter === "vehicle" && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-1">
-              <span className="text-[12px] text-steel mr-1 font-medium">
-                Vehicle Type:
-              </span>
-              <button
-                onClick={() => setVehicleSubFilter("all")}
-                className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
-                  vehicleSubFilter === "all"
-                    ? "bg-ink text-white"
-                    : "bg-paper border border-line text-steel hover:bg-gray-100"
-                }`}>
-                All ({vehicles.length})
-              </button>
-              <button
-                onClick={() => setVehicleSubFilter("heavy")}
-                className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
-                  vehicleSubFilter === "heavy"
-                    ? "bg-ink text-white"
-                    : "bg-paper border border-line text-steel hover:bg-gray-100"
-                }`}>
-                Heavy Equipment ({heavyEquipment.length})
-              </button>
-              <button
-                onClick={() => setVehicleSubFilter("ambulance")}
-                className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
-                  vehicleSubFilter === "ambulance"
-                    ? "bg-ink text-white"
-                    : "bg-paper border border-line text-steel hover:bg-gray-100"
-                }`}>
-                Ambulances ({ambulances.length})
-              </button>
-              <button
-                onClick={() => setVehicleSubFilter("service")}
-                className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
-                  vehicleSubFilter === "service"
-                    ? "bg-ink text-white"
-                    : "bg-paper border border-line text-steel hover:bg-gray-100"
-                }`}>
-                Service Vehicles ({serviceVehicles.length})
-              </button>
-            </div>
-          )}
         </div>
+
+        {(searchQuery || availabilityFilter !== "all") && (
+          <button
+            onClick={() => {
+              setSearchQuery("");
+              setAvailabilityFilter("all");
+            }}
+            className="text-[12px] text-brand hover:underline">
+            Clear filters
+          </button>
+        )}
+        {/* Sub-category pills for vehicles */}
+        {mainFilter === "vehicle" && (
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <span className="text-[12px] text-steel mr-1 font-medium">
+              Vehicle Type:
+            </span>
+            <button
+              onClick={() => setVehicleSubFilter("all")}
+              className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
+                vehicleSubFilter === "all"
+                  ? "bg-ink text-white"
+                  : "bg-paper border border-line text-steel hover:bg-gray-100"
+              }`}>
+              All ({vehicles.length})
+            </button>
+            <button
+              onClick={() => setVehicleSubFilter("heavy")}
+              className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
+                vehicleSubFilter === "heavy"
+                  ? "bg-ink text-white"
+                  : "bg-paper border border-line text-steel hover:bg-gray-100"
+              }`}>
+              Heavy Equipment ({heavyEquipment.length})
+            </button>
+            <button
+              onClick={() => setVehicleSubFilter("ambulance")}
+              className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
+                vehicleSubFilter === "ambulance"
+                  ? "bg-ink text-white"
+                  : "bg-paper border border-line text-steel hover:bg-gray-100"
+              }`}>
+              Ambulances ({ambulances.length})
+            </button>
+            <button
+              onClick={() => setVehicleSubFilter("service")}
+              className={`px-3 py-1 rounded-full text-[12px] font-medium transition ${
+                vehicleSubFilter === "service"
+                  ? "bg-ink text-white"
+                  : "bg-paper border border-line text-steel hover:bg-gray-100"
+              }`}>
+              Service Vehicles ({serviceVehicles.length})
+            </button>
+          </div>
+        )}
 
         {/* Facilities Section (Shown if mainFilter is 'all' or 'facility') */}
         {(mainFilter === "all" || mainFilter === "facility") && (
@@ -383,7 +376,7 @@ export default function Overview() {
                   : "No facilities found."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {facilities.map((item) => (
                   <div
                     key={item.resource_id || item.id}
@@ -455,7 +448,7 @@ export default function Overview() {
                   : "No vehicles found in this category."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {filteredVehicles.map((item) => (
                   <div
                     key={item.resource_id || item.id}
