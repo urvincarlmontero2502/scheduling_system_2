@@ -556,7 +556,7 @@ export default function Resources() {
             )}
           </div>
 
-          <p className="mt-1.5 text-[11px] text-steel">
+          <p className="mt-1.5 min-h-[2.5rem] text-[11px] text-steel">
             {item.type === "vehicle" ? "Unit Details:" : "Capacity:"}{" "}
             <span className="font-medium text-ink">
               {item.type === "facility"

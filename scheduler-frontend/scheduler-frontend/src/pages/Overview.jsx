@@ -387,7 +387,7 @@ export default function Overview() {
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
-                    className="cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
+                    className="flex flex-col h-full cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
                     <div className="h-20 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line sm:h-36">
                       {item.image && item.image.trim() !== "" ? (
                         <img
@@ -402,7 +402,7 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="p-2 sm:p-3">
+                    <div className="flex-1 flex flex-col p-2 sm:p-3">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
                           {item.name}
@@ -413,18 +413,18 @@ export default function Overview() {
                           {item.available ? "Available" : "Booked"}
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] sm:text-[13px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
                         Capacity:{" "}
                         <span className="font-medium text-ink">
                           {item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 text-[10px] sm:text-[11px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
                         {item.description || "No description available"}
                       </p>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full mt-2 py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
+                        className="mt-auto w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
                       >
                         Request Booking
                       </button>
@@ -457,7 +457,7 @@ export default function Overview() {
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
-                    className="cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
+                    className="flex flex-col h-full cursor-pointer overflow-hidden rounded-lg border border-line bg-white shadow-sm hover:border-brand hover:shadow-md transition">
                     <div className="h-20 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line sm:h-36">
                       {item.image && item.image.trim() !== "" ? (
                         <img
@@ -472,7 +472,7 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="p-2 sm:p-3">
+                    <div className="flex-1 flex flex-col p-2 sm:p-3">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-[12px] sm:text-[14px] font-semibold text-ink line-clamp-1">
                           {item.name}
@@ -483,18 +483,18 @@ export default function Overview() {
                           {item.available ? "Available" : "Booked"}
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] sm:text-[13px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
                         Unit Details:{" "}
                         <span className="font-medium text-ink">
                           {item.unit_name || item.capacity || "—"}
                         </span>
                       </p>
-                      <p className="mt-1 text-[10px] sm:text-[11px] text-steel line-clamp-2">
+                      <p className="mt-1 min-h-[2.5rem] text-[10px] sm:text-[11px] text-steel line-clamp-2">
                         {item.description || "No description available"}
                       </p>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full mt-2 py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
+                        className="mt-auto w-full py-1.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
                       >
                         Request Booking
                       </button>
