@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { createPortal } from "react-dom"
-import { X, CheckCheck, Trash2, Clock, CheckCircle, XCircle, Wrench, FileText } from "lucide-react"
+import { X, Trash2, Clock, CheckCircle, XCircle, Wrench, FileText } from "lucide-react"
 import { useNotifications } from "../context/NotificationContext"
 
 // Simple time-ago formatter (no external deps)
@@ -158,16 +158,6 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-line">
         <h3 className="text-sm font-semibold text-ink">Notifications</h3>
         <div className="flex items-center space-x-3">
-          {isDesktop && (
-            <button
-              onClick={handleMarkAllRead}
-              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-              title="Mark all as read"
-            >
-              <CheckCheck size={14} />
-              <span>Mark all as read</span>
-            </button>
-          )}
           <button
             onClick={onClose}
             className="text-steel hover:text-ink"
