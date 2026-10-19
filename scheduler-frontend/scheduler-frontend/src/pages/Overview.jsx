@@ -234,10 +234,24 @@ export default function Overview() {
 
       {/* Main Content Area */}
       <div className="space-y-4">
-        {/* Inline Filters: Category pills left, search/dropdown right */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 my-4">
-          {/* Main Filter Navigation Buttons */}
-          <div className="flex items-center gap-2">
+        {/* Search Bar at Top */}
+        <div className="relative">
+          <Search
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
+          />
+          <input
+            type="text"
+            placeholder="Search resources..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+          />
+        </div>
+
+        {/* Category Pills + Status Dropdown */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex overflow-x-auto gap-2 py-1 no-scrollbar whitespace-nowrap">
             <button
               onClick={() => {
                 setMainFilter("all");
@@ -273,34 +287,17 @@ export default function Overview() {
               Vehicles ({vehicles.length})
             </button>
           </div>
-
-          {/* Search and Availability Filter */}
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
-              />
-              <input
-                type="text"
-                placeholder="Search resources..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Filter size={14} className="text-steel" />
-              <span className="text-[12px] text-steel">Show:</span>
-              <select
-                value={availabilityFilter}
-                onChange={(e) => setAvailabilityFilter(e.target.value)}
-                className="h-10 rounded-lg border border-line bg-white px-2 text-[12.5px] text-steel outline-none focus:border-brand">
-                <option value="all">All Status</option>
-                <option value="available">Available Only</option>
-                <option value="booked">Booked Only</option>
-              </select>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <Filter size={14} className="text-steel" />
+            <span className="text-[12px] text-steel">Show:</span>
+            <select
+              value={availabilityFilter}
+              onChange={(e) => setAvailabilityFilter(e.target.value)}
+              className="h-10 rounded-lg border border-line bg-white px-2 text-[12.5px] text-steel outline-none focus:border-brand">
+              <option value="all">All Status</option>
+              <option value="available">Available Only</option>
+              <option value="booked">Booked Only</option>
+            </select>
           </div>
         </div>
 
