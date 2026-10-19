@@ -208,12 +208,11 @@ export default function Overview() {
 
   return (
     <div className="p-4 md:p-6 w-full max-w-full">
-      {/* Top Bar: Welcome text left, Notification Bell right */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-[17px] font-semibold">
-          Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-        </h1>
-        <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+      {/* Top Bar: Notification Bell right, hidden on mobile */}
+      <div className="flex items-center justify-end sm:justify-between">
+        <div className="hidden sm:ml-auto sm:flex">
+          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+        </div>
       </div>
 
       {/* Stats Grid */}
