@@ -321,7 +321,7 @@ export default function VehicleBookingModal({
         dateString < formData.end_date;
 
       let cellStyles =
-        "relative h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-medium transition cursor-pointer ";
+        "relative h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-medium transition cursor-pointer ";
       if (isStart || isEnd) {
         cellStyles += "bg-brand text-white font-bold shadow-sm";
       } else if (isInRange) {
@@ -354,7 +354,7 @@ export default function VehicleBookingModal({
     }
 
     return (
-      <div className="rounded-lg border border-line bg-white p-2.5 shadow-sm">
+      <div className="rounded-lg border border-line bg-white p-2 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <button
             type="button"
@@ -372,7 +372,7 @@ export default function VehicleBookingModal({
             <ChevronRight size={14} />
           </button>
         </div>
-        <div className="mb-1 grid grid-cols-7 border-b border-line pb-1 text-center text-[10px] font-semibold text-steel">
+        <div className="mb-0.5 grid grid-cols-7 border-b border-line pb-0.5 text-center text-[9px] font-semibold text-steel">
           <span>S</span>
           <span>M</span>
           <span>T</span>
@@ -384,7 +384,7 @@ export default function VehicleBookingModal({
         <div className="grid grid-cols-7 justify-items-center gap-y-0.5">
           {days}
         </div>
-        <div className="mt-2 flex items-center justify-center gap-4 border-t border-line pt-2 text-[10.5px] text-steel">
+        <div className="mt-1 flex items-center justify-center gap-3 border-t border-line pt-1 text-[9.5px] text-steel">
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{" "}
             Approved
@@ -437,7 +437,7 @@ export default function VehicleBookingModal({
       <div
         className="w-[95%] max-w-5xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white z-10">
           <div>
             <h2 className="text-[15px] font-semibold text-ink">
               {isDirectUse ? "Direct Allocation" : "Request Booking"}: {selectedVehicle.name}
@@ -449,10 +449,11 @@ export default function VehicleBookingModal({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 gap-6 md:grid-cols-12">
-            {/* LEFT: image + details */}
-            <div className="md:col-span-5 space-y-4">
-              <div className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:items-start">
+            {/* LEFT: image + details - sticky on desktop */}
+            <div className="md:col-span-5 md:sticky md:top-0 space-y-4">
+              <div className="relative flex h-32 sm:h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
                 {selectedVehicle.image &&
                 selectedVehicle.image.trim() !== "" ? (
                   <img
@@ -527,7 +528,7 @@ export default function VehicleBookingModal({
               </div>
             </div>
             {/* RIGHT: calendar + form */}
-            <div className="md:col-span-7 space-y-4">
+            <div className="md:col-span-7 space-y-3.5">
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink">
                   <CalendarIcon size={14} className="text-brand" /> Select Date
@@ -651,8 +652,9 @@ export default function VehicleBookingModal({
               </div>
             </div>
           </div>
-          {/* Footer is a sibling of scroll body, fixed at bottom */}
-          <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0 bg-white z-10">
+          {/* Close grid, open fixed footer */}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-white z-10">
             {conflict && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <div className="rounded-lg border border-status-rejected/30 bg-status-rejected/5 px-3 py-2.5">
