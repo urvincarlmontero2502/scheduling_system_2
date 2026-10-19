@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
 import { createPortal } from "react-dom"
 import { X, CheckCheck, Trash2, Clock, CheckCircle, XCircle, Wrench, FileText } from "lucide-react"
 import { useNotifications } from "../context/NotificationContext"
@@ -58,6 +58,29 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
     window.addEventListener("resize", checkDesktop)
     return () => window.removeEventListener("resize", checkDesktop)
   }, [])
+
+  // Close on route change
+  const currentPath = useLocation().pathname
+  useEffect(() => {
+    if (open) onClose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPath])
+
+  // Force re-render to recompute bell position on resize or scroll (desktop only)
+  const [, forceUpdate] = useState(0)
+  const reposition = useCallback(() => {
+    if (isDesktop && open) forceUpdate((n) => n + 1)
+  }, [isDesktop, open])
+
+  useEffect(() => {
+    if (!open || !isDesktop) return
+    window.addEventListener("resize", reposition)
+    window.addEventListener("scroll", reposition, true)
+    return () => {
+      window.removeEventListener("resize", reposition)
+      window.removeEventListener("scroll", reposition, true)
+    }
+  }, [open, isDesktop, reposition])
 
   // Handle clicking a notification item: mark as read, close, navigate to bookings
   const handleNotificationClick = async (id, bookingId) => {

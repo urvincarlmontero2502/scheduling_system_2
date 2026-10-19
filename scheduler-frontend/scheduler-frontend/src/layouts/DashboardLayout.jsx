@@ -107,6 +107,13 @@ export default function DashboardLayout() {
         <p className="text-[16px] font-bold">Scheduler</p>
         {/* Notification Bell (mobile) */}
         <div className="ml-auto md:hidden">
+          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+        </div>
+      </header>
+
+      {/* Desktop top header with notification bell (top-right) */}
+      <header className="hidden items-center justify-end gap-3 border-b border-line bg-white px-4 py-2 md:flex">
+        <div ref={bellRef}>
           <NotificationBell onClick={toggleDropdown} />
         </div>
       </header>
@@ -131,9 +138,6 @@ export default function DashboardLayout() {
               <CalendarClock size={20} />
             </div>
             <p className="text-[16px] font-bold leading-tight">Scheduler</p>
-          </div>
-          <div className="ml-auto hidden md:flex">
-            <NotificationBell ref={bellRef} onClick={toggleDropdown} />
           </div>
           <button
             onClick={() => setOpen(false)}
