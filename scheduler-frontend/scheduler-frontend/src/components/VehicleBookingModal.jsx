@@ -437,7 +437,7 @@ export default function VehicleBookingModal({
       <div
         className="w-[95%] max-w-5xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white z-10">
           <div>
             <h2 className="text-[15px] font-semibold text-ink">
               {isDirectUse ? "Direct Allocation" : "Request Booking"}: {selectedVehicle.name}
@@ -448,8 +448,8 @@ export default function VehicleBookingModal({
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-6 grid grid-cols-1 gap-8 md:grid-cols-12">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 gap-6 md:grid-cols-12">
             {/* LEFT: image + details */}
             <div className="md:col-span-5 space-y-4">
               <div className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
@@ -651,7 +651,8 @@ export default function VehicleBookingModal({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0 bg-white">
+          {/* Footer is a sibling of scroll body, fixed at bottom */}
+          <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0 bg-white z-10">
             {conflict && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <div className="rounded-lg border border-status-rejected/30 bg-status-rejected/5 px-3 py-2.5">
