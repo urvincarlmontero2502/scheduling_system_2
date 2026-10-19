@@ -19,7 +19,6 @@ export default function Overview() {
   const [mainFilter, setMainFilter] = useState("all"); // "all" | "facility" | "vehicle"
   const [vehicleSubFilter, setVehicleSubFilter] = useState("all"); // "all" | "heavy" | "ambulance" | "service"
   const [searchQuery, setSearchQuery] = useState("");
-  const [availabilityFilter, setAvailabilityFilter] = useState("all"); // "all" | "available" | "booked"
 
   useEffect(() => {
     let isMounted = true;
@@ -104,7 +103,7 @@ export default function Overview() {
     (r) => r?.type?.toLowerCase() === "vehicle",
   );
 
-  // Apply search and availability filters
+  // Apply search filter
   const applyFilters = (items) => {
     return items.filter((item) => {
       // Search filter
@@ -113,14 +112,6 @@ export default function Overview() {
         const name = (item?.name || "").toLowerCase();
         const description = (item?.description || "").toLowerCase();
         if (!name.includes(query) && !description.includes(query)) return false;
-      }
-      // Availability filter
-      if (availabilityFilter === "available") {
-        if (item?.available !== true && item?.status !== "available")
-          return false;
-      } else if (availabilityFilter === "booked") {
-        if (item?.available !== false && item?.status !== "booked")
-          return false;
       }
       return true;
     });
@@ -234,18 +225,9 @@ export default function Overview() {
 
       {/* Main Content Area */}
       <div className="space-y-4">
-        {/* Combined Top Row: Status Dropdown Left, Search Right */}
-        <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
-          <select
-            value={availabilityFilter}
-            onChange={(e) => setAvailabilityFilter(e.target.value)}
-            className="w-[130px] shrink-0 text-xs py-2 px-2.5 rounded-lg border border-line bg-white"
-          >
-            <option value="all">All Status</option>
-            <option value="available">Available Only</option>
-            <option value="booked">Booked Only</option>
-          </select>
-          <div className="relative flex-1 min-w-0">
+        {/* Mobile: Search full-width at top, pills below */}
+        <div className="sm:hidden">
+          <div className="relative w-full">
             <Search
               size={14}
               className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
@@ -255,57 +237,107 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 min-w-0 text-xs py-2 pl-9 pr-3 rounded-lg border border-line bg-white outline-none focus:border-brand"
+              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-line bg-white shadow-sm outline-none focus:border-brand"
+            />
+          </div>
+          <div className="flex overflow-x-auto gap-2 pt-2 pb-1 no-scrollbar whitespace-nowrap w-full">
+            <button
+              onClick={() => {
+                setMainFilter("all");
+                setVehicleSubFilter("all");
+              }}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+                mainFilter === "all"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper"
+              }`}>
+              All Resources ({resources.length})
+            </button>
+            <button
+              onClick={() => {
+                setMainFilter("facility");
+              }}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+                mainFilter === "facility"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper"
+              }`}>
+              Facilities ({facilities.length})
+            </button>
+            <button
+              onClick={() => {
+                setMainFilter("vehicle");
+              }}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+                mainFilter === "vehicle"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper"
+              }`}>
+              Vehicles ({vehicles.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop: Category pills left, search right in same row */}
+        <div className="hidden sm:flex flex-col sm:flex-row sm:items-center justify-between gap-3 my-4">
+          <div className="flex overflow-x-auto gap-2 no-scrollbar whitespace-nowrap">
+            <button
+              onClick={() => {
+                setMainFilter("all");
+                setVehicleSubFilter("all");
+              }}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+                mainFilter === "all"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper"
+              }`}>
+              All Resources ({resources.length})
+            </button>
+            <button
+              onClick={() => {
+                setMainFilter("facility");
+              }}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+                mainFilter === "facility"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper"
+              }`}>
+              Facilities ({facilities.length})
+            </button>
+            <button
+              onClick={() => {
+                setMainFilter("vehicle");
+              }}
+              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+                mainFilter === "vehicle"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper"
+              }`}>
+              Vehicles ({vehicles.length})
+            </button>
+          </div>
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel"
+            />
+            <input
+              type="text"
+              placeholder="Search resources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-64 lg:w-80 text-xs py-2 pl-9 pr-3 rounded-lg border border-line bg-white shadow-sm outline-none focus:border-brand"
             />
           </div>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex overflow-x-auto gap-2 py-1 no-scrollbar whitespace-nowrap w-full">
-          <button
-            onClick={() => {
-              setMainFilter("all");
-              setVehicleSubFilter("all");
-            }}
-            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
-              mainFilter === "all"
-                ? "bg-brand text-white shadow-sm"
-                : "bg-white border border-line text-steel hover:bg-paper"
-            }`}>
-            All Resources ({resources.length})
-          </button>
-          <button
-            onClick={() => {
-              setMainFilter("facility");
-            }}
-            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
-              mainFilter === "facility"
-                ? "bg-brand text-white shadow-sm"
-                : "bg-white border border-line text-steel hover:bg-paper"
-            }`}>
-            Facilities ({facilities.length})
-          </button>
-          <button
-            onClick={() => {
-              setMainFilter("vehicle");
-            }}
-            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
-              mainFilter === "vehicle"
-                ? "bg-brand text-white shadow-sm"
-                : "bg-white border border-line text-steel hover:bg-paper"
-            }`}>
-            Vehicles ({vehicles.length})
-          </button>
-        </div>
-
-        {(searchQuery || availabilityFilter !== "all") && (
+        {searchQuery && (
           <button
             onClick={() => {
               setSearchQuery("");
-              setAvailabilityFilter("all");
             }}
             className="text-[12px] text-brand hover:underline">
-            Clear filters
+            Clear search
           </button>
         )}
         {/* Sub-category pills for vehicles */}
@@ -364,8 +396,8 @@ export default function Overview() {
               <p className="text-[13px] text-steel">Loading facilities...</p>
             ) : facilities.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-[13px] text-steel">
-                {searchQuery || availabilityFilter !== "all"
-                  ? "No facilities match your current filters. Try adjusting your search."
+                {searchQuery
+                  ? "No facilities match your current search. Try adjusting your search."
                   : "No facilities found."}
               </div>
             ) : (
@@ -436,8 +468,8 @@ export default function Overview() {
               <p className="text-[13px] text-steel">Loading vehicles...</p>
             ) : filteredVehicles.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-[13px] text-steel">
-                {searchQuery || availabilityFilter !== "all"
-                  ? "No vehicles match your current filters. Try adjusting your search."
+                {searchQuery
+                  ? "No vehicles match your current search. Try adjusting your search."
                   : "No vehicles found in this category."}
               </div>
             ) : (
