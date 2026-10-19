@@ -182,7 +182,7 @@ export default function Overview() {
       tone: "text-status-pending",
     },
     {
-      label: "Approved t   week",
+      label: "Approved this week",
       value: loading ? "..." : (stats.approved ?? 0),
       tone: "text-status-approved",
     },
@@ -208,7 +208,7 @@ export default function Overview() {
 
   return (
     <div>
-      <header className="flex flex-col gap-3 border-b border-line bg-white px-4 sm:px-6 py-4 md:flex-row md:items-center md:justify-between">
+      <header className="flex flex-col gap-3 border-b border-line bg-white px-4 sm:px-6 py-4 md:flex-row md:justify-between">
         <div>
           <h1 className="text-[17px] font-semibold">
             Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
@@ -218,7 +218,7 @@ export default function Overview() {
             any resource below to make a request.
           </p>
         </div>
-        <div className="hidden items-center md:flex">
+        <div className="hidden items-start md:flex">
           <NotificationBell ref={bellRef} onClick={toggleDropdown} />
         </div>
       </header>
@@ -303,7 +303,7 @@ export default function Overview() {
               <select
                 value={availabilityFilter}
                 onChange={(e) => setAvailabilityFilter(e.target.value)}
-                className="rounded-md border border-line bg-white px-2 py-1 text-[12px] outline-none focus:border-brand">
+                className="h-10 rounded-lg border border-line bg-white px-2 text-[12.5px] text-steel outline-none focus:border-brand">
                 <option value="all">All Status</option>
                 <option value="available">Available Only</option>
                 <option value="booked">Booked Only</option>
@@ -396,8 +396,8 @@ export default function Overview() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex flex-col items-center text-steel gap-1">
-                          <ImageIcon size={24} />
+                        <div className="flex flex-col items-center text-steel gap-1 bg-gray-100/70">
+                          <ImageIcon size={24} className="text-gray-400" />
                           <span className="text-[11px]">No image provided</span>
                         </div>
                       )}
@@ -421,7 +421,7 @@ export default function Overview() {
                       <p className="mt-1 text-[12.5px] text-steel truncate">
                         Description: {item.description || "None"}
                       </p>
-                      <div className="mt-3 text-[12px] font-medium text-brand">
+                      <div className="mt-3 text-[12px] font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
                         Click to request booking &rarr;
                       </div>
                     </div>
@@ -462,8 +462,8 @@ export default function Overview() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex flex-col items-center text-steel gap-1">
-                          <ImageIcon size={24} />
+                        <div className="flex flex-col items-center text-steel gap-1 bg-gray-100/70">
+                          <ImageIcon size={24} className="text-gray-400" />
                           <span className="text-[11px]">No image provided</span>
                         </div>
                       )}
@@ -487,7 +487,7 @@ export default function Overview() {
                       <p className="mt-1 text-[12.5px] text-steel truncate">
                         Description: {item.description || "None"}
                       </p>
-                      <div className="mt-3 text-[12px] font-medium text-brand">
+                      <div className="mt-3 text-[12px] font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
                         Click to request booking &rarr;
                       </div>
                     </div>

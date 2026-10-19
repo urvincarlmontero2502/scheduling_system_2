@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { to: "/calendar", label: "Calendar", icon: CalendarClock },
   { to: "/bookings", label: "Bookings", icon: ClipboardList },
   { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin"] },
-  { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
+  { to: "/resources", label: "Facilities & Fleet", icon: Building2, roles: ["admin"] },
 ];
 
 const itemStyle = {
@@ -125,7 +125,7 @@ export default function DashboardLayout() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar: slide-out on mobile, fixed column on desktop */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-line bg-white transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-60 md:max-w-none md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-80 max-w-[90vw] flex-col border-r border-line bg-white transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-64 md:max-w-none md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}>
         <div className="flex items-center justify-between gap-3 px-6 py-6">
