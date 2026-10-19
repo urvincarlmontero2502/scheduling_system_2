@@ -48,9 +48,9 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const navigate = useNavigate()
   const [isDesktop, setIsDesktop] = useState(false)
 
-  // Check if we're on desktop (md breakpoint)
+  // Check if we're on desktop (sm breakpoint = 640px)
   useEffect(() => {
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 640)
     checkDesktop()
     window.addEventListener("resize", checkDesktop)
     return () => window.removeEventListener("resize", checkDesktop)
