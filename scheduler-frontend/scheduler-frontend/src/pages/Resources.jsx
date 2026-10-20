@@ -8,6 +8,7 @@ import {
   Calendar,
   Search,
   Wrench,
+  Users as UserGroupIcon,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import client from "../api/client";
@@ -27,14 +28,14 @@ import { SkeletonResourceCard } from "../components/Skeleton";
 const STATUS_VARIANTS = {
   available: {
     label: "Available",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   },
   booked: {
     label: "In Use",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
+    className: "bg-amber-50 text-amber-700 border border-amber-200",
   },
   maintenance: {
-    label: "🟡 Maintenance",
+    label: "Maintenance",
     className: "bg-yellow-50 text-yellow-800 border-yellow-200",
   },
 };
@@ -453,21 +454,21 @@ export default function Resources() {
     return (
       <div
         key={item.resource_id || item.id}
-        className="group flex flex-col h-full overflow-hidden rounded-xl border border-line bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
+        className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between h-full"
       >
         {/* Thumbnail with status badge overlay */}
-        <div className="relative overflow-hidden rounded-t-lg bg-paper flex items-center justify-center h-20 sm:h-28 w-full shrink-0">
+        <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-lg mb-2">
           {item.image ? (
             <img
               src={item.image}
               alt={item.name}
-              className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${
+              className={`h-full w-full object-cover rounded-lg ${
                 isMaintenance ? "grayscale opacity-60" : ""
               }`}
             />
           ) : (
             <div
-              className={`flex flex-col items-center justify-center gap-2 text-steel ${
+              className={`flex flex-col items-center justify-center gap-2 text-slate-500 ${
                 isMaintenance ? "opacity-60" : ""
               }`}
             >
@@ -492,7 +493,7 @@ export default function Resources() {
                   />
                 )}
               </div>
-              <span className="text-[10px]">No image</span>
+              <span className="text-xs">No image provided</span>
             </div>
           )}
 
@@ -503,29 +504,25 @@ export default function Resources() {
 
           {/* Status badge overlay on thumbnail */}
           <span
-            className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500 text-white shadow-2xs`}
+            className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full border ${statusConfig.className}`}
           >
             {statusConfig.label}
           </span>
         </div>
 
-        <div className="flex flex-col flex-1 p-3 space-y-1.5">
-          <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col">
+          <div className="flex items-start justify-between gap-1 mb-1">
             <div className="flex-1 min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[2rem] leading-snug">
+              <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
                 {item.name}
               </h3>
-              {isMaintenance && (
-                <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-orange-100 text-orange-800">
-                  <Wrench size={8} /> Under Maintenance
-                </span>
-              )}
+
             </div>
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleOpenModal(item)}
-                  className="text-steel hover:text-brand transition p-1"
+                  className="text-slate-400 hover:text-emerald-700 transition p-1"
                   title="Edit Resource"
                 >
                   <Edit2 size={12} />
@@ -535,7 +532,7 @@ export default function Resources() {
                   className={`transition p-1 ${
                     isMaintenance
                       ? "text-orange-600 hover:text-orange-700"
-                      : "text-steel hover:text-orange-600"
+                      : "text-slate-500 hover:text-orange-600"
                   }`}
                   title={
                     isMaintenance
@@ -547,7 +544,7 @@ export default function Resources() {
                 </button>
                 <button
                   onClick={() => handleDelete(item.resource_id || item.id)}
-                  className="text-steel hover:text-red-500 transition p-1"
+                  className="text-slate-500 hover:text-red-500 transition p-1"
                   title="Delete Resource"
                 >
                   <Trash2 size={12} />
@@ -556,9 +553,10 @@ export default function Resources() {
             )}
           </div>
 
-          <p className="mt-1.5 min-h-[2.5rem] text-[11px] sm:text-xs text-steel">
+          <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
+            <UserGroupIcon size={12} className="inline" />
             {item.type === "vehicle" ? "Unit Details:" : "Capacity:"}{" "}
-            <span className="font-medium text-ink">
+            <span className="font-medium text-slate-700">
               {item.type === "facility"
                 ? formatCapacity(item.capacity)
                 : item.unit_name || item.capacity
@@ -566,33 +564,34 @@ export default function Resources() {
                   : "N/A"}
             </span>
           </p>
-          <p className="mt-1 text-[11px] sm:text-xs text-steel line-clamp-2">
+          <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2.5rem]">
             {item.description || "No description provided."}
           </p>
         </div>
 
-        {/* Request Button Footer */}
-        <div className="p-2 pt-0 mt-auto">
+        {/* CTA Footer */}
+        <div className="mt-auto w-full">
           {isMaintenance ? (
             <button
               disabled
-              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-1 mt-auto"
             >
-              <Wrench size={10} /> Under Maintenance
+              <Wrench size={12} />
+              Under Maintenance
             </button>
           ) : isAdmin ? (
             <button
               onClick={() => handleOpenRequestModal(item, true)}
-              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-brand text-white hover:bg-brand-dark"
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
             >
-              <Calendar size={10} /> Book
+              <Calendar size={12} /> Book
             </button>
           ) : (
             <button
               onClick={() => handleOpenRequestModal(item)}
-              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-brand-light text-brand hover:bg-brand hover:text-white"
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
             >
-              <Calendar size={10} /> Request
+              <Calendar size={12} /> Request Booking
             </button>
           )}
         </div>
@@ -602,107 +601,97 @@ export default function Resources() {
 
   return (
     <div className="p-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full mb-4">
-        <h1 className="text-[20px] font-semibold text-ink">
-        Facilities &amp; Vehicles
-        </h1>
+      {/* Top Header & Action Row */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-slate-900">Facilities &amp; Vehicles</h1>
         {isAdmin && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90 transition"
+            className="py-2 px-4 text-xs font-semibold rounded-lg bg-emerald-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-emerald-800"
           >
-            <Plus size={16} /> Add Resource
+            <Plus size={12} />
+            Add Resource
           </button>
         )}
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-3">
-        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel" />
+      <div className="relative w-full mb-3">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
-          placeholder="Search resources by name or description..."
+          placeholder="Search resources..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-full block rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand bg-white"
+          className="w-full text-sm py-2 px-3 rounded-lg border border-slate-200 bg-white mb-3 shadow-2xs outline-none focus:border-emerald-500"
         />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-steel hover:text-ink"
-            title="Clear search"
-          >
-            ×
-          </button>
-        )}
       </div>
 
-      {/* Segmented Control / Tab Filter */}
-      <div className="mb-4 flex flex-wrap gap-1 overflow-x-auto whitespace-nowrap rounded-lg bg-gray-100 p-1 border border-line py-1.5 no-scrollbar">
+      {/* Filter Pills */}
+      <div className="flex overflow-x-auto gap-2 pb-1 mb-3 no-scrollbar whitespace-nowrap w-full">
         <button
           onClick={() => handleTabClick("all")}
-          className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium transition ${
+          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
             activeFilter === "all"
-              ? "bg-white text-ink shadow-sm"
-              : "text-steel hover:text-ink"
+              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
           }`}
         >
-          All ({displayedCount})
+          All Resources ({displayedCount})
         </button>
         <button
           onClick={() => handleTabClick("vehicle")}
-          className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium transition ${
+          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
             activeFilter === "vehicle"
-              ? "bg-white text-ink shadow-sm"
-              : "text-steel hover:text-ink"
+              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
           }`}
         >
           <Car size={15} /> Vehicles ({allVehicles.length})
         </button>
         <button
           onClick={() => handleTabClick("facility")}
-          className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium transition ${
+          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
             activeFilter === "facility"
-              ? "bg-white text-ink shadow-sm"
-              : "text-steel hover:text-ink"
+              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
           }`}
         >
           <Building2 size={15} /> Facilities ({allFacilities.length})
         </button>
         <button
           onClick={() => handleTabClick("maintenance")}
-          className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium transition ${
+          className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
             activeFilter === "maintenance"
-              ? "bg-white text-yellow-800 shadow-sm border border-yellow-200"
-              : "text-steel hover:text-ink"
+              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
           }`}
         >
-          🟡 In Maintenance ({maintenanceItems.length})
+          In Maintenance ({maintenanceItems.length})
         </button>
       </div>
 
       {/* Resource Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 max-w-full">
+        <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonResourceCard key={`skeleton-${i}`} />
           ))}
         </div>
       ) : displayedCount === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-line bg-white p-12 text-center">
-          <Building2 size={40} className="text-steel mb-2 opacity-40" />
-          <h2 className="text-[15px] font-semibold text-ink">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200/80 bg-white p-12 text-center">
+          <Building2 size={40} className="text-slate-500 mb-2 opacity-40" />
+          <h2 className="text-sm font-semibold text-slate-700">
             No resources found
           </h2>
-          <p className="text-[13px] text-steel mt-1 max-w-sm">
+          <p className="text-xs text-slate-500 mt-1 max-w-sm">
             {searchQuery
               ? "Try adjusting your search terms."
               : "Get started by adding your first facility or vehicle using the button above."}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 max-w-full">
+        <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {displayedItems.map(renderResourceCard)}
         </div>
       )}
@@ -749,13 +738,13 @@ export default function Resources() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h2 className="text-[16px] font-semibold mb-4">
+            <h2 className="text-base font-semibold mb-4">
               {editingResource ? "Edit Resource" : "Add New Resource"}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Resource Name
                 </label>
                 <input
@@ -765,13 +754,13 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
                   placeholder="e.g., Conference Room A or Delivery Van"
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Type
                 </label>
                 <select
@@ -779,7 +768,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, type: e.target.value })
                   }
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
                 >
                   <option value="facility">Facility</option>
                   <option value="vehicle">Vehicle</option>
@@ -787,7 +776,7 @@ export default function Resources() {
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   {formData.type === "facility"
                     ? "Capacity (pax)"
                     : "Unit Name / Plate"}
@@ -798,7 +787,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, capacity: e.target.value })
                   }
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
                   placeholder={
                     formData.type === "facility" ? "e.g., 50" : "e.g., ABC-1234"
                   }
@@ -806,7 +795,7 @@ export default function Resources() {
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Description
                 </label>
                 <textarea
@@ -815,13 +804,13 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
                   placeholder="Brief details about this resource..."
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-ink mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Resource Image
                 </label>
                 <input
@@ -830,7 +819,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, image: e.target.files[0] })
                   }
-                  className="w-full text-[13px] text-steel file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-[13px] file:font-semibold file:bg-brand-light file:text-brand-dark hover:file:opacity-80"
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:opacity-80"
                 />
               </div>
 
@@ -838,13 +827,13 @@ export default function Resources() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-md border border-line px-4 py-2 text-[13px] text-steel hover:bg-paper"
+                  className="rounded-md border border-slate-200 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90"
+                  className="rounded-md bg-emerald-700 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-800"
                 >
                   {editingResource ? "Save Changes" : "Create Resource"}
                 </button>
