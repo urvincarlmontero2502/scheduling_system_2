@@ -407,10 +407,16 @@ export default function VehicleBookingModal({
     formData.address.trim() &&
     !conflict;
 
+  const [submitError, setSubmitError] = useState(null);
+  const [submitAlternatives, setSubmitAlternatives] = useState([]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
+    setSubmitError(null);
+    setSubmitAlternatives([]);
+
     const payload = {
       item_id: selectedVehicle.resource_id || selectedVehicle.id,
       type: "vehicle",
@@ -420,11 +426,18 @@ export default function VehicleBookingModal({
     };
 
     Promise.resolve(onSubmit(payload))
+      .then(() => {
+        onClose();
+      })
       .catch((err) => {
-        if (err?.response?.status === 409) {
-          const data = err.response.data;
-          const slots = data?.suggested_slots || [];
-          setSuggestedSlots(slots);
+        if (err?.type === "conflict") {
+          setSubmitError(err.message);
+          setSubmitAlternatives(err.alternatives || []);
+        } else if (err?.type === "error") {
+          setSubmitError(err.message);
+          setSubmitAlternatives([]);
+        } else {
+          setSubmitError("Failed to submit booking request.");
         }
       })
       .finally(() => setSubmitting(false));
@@ -710,6 +723,31 @@ export default function VehicleBookingModal({
             {loadingSlots && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <p className="text-[11px] text-steel">Checking availability...</p>
+              </div>
+            )}
+            {submitError && (
+              <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
+                <div className="rounded-lg border border-rose-200/50 bg-rose-50 px-3 py-2.5">
+                  <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-rose-700">
+                    <Clock size={13} />
+                    {submitError}
+                  </p>
+                  {submitAlternatives.length > 0 && (
+                    <div className="mt-1.5">
+                      <p className="text-[10.5px] font-medium text-rose-600">Alternative resources available:</p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {submitAlternatives.map((alt) => (
+                          <span
+                            key={alt.resource_id || alt.id}
+                            className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-800"
+                          >
+                            {alt.name || alt.resource_name || "Resource"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             <button

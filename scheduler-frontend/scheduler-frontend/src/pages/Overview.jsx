@@ -99,14 +99,28 @@ export default function Overview() {
     return api
       .createBooking(apiPayload)
       .then(() => {
-        alert("Booking request submitted successfully!");
         setSelectedResource(null);
+        return { success: true };
       })
       .catch((err) => {
-        console.error("Failed to submit booking request", err);
-        alert(
-          err?.response?.data?.message || "Failed to submit booking request.",
-        );
+        const status = err?.response?.status;
+        if (status === 409) {
+          const data = err?.response?.data || {};
+          const alternatives = data.alternatives || [];
+          return Promise.reject({
+            type: "conflict",
+            message:
+              data.message ||
+              "The selected resource is unavailable during this time.",
+            alternatives,
+          });
+        }
+        return Promise.reject({
+          type: "error",
+          message:
+            err?.response?.data?.message ||
+            "Failed to submit booking request.",
+        });
       });
   };
 
@@ -357,11 +371,13 @@ export default function Overview() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
-                {facilities.map((item) => (
+                {facilities.map((item) => {
+                  const isMaintenance = item.is_maintenance || item.status === "maintenance";
+                  return (
                   <div
                     key={item.resource_id || item.id}
-                    onClick={() => handleOpenBooking(item)}
-                    className="flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden">
+                    onClick={() => !isMaintenance && handleOpenBooking(item)}
+                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
                     <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
@@ -405,13 +421,20 @@ export default function Overview() {
                       </div>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-150"
+                        disabled={item.is_maintenance || item.status === "maintenance"}
+                        className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
+                          item.is_maintenance || item.status === "maintenance"
+                            ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
+                            : "border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white"
+                        }`}
                       >
-                        Request Booking
+                        {item.is_maintenance || item.status === "maintenance"
+                          ? "Under Maintenance"
+                          : "Request Booking"}
                       </button>
                     </div>
                   </div>
-                ))}
+                  )})}
               </div>
             )}
           </div>
@@ -449,11 +472,13 @@ export default function Overview() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
-                {filteredVehicles.map((item) => (
+                {filteredVehicles.map((item) => {
+                  const isMaintenance = item.is_maintenance || item.status === "maintenance";
+                  return (
                   <div
                     key={item.resource_id || item.id}
-                    onClick={() => handleOpenBooking(item)}
-                    className="flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden">
+                    onClick={() => !isMaintenance && handleOpenBooking(item)}
+                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
                     <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
@@ -497,13 +522,20 @@ export default function Overview() {
                       </div>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-150"
+                        disabled={item.is_maintenance || item.status === "maintenance"}
+                        className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
+                          item.is_maintenance || item.status === "maintenance"
+                            ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
+                            : "border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white"
+                        }`}
                       >
-                        Request Booking
+                        {item.is_maintenance || item.status === "maintenance"
+                          ? "Under Maintenance"
+                          : "Request Booking"}
                       </button>
                     </div>
                   </div>
-                ))}
+                  )})}
               </div>
             )}
           </div>
