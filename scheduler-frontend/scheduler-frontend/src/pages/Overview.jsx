@@ -211,9 +211,13 @@ export default function Overview() {
         {STATS_ITEMS.map((stat) => (
           <div
             key={stat.label}
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs">
+            className={`p-2.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs ${loading ? "animate-pulse" : ""}`}>
             <p className="font-mono text-lg sm:text-xl font-bold text-slate-900">
-              {stat.value}
+              {loading ? (
+                <span className="inline-block h-7 w-12 bg-slate-200 rounded-md"></span>
+              ) : (
+                stat.value
+              )}
             </p>
             <p className="mt-0.5 text-[11px] leading-tight text-slate-500 font-medium">
               {stat.label}
@@ -393,7 +397,22 @@ export default function Overview() {
               ({facilities.length})
             </h2>
             {loading ? (
-              <p className="text-[13px] text-steel">Loading facilities...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
+                    <div className="w-full h-28 sm:h-32 bg-slate-200/70 relative">
+                      <div className="w-16 h-5 rounded-full bg-slate-300/60 absolute top-2.5 right-2.5"></div>
+                    </div>
+                    <div className="p-3 sm:p-4 flex flex-col gap-2.5">
+                      <div className="h-4 w-3/4 bg-slate-200 rounded-md"></div>
+                      <div className="h-3 w-1/3 bg-slate-200/80 rounded-md"></div>
+                      <div className="h-3 w-full bg-slate-200/60 rounded-md"></div>
+                      <div className="h-3 w-4/5 bg-slate-200/60 rounded-md"></div>
+                      <div className="h-8 w-full bg-slate-200 rounded-lg mt-3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : facilities.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line bg-white p-4 text-center text-[12px] text-steel">
                 {searchQuery
@@ -468,7 +487,22 @@ export default function Overview() {
               {filteredVehicles.length})
             </h2>
             {loading ? (
-              <p className="text-[13px] text-steel">Loading vehicles...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
+                    <div className="w-full h-28 sm:h-32 bg-slate-200/70 relative">
+                      <div className="w-16 h-5 rounded-full bg-slate-300/60 absolute top-2.5 right-2.5"></div>
+                    </div>
+                    <div className="p-3 sm:p-4 flex flex-col gap-2.5">
+                      <div className="h-4 w-3/4 bg-slate-200 rounded-md"></div>
+                      <div className="h-3 w-1/3 bg-slate-200/80 rounded-md"></div>
+                      <div className="h-3 w-full bg-slate-200/60 rounded-md"></div>
+                      <div className="h-3 w-4/5 bg-slate-200/60 rounded-md"></div>
+                      <div className="h-8 w-full bg-slate-200 rounded-lg mt-3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : filteredVehicles.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line bg-white p-4 text-center text-[12px] text-steel">
                 {searchQuery
