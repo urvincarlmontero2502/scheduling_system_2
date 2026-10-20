@@ -207,7 +207,7 @@ export default function Overview() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 mb-3 lg:grid-cols-4 lg:gap-4">
         {STATS_ITEMS.map((stat) => (
           <div
             key={stat.label}
@@ -226,7 +226,7 @@ export default function Overview() {
       {/* Main Content Area */}
       <div className="space-y-4 pb-8 sm:pb-12">
         {/* Mobile: Search full-width at top, pills below */}
-        <div className="sm:hidden">
+        <div className="sm:hidden mt-3 sm:mt-4 mb-2 w-full">
           <div className="relative w-full">
             <Search
               size={14}
@@ -237,10 +237,10 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs py-1.5 pl-8 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
+              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
             />
           </div>
-          <div className="flex overflow-x-auto gap-2 pt-2 pb-1 no-scrollbar whitespace-nowrap w-full">
+          <div className="flex overflow-x-auto gap-2 py-1 mb-2 no-scrollbar whitespace-nowrap w-full">
             <button
               onClick={() => {
                 setMainFilter("all");
