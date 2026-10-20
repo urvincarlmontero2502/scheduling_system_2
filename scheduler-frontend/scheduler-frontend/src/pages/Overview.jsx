@@ -409,10 +409,10 @@ export default function Overview() {
                     className="flex flex-col h-full rounded-xl bg-white border border-line overflow-hidden">
                     <div className="relative w-full h-20 sm:h-28 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
-                        className={`absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full ${
+                        className={`absolute top-1.5 right-1.5 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
-                            ? "bg-emerald-500 text-white shadow-xs"
-                            : "bg-gray-500 text-white shadow-xs"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : "bg-gray-50 text-gray-700 border border-gray-200/60"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -484,10 +484,10 @@ export default function Overview() {
                     className="flex flex-col h-full rounded-xl bg-white border border-line overflow-hidden">
                     <div className="relative w-full h-20 sm:h-28 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
-                        className={`absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full ${
+                        className={`absolute top-1.5 right-1.5 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
-                            ? "bg-emerald-500 text-white shadow-xs"
-                            : "bg-gray-500 text-white shadow-xs"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : "bg-gray-50 text-gray-700 border border-gray-200/60"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
