@@ -244,8 +244,30 @@ class BookingController extends Controller
                 }
             }
 
-            // Block requests that overlap an already approved booking
-            $conflict = $this->findApprovedConflict(
+            // Block requests that overlap an already approved booking OR
+            // if the resource is currently under maintenance
+            $resource = $resourceId ? Resource::find($resourceId) : null;
+
+            // Check if resource is in maintenance
+            if ($resource && $resource->status === 'maintenance') {
+                $alternatives = $this->findAvailableAlternatives(
+                    $resource->type,
+                    $validated['start_date'],
+                    $validated['end_date'],
+                    $validated['start_time'] ?? null,
+                    $validated['end_time'] ?? null,
+                    $resourceId
+                );
+
+                return response()->json([
+                    'message' => 'The selected resource is unavailable during this time.',
+                    'conflict' => true,
+                    'reason' => 'maintenance',
+                    'alternatives' => $alternatives,
+                ], 409);
+            }
+
+            $conflict = $this->hasBookingConflict(
                 $resourceId,
                 $validated['start_date'],
                 $validated['end_date'],
@@ -254,19 +276,21 @@ class BookingController extends Controller
             );
 
             if ($conflict) {
-                $suggestedSlots = $this->findAvailableSlots(
-                    $resourceId,
-                    $validated['start_date'],
-                    $validated['end_time']
-                        ? $this->timeToMinutes($validated['start_time'])
-                        : null,
-                    $validated['end_time']
-                        ? $this->timeToMinutes($validated['end_time'])
-                        : null
-                );
+                $alternatives = [];
+                if ($resourceId && $resource) {
+                    $alternatives = $this->findAvailableAlternatives(
+                        $resource->type,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $validated['start_time'] ?? null,
+                        $validated['end_time'] ?? null,
+                        $resourceId
+                    );
+                }
 
                 return response()->json([
-                    'message' => 'This resource is already booked (approved) for the selected date and time.',
+                    'message' => 'The selected resource is unavailable during this time.',
+                    'conflict' => true,
                     'conflicting_booking' => [
                         'start_date' => $conflict->start_date,
                         'end_date' => $conflict->end_date,
@@ -274,9 +298,9 @@ class BookingController extends Controller
                         'end_time' => $conflict->end_time,
                         'full_name' => $conflict->full_name,
                         'purpose' => $conflict->purpose,
+                        'status' => $conflict->status,
                     ],
-                    'suggested_slots' => $suggestedSlots,
-                    'buffer_minutes' => self::BUFFER_MINUTES,
+                    'alternatives' => $alternatives,
                 ], 409);
             }
 
@@ -359,7 +383,7 @@ class BookingController extends Controller
             ]);
 
             if ($validated['status'] === 'approved') {
-                $conflict = $this->findApprovedConflict(
+                $conflict = $this->hasBookingConflict(
                     $booking->resource_id,
                     Carbon::parse($booking->start_date)->toDateString(),
                     Carbon::parse($booking->end_date)->toDateString(),
@@ -370,7 +394,7 @@ class BookingController extends Controller
 
                 if ($conflict) {
                     return response()->json([
-                        'message' => 'This resource is already booked (approved) for that date and time.',
+                        'message' => 'This resource is already booked for that date and time.',
                     ], 422);
                 }
             }
@@ -452,51 +476,119 @@ class BookingController extends Controller
     }
 
     /**
-     * Find an approved booking of the same resource that overlaps
-     * the given dates AND daily time window (missing times = all day).
-     * Includes a mandatory buffer period (BUFFER_MINUTES) after each
-     * booking end before the next booking can start.
+     * Check for booking conflicts using mathematical interval overlap:
+     * (ExistingStart <= RequestedEnd) AND (ExistingEnd >= RequestedStart)
+     * AND (ExistingStartTime < RequestedEndTime) AND (ExistingEndTime > RequestedStartTime)
+     *
+     * Checks against all non-cancelled and non-rejected bookings (pending, approved).
+     *
+     * @param int $resourceId
+     * @param string $startDate  (Y-m-d)
+     * @param string $endDate    (Y-m-d)
+     * @param string|null $startTime  (HH:MM or HH:MM:SS)
+     * @param string|null $endTime    (HH:MM or HH:MM:SS)
+     * @param int|null $excludeBookingId  Booking ID to exclude (self on update)
+     * @return BookingRequest|null  Returns the conflicting booking or null
      */
-    private function findApprovedConflict(
+    private function hasBookingConflict(
         $resourceId,
         $startDate,
         $endDate,
         $startTime,
         $endTime,
-        $ignoreId = null
+        $excludeBookingId = null
     ) {
         if (!$resourceId) {
             return null;
         }
 
-        $candidates = BookingRequest::where('resource_id', $resourceId)
-            ->where('status', 'approved')
+        $query = BookingRequest::where('resource_id', $resourceId)
+            ->whereNotIn('status', ['rejected', 'cancelled'])
             ->whereDate('start_date', '<=', $endDate)
             ->whereDate('end_date', '>=', $startDate)
-            ->when($ignoreId, fn ($q) => $q->where('booking_id', '!=', $ignoreId))
-            ->get();
+            ->when($excludeBookingId, fn ($q) => $q->where('booking_id', '!=', $excludeBookingId))
+            ->orderBy('start_date');
 
-        $newStart = $this->timeToMinutes($startTime);
-        $newEnd = $this->timeToMinutes($endTime);
+        $candidates = $query->get();
+
+        $newStartMins = $this->timeToMinutes($startTime);
+        $newEndMins = $this->timeToMinutes($endTime);
 
         foreach ($candidates as $c) {
-            $s = $this->timeToMinutes($c->start_time);
-            $e = $this->timeToMinutes($c->end_time);
+            $existingStartMins = $this->timeToMinutes($c->start_time);
+            $existingEndMins = $this->timeToMinutes($c->end_time);
 
-            if ($newStart === null || $newEnd === null || $s === null || $e === null) {
+            // If any time is missing, treat as all-day booking — date range overlap is sufficient
+            if (
+                $newStartMins === null || $newEndMins === null ||
+                $existingStartMins === null || $existingEndMins === null
+            ) {
                 return $c;
             }
 
-            // Buffer: a new booking cannot start within BUFFER_MINUTES
-            // after an existing booking ends (turnaround period)
-            $bufferedEnd = $e + self::BUFFER_MINUTES;
-
-            if (max($newStart, $s) < min($newEnd, $bufferedEnd)) {
+            // Mathematical interval overlap condition for time:
+            // (ExistingStart <= RequestedEnd) AND (ExistingEnd >= RequestedStart)
+            // Applied to time-of-day:
+            // (existingStart < newEnd) AND (existingEnd > newStart)
+            if ($existingStartMins < $newEndMins && $existingEndMins > $newStartMins) {
                 return $c;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Greedily find available alternative resources of the same type
+     * during the requested time window.
+     *
+     * Iterates through all active resources of the given type (excluding
+     * the specified resource), testing each against hasBookingConflict().
+     * Returns all candidates that have no conflicts.
+     *
+     * @param string $resourceType  'vehicle' or 'facility'
+     * @param string $startDate
+     * @param string $endDate
+     * @param string|null $startTime
+     * @param string|null $endTime
+     * @param int $excludeResourceId  Resource ID to exclude from results
+     * @return array
+     */
+    private function findAvailableAlternatives(
+        $resourceType,
+        $startDate,
+        $endDate,
+        $startTime,
+        $endTime,
+        $excludeResourceId
+    ) {
+        $candidates = Resource::where('type', $resourceType)
+            ->where('status', '!=', 'maintenance')
+            ->where('resource_id', '!=', $excludeResourceId)
+            ->get(['resource_id', 'name', 'type', 'status']);
+
+        $alternatives = [];
+
+        foreach ($candidates as $resource) {
+            $conflict = $this->hasBookingConflict(
+                $resource->resource_id,
+                $startDate,
+                $endDate,
+                $startTime,
+                $endTime
+            );
+
+            if (!$conflict) {
+                $alternatives[] = [
+                    'resource_id' => $resource->resource_id,
+                    'name' => $resource->name,
+                    'type' => $resource->type,
+                    'status' => $resource->status,
+                ];
+            }
+        }
+
+        return $alternatives;
     }
 
     private function timeToMinutes($time)
