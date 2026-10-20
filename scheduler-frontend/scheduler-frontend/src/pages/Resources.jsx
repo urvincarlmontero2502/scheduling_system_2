@@ -618,13 +618,13 @@ export default function Resources() {
 
       {/* Search Bar */}
       <div className="relative w-full mb-3 flex items-center">
-        <Search size={14} className="absolute left-3 top-[47%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
+        <Search size={14} className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400" />
         <input
           type="text"
           placeholder="Search resources..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full text-sm py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white mb-3 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+          className="w-full text-sm py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white mb-3 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
         />
       </div>
 
