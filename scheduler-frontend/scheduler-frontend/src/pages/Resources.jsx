@@ -630,7 +630,7 @@ export default function Resources() {
           </div>
 
           {/* Filter Pills */}
-          <div className="flex flex-wrap gap-2 rounded-lg bg-slate-100/80 p-1.5 border border-slate-200">
+          <div className="flex flex-wrap gap-2 rounded-lg p-1.5 border border-slate-200">
           <button
             onClick={() => handleTabClick("all")}
             className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
