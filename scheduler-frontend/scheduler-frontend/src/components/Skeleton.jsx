@@ -54,15 +54,25 @@ export const SkeletonStatCard = () => (
 
 /** Resource / facility card (image + text lines) */
 export const SkeletonResourceCard = () => (
-  <div className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
-    <Skeleton className="w-full h-20 sm:h-28 bg-slate-200/70" />
-    <div className="p-3 sm:p-4 flex flex-col gap-2.5">
-      <Skeleton className="h-4 w-3/4 bg-slate-200 rounded-md" />
-      <Skeleton className="h-3 w-1/3 bg-slate-200/80 rounded-md" />
-      <Skeleton className="h-3 w-full bg-slate-200/60 rounded-md" />
-      <Skeleton className="h-3 w-4/5 bg-slate-200/60 rounded-md" />
-      <Skeleton className="h-8 w-full bg-slate-200 rounded-lg mt-3" />
+  <div className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs flex flex-col justify-between h-full">
+    <div>
+      <div className="w-full h-28 sm:h-32 bg-slate-200/70 relative rounded-lg mb-2">
+        <div className="w-12 h-4 rounded-full bg-slate-300/60 absolute top-2 right-2"></div>
+      </div>
+      <div className="flex items-start justify-between gap-1 mb-1">
+        <div className="flex-1 space-y-1">
+          <div className="h-3 w-4/5 bg-slate-200/70 rounded-md"></div>
+          <div className="h-3 w-1/3 bg-slate-200/80 rounded-md"></div>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="h-3 w-3 bg-slate-300/60 rounded"></div>
+          <div className="h-3 w-3 bg-slate-300/60 rounded"></div>
+          <div className="h-3 w-3 bg-slate-300/60 rounded"></div>
+        </div>
+      </div>
+      <div className="h-3 w-full bg-slate-200/60 rounded-md mb-3"></div>
     </div>
+    <div className="h-7 w-full bg-slate-200/70 rounded-lg"></div>
   </div>
 );
 
