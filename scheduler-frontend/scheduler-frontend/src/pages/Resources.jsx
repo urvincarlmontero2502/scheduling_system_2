@@ -616,28 +616,28 @@ export default function Resources() {
         )}
       </div>
 
-      {/* Search Bar */}
-      <div className="relative w-full mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none w-4 h-4" />
-        <input
-          type="text"
-          placeholder="Search resources..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-emerald-600 transition-colors"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm"
-          >
-            ×
-          </button>
-        )}
-      </div>
-
-      {/* Filter Pills */}
-      <div className="flex overflow-x-auto gap-2 pb-1 mb-3 no-scrollbar whitespace-nowrap w-full">
+      {/* Search Bar & Filter Pills Row */}
+      <div className="flex items-center gap-2 mb-4 w-full">
+        <div className="relative w-full mb-4">
+          <Search size={16} className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search resources..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-emerald-600 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {/* Filter Pills */}
+        <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full sm:w-auto">
         <button
           onClick={() => handleTabClick("all")}
           className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
@@ -678,9 +678,10 @@ export default function Resources() {
         >
           In Maintenance ({maintenanceItems.length})
         </button>
-      </div>
+        </div>
+        </div>
 
-      {/* Resource Grid */}
+        {/* Resource Grid */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
