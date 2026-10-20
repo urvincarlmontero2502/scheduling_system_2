@@ -617,9 +617,11 @@ export default function Resources() {
       </div>
 
       {/* Search Bar & Filter Pills Row */}
-      <div className="flex items-center gap-2 mb-4 w-full">
-        <div className="relative w-full mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
+      <div className="mb-6">
+        <div className="relative w-full max-w-md mb-4">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search size={16} className="w-4 h-4" />
+          </div>
           <input
             type="text"
             placeholder="Search resources..."
@@ -637,7 +639,7 @@ export default function Resources() {
           )}
         </div>
         {/* Filter Pills */}
-        <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 mb-4 rounded-lg bg-slate-100/80 p-1.5 border border-slate-200">
         <button
           onClick={() => handleTabClick("all")}
           className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
@@ -679,9 +681,9 @@ export default function Resources() {
           In Maintenance ({maintenanceItems.length})
         </button>
         </div>
-        </div>
+      </div>
 
-        {/* Resource Grid */}
+      {/* Resource Grid */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
