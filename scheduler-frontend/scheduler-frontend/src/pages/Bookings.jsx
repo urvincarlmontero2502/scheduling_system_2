@@ -942,7 +942,7 @@ export default function Bookings() {
                         onClick={() =>
                           handleStatusChange(bookingId, "approved")
                         }
-                        className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 transition"
+                        className="mt-auto w-full sm:w-1/2 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -951,7 +951,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100 transition"
+                        className="mt-auto w-full sm:w-1/2 py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
                       >
                         <X size={12} /> Reject
                       </button>

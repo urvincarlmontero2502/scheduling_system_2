@@ -503,7 +503,7 @@ export default function Resources() {
 
           {/* Status badge overlay on thumbnail */}
           <span
-            className={`absolute top-1.5 right-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${statusConfig.className}`}
+            className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500 text-white shadow-2xs`}
           >
             {statusConfig.label}
           </span>
