@@ -619,7 +619,7 @@ export default function Resources() {
       {/* Search Bar & Filter Pills Row */}
       <div className="flex items-center gap-2 mb-4 w-full">
         <div className="relative w-full mb-4">
-          <Search size={16} className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
           <input
             type="text"
             placeholder="Search resources..."
