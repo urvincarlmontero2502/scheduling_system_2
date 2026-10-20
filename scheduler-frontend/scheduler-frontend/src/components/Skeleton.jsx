@@ -82,18 +82,28 @@ export const SkeletonBookingRow = () => (
 
 /** Booking card skeleton for card-view loading */
 export const SkeletonBookingCard = () => (
-  <div className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
-    <div className="p-2.5 space-y-1.5">
-      <div className="flex items-start justify-between gap-2">
-        <Skeleton className="h-4 w-4/5 bg-gray-200 rounded" />
-        <Skeleton className="h-4 w-12 bg-gray-200 rounded-full" />
+  <div className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
+    <div className="p-2.5">
+      <div className="flex items-start justify-between gap-1 mb-1.5">
+        <div className="flex-1 min-w-0">
+          <Skeleton className="h-3 w-20 bg-slate-300/60 rounded mb-1" />
+          <Skeleton className="h-4 w-3/4 bg-slate-200/70 rounded-md" />
+        </div>
+        <Skeleton className="h-5 w-12 bg-slate-300/60 rounded-md shrink-0" />
       </div>
-      <Skeleton className="h-2.5 w-full bg-gray-200 rounded" />
-      <Skeleton className="h-2.5 w-3/4 bg-gray-200 rounded" />
-    </div>
-    <div className="border-t border-line px-2.5 py-2 space-y-1.5">
-      <Skeleton className="h-2.5 w-full bg-gray-200 rounded" />
-      <Skeleton className="h-2.5 w-2/3 bg-gray-200 rounded" />
+      <div className="flex flex-wrap items-center gap-1 mb-2">
+        <Skeleton className="h-4 w-24 bg-slate-200/60 rounded-md" />
+        <Skeleton className="h-4 w-20 bg-slate-200/60 rounded-md" />
+      </div>
+      <div className="p-2 bg-slate-50/80 rounded-lg space-y-1">
+        <Skeleton className="h-3 w-full bg-slate-200/50 rounded" />
+        <Skeleton className="h-3 w-full bg-slate-200/50 rounded" />
+        <Skeleton className="h-3 w-2/3 bg-slate-200/50 rounded" />
+      </div>
+      <div className="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
+        <Skeleton className="h-7 w-full bg-slate-200/70 rounded-lg" />
+        <Skeleton className="h-7 w-full bg-slate-200/70 rounded-lg" />
+      </div>
     </div>
   </div>
 );

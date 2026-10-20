@@ -20,7 +20,6 @@ import {
   Calendar,
   Clock,
   User,
-  Trash2,
   Search,
   LayoutGrid,
   Table2,
@@ -324,49 +323,6 @@ export default function Bookings() {
   // Real requests only: special events are never counted, listed or bulk-deleted
   const requests = bookings.filter((b) => !isSpecialEvent(b));
 
-  async function handleDeleteAllApproved() {
-    const approvedBookings = requests.filter(
-      (b) => (b.status || "").toLowerCase() === "approved",
-    );
-
-    if (approvedBookings.length === 0) {
-      toast.info("No approved bookings to delete.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete all ${approvedBookings.length} approved booking(s)? This action cannot be undone.`,
-    );
-    if (!confirmed) return;
-
-    const approvedIds = approvedBookings.map((b) => b.id || b.booking_id);
-    const prevBookings = [...bookings];
-
-    // Optimistically remove approved bookings from state + cache
-    const updated = bookings.filter(
-      (b) => !approvedIds.includes(b.id || b.booking_id),
-    );
-    setBookings(updated);
-    writeCache(CACHE_KEYS.BOOKINGS, updated);
-
-    try {
-      await Promise.all(
-        approvedIds.map((id) =>
-          api.deleteBooking
-            ? api.deleteBooking(id)
-            : api.updateBookingStatus(id, "deleted"),
-        ),
-      );
-      toast.success(`${approvedBookings.length} booking(s) deleted successfully`);
-      window.dispatchEvent(new Event("cacheInvalidated"));
-    } catch {
-      // Revert on failure
-      setBookings(prevBookings);
-      writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
-      toast.error("Failed to delete some bookings. Please try again.");
-    }
-  }
-
   // Count metrics for tabs
   const pendingCount = requests.filter(
     (b) => (b.status || "").toLowerCase() === "pending",
@@ -459,25 +415,24 @@ export default function Bookings() {
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* Search & Barangay Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full md:w-64">
+        <div className="flex items-center justify-between gap-2 mb-2 w-full">
+          <div className="relative flex-1 min-w-0">
             <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               type="text"
-              placeholder="Search by resource, applicant, purpose..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-full block rounded-lg border border-line bg-white py-2.5 pl-9 pr-3 text-[13px] outline-none focus:border-brand box-border"
+              className="w-full text-xs py-1.5 pl-8 pr-3 rounded-lg border border-slate-200 bg-white mb-2 outline-none focus:border-brand"
             />
           </div>
-
           <select
             value={barangayFilter}
             onChange={(e) => setBarangayFilter(e.target.value)}
-            className="rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none focus:border-brand"
+            className="text-xs py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white shrink-0 outline-none focus:border-brand"
           >
             <option value="all">All Barangays</option>
             {barangayOptions.map((bg) => (
@@ -486,39 +441,40 @@ export default function Bookings() {
               </option>
             ))}
           </select>
+        </div>
 
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-[12px] text-steel">View:</span>
-            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
-              <button
-                onClick={() => setViewMode("card")}
-                className={`p-1.5 rounded transition text-sm font-medium ${
-                  viewMode === "card"
-                    ? "bg-white shadow border border-line text-ink"
-                    : "text-steel hover:text-ink"
-                }`}
-                title="Card View"
-              >
-                <LayoutGrid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode("table")}
-                className={`p-1.5 rounded transition text-sm font-medium ${
-                  viewMode === "table"
-                    ? "bg-white shadow border border-line text-ink"
-                    : "text-steel hover:text-ink"
-                }`}
-                title="Table View"
-              >
-                <Table2 size={16} />
-              </button>
-            </div>
+        {/* View Toggle */}
+        <div className="flex items-center justify-between gap-2 mb-2 w-full">
+          <div className="flex-1" />
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
+            <button
+              onClick={() => setViewMode("card")}
+              className={`p-1.5 rounded transition text-sm font-medium ${
+                viewMode === "card"
+                  ? "bg-white shadow border border-line text-ink"
+                  : "text-steel hover:text-ink"
+              }`}
+              title="Card View"
+            >
+              <LayoutGrid size={14} />
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`p-1.5 rounded transition text-sm font-medium ${
+                viewMode === "table"
+                  ? "bg-white shadow border border-line text-ink"
+                  : "text-steel hover:text-ink"
+              }`}
+              title="Table View"
+            >
+              <Table2 size={14} />
+            </button>
           </div>
         </div>
 
         {/* Tab Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
-          <div className="inline-flex items-center gap-1 rounded-lg bg-gray-100 p-1 border border-line">
+        <div className="flex overflow-x-auto gap-1.5 py-1 mb-2 no-scrollbar w-full text-xs">
+          <div className="inline-flex items-center gap-1 rounded-lg bg-gray-100 p-1 border border-line flex-shrink-0">
             <button
               onClick={() => setActiveTab("pending")}
               className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
@@ -588,20 +544,13 @@ export default function Bookings() {
             </button>
           </div>
 
-          {canModerate && approvedCount > 0 && (
-            <button
-              onClick={handleDeleteAllApproved}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition shadow-sm"
-            >
-              <Trash2 size={14} /> Delete All Approved ({approvedCount})
-            </button>
-          )}
+
         </div>
 
         {/* Content Section */}
         {loading ? (
           viewMode === "card" ? (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 max-w-full">
+            <div className="grid grid-cols-2 gap-2.5 w-full max-w-full px-1">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonBookingCard key={`skeleton-card-${i}`} />
               ))}
@@ -787,7 +736,7 @@ export default function Bookings() {
                           {!canModerate && (
                             <button
                               onClick={() => {}}
-                              className="flex items-center justify-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[12px] font-medium text-steel hover:bg-gray-50 transition"
+                              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg border border-line text-steel hover:bg-gray-50"
                               title="View"
                             >
                               <FileText size={12} /> View
@@ -803,7 +752,7 @@ export default function Bookings() {
           </div>
         ) : (
           // Card View
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 max-w-full">
+          <div className="grid grid-cols-2 gap-2.5 w-full max-w-full px-1">
             {filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
               const resourceName =
@@ -869,67 +818,54 @@ export default function Bookings() {
                   className="cursor-pointer overflow-hidden rounded-xl border border-line bg-white shadow-sm transition-shadow hover:shadow-md flex flex-col"
                 >
                   {/* Resource + Status header */}
-                  <div className="flex justify-between items-start gap-2 p-2.5">
+                  <div className="flex items-start justify-between gap-1 mb-1.5 p-2.5">
                     <div className="flex-1 min-w-0">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
                         Resource
                       </span>
-                      <h3 className="text-[13px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[2.5rem]">
+                      <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight flex-1">
                         {resourceName}
                       </h3>
                     </div>
                     <div className="shrink-0">
-                      <StatusBadge status={b.status} />
+                      <StatusBadge status={b.status} className="px-1.5 py-0.5 text-[9px] font-semibold rounded-md" />
                     </div>
                   </div>
 
                   {/* Date & Time chips */}
                   <div className="px-2.5 mb-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-1 text-[10px] font-medium text-blue-800">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-md bg-slate-100 text-slate-700 shrink-0">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 border border-purple-200 px-2 py-1 text-[10px] font-medium text-purple-800">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-md bg-slate-100 text-slate-700 shrink-0">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
                   {/* Details block */}
-                  <div className="space-y-1.5 rounded-md bg-gray-50 p-2.5 text-[11px] mb-3">
+                  <div className="p-2 bg-slate-50/80 rounded-lg text-[10px] space-y-0.5 text-slate-600 mb-2">
                     <div className="flex items-center gap-1.5">
-                      <User size={12} className="shrink-0 text-gray-400" />
-                      <span>
-                        <strong className="text-gray-700">Name:</strong>{" "}
+                      <User size={10} className="shrink-0 text-slate-400" />
+                      <span className="truncate">
+                        <strong className="text-slate-700">Name:</strong>{" "}
                         {fullName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Building2
-                        size={12}
-                        className="shrink-0 text-gray-400"
-                      />
-                      <span>
-                        <strong className="text-gray-700">Brgy:</strong>{" "}
-                        {barangayName}
-                      </span>
+                      <Building2 size={10} className="shrink-0 text-slate-400" />
+                      <span className="truncate">{barangayName}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Phone size={12} className="shrink-0 text-gray-400" />
-                      <span className="font-mono">
-                        <strong className="text-gray-700 font-sans">
-                          Cell:
-                        </strong>{" "}
+                      <Phone size={10} className="shrink-0 text-slate-400" />
+                      <span className="font-mono truncate">
                         {cellNumber}
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5">
-                      <FileText
-                        size={12}
-                        className="shrink-0 text-gray-400 mt-0.5"
-                      />
+                      <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
                       <span className="line-clamp-2">
-                        <strong className="text-gray-700">Purpose:</strong>{" "}
                         {purposeValue}
                       </span>
                     </div>
@@ -937,12 +873,15 @@ export default function Bookings() {
 
                   {/* Action Buttons */}
                   {canModerate && isPendingItem && (
-                    <div className="mt-auto flex gap-2 p-2 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
+                            <div
+                      className="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100 p-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
                         onClick={() =>
                           handleStatusChange(bookingId, "approved")
                         }
-                        className="mt-auto w-full sm:w-1/2 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                        className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -951,7 +890,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="mt-auto w-full sm:w-1/2 py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
+                        className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
                       >
                         <X size={12} /> Reject
                       </button>
