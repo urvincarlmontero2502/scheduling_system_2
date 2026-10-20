@@ -160,7 +160,7 @@ export default function DashboardLayout() {
         </nav>
 
         <div
-          className="border-t border-line bg-white py-4"
+          className="mt-3 border-t border-line bg-white py-4"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
           {/* Clickable user profile block → navigates to Account Settings */}
           <NavLink

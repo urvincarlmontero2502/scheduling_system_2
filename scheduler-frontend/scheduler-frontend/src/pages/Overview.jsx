@@ -283,7 +283,7 @@ export default function Overview() {
             <div className="relative w-full sm:w-auto flex items-center">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4"
+                className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4"
               />
               <input
                 type="text"
