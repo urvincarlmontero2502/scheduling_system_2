@@ -605,71 +605,73 @@ export default function Resources() {
       {/* Clean Header Title */}
       <h1 className="text-[20px] font-semibold text-slate-900 mb-4">Facilities &amp; Vehicles</h1>
 
-      {/* Action Toolbar Row: Search Bar + Filter Pills + Add Resource */}
-      <div className="flex items-center gap-2 mb-6 w-full">
-        <div className="relative w-full max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search size={16} className="w-4 h-4" />
+      {/* Action Toolbar Row: Search Bar + Filter Pills | Add Resource */}
+      <div className="flex items-center justify-between gap-2 mb-6 w-full">
+        <div className="flex items-center gap-2 w-full">
+          <div className="relative w-full max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search size={16} className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search resources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-emerald-600 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm"
+              >
+                ×
+              </button>
+            )}
           </div>
-          <input
-            type="text"
-            placeholder="Search resources..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-emerald-600 transition-colors"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm"
-            >
-              ×
-            </button>
-          )}
-        </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap gap-2 rounded-lg bg-slate-100/80 p-1.5 border border-slate-200">
-        <button
-          onClick={() => handleTabClick("all")}
-          className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
-            activeFilter === "all"
-              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-          }`}
-        >
-          <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-slate-500"}`} /> All Resources ({displayedCount})
-        </button>
-        <button
-          onClick={() => handleTabClick("vehicle")}
-          className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
-            activeFilter === "vehicle"
-              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-          }`}
-        >
-          <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-slate-500"}`} /> Vehicles ({allVehicles.length})
-        </button>
-        <button
-          onClick={() => handleTabClick("facility")}
-          className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
-            activeFilter === "facility"
-              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-          }`}
-        >
-          <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-slate-500"}`} /> Facilities ({allFacilities.length})
-        </button>
-        <button
-          onClick={() => handleTabClick("maintenance")}
-          className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
-            activeFilter === "maintenance"
-              ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-          }`}
-        >
-          In Maintenance ({maintenanceItems.length})
-        </button>
+          {/* Filter Pills */}
+          <div className="flex flex-wrap gap-2 rounded-lg bg-slate-100/80 p-1.5 border border-slate-200">
+          <button
+            onClick={() => handleTabClick("all")}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+              activeFilter === "all"
+                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+            }`}
+          >
+            <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-slate-500"}`} /> All Resources ({displayedCount})
+          </button>
+          <button
+            onClick={() => handleTabClick("vehicle")}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+              activeFilter === "vehicle"
+                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+            }`}
+          >
+            <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-slate-500"}`} /> Vehicles ({allVehicles.length})
+          </button>
+          <button
+            onClick={() => handleTabClick("facility")}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+              activeFilter === "facility"
+                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+            }`}
+          >
+            <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-slate-500"}`} /> Facilities ({allFacilities.length})
+          </button>
+          <button
+            onClick={() => handleTabClick("maintenance")}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+              activeFilter === "maintenance"
+                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+            }`}
+          >
+            In Maintenance ({maintenanceItems.length})
+          </button>
+          </div>
         </div>
         {isAdmin && (
           <button
