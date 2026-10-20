@@ -211,11 +211,11 @@ export default function Overview() {
         {STATS_ITEMS.map((stat) => (
           <div
             key={stat.label}
-            className="p-3 sm:p-4 bg-white rounded-xl border border-line shadow-sm">
-            <p className={`font-mono text-[28px] font-semibold ${stat.tone}`}>
+            className="p-2.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs">
+            <p className="font-mono text-lg sm:text-xl font-bold text-slate-900">
               {stat.value}
             </p>
-            <p className="mt-1 text-[13px] text-steel">
+            <p className="mt-0.5 text-[11px] leading-tight text-slate-500 font-medium">
               {stat.label}
               {stat.subLabel ? ` ${stat.subLabel}` : ""}
             </p>
@@ -237,7 +237,7 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-sm outline-none focus:border-brand"
+              className="w-full text-xs py-1.5 pl-8 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
             />
           </div>
           <div className="flex overflow-x-auto gap-2 pt-2 pb-1 no-scrollbar whitespace-nowrap w-full">
@@ -246,7 +246,7 @@ export default function Overview() {
                 setMainFilter("all");
                 setVehicleSubFilter("all");
               }}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
                 mainFilter === "all"
                   ? "bg-brand text-white shadow-sm"
                   : "bg-white border border-line text-steel hover:bg-paper"
@@ -257,7 +257,7 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("facility");
               }}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
                 mainFilter === "facility"
                   ? "bg-brand text-white shadow-sm"
                   : "bg-white border border-line text-steel hover:bg-paper"
@@ -268,7 +268,7 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("vehicle");
               }}
-              className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
                 mainFilter === "vehicle"
                   ? "bg-brand text-white shadow-sm"
                   : "bg-white border border-line text-steel hover:bg-paper"
@@ -395,24 +395,24 @@ export default function Overview() {
             {loading ? (
               <p className="text-[13px] text-steel">Loading facilities...</p>
             ) : facilities.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-[13px] text-steel">
+              <div className="rounded-lg border border-dashed border-line bg-white p-4 text-center text-[12px] text-steel">
                 {searchQuery
                   ? "No facilities match your current search. Try adjusting your search."
                   : "No facilities found."}
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                 {facilities.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
-                    className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
+                    className="flex flex-col h-full rounded-xl bg-white border border-line overflow-hidden">
+                    <div className="relative w-full h-20 sm:h-28 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
-                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
+                        className={`absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full ${
                           item.available
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                            : "bg-gray-50 text-gray-700 border border-gray-200/60"
+                            ? "bg-emerald-500 text-white shadow-xs"
+                            : "bg-gray-500 text-white shadow-xs"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -425,30 +425,30 @@ export default function Overview() {
                         />
                       ) : (
                         <div className="flex flex-col items-center text-steel gap-1">
-                          <ImageIcon size={20} className="text-gray-400" />
-                          <span className="text-xs">No image provided</span>
+                          <ImageIcon size={24} strokeWidth={1.5} className="text-gray-300 opacity-60" />
+                          <span className="text-[10px] text-gray-400">No image provided</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col flex-1 p-4 justify-between">
+                    <div className="flex flex-col flex-1 p-2.5 justify-between">
                       <div>
-                        <h3 className="font-bold text-slate-800 text-sm line-clamp-2 min-h-[2.5rem] mb-1">
+                        <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug min-h-[2rem] mb-0.5">
                           {item.name}
                         </h3>
-                        <p className="text-xs text-slate-500 font-medium mb-2">
+                        <p className="text-[10px] text-slate-500 font-medium mb-2">
                           <UserGroupIcon size={12} className="inline mr-1" />
                           Capacity:{" "}
                           <span className="text-ink">
                             {item.capacity || "N/A"}
                           </span>
                         </p>
-                        <p className="text-xs text-slate-600 line-clamp-2 min-h-[2rem] mb-4 overflow-hidden">
+                        <p className="text-[10px] text-slate-600 line-clamp-2 leading-tight mb-2 min-h-[2rem] overflow-hidden">
                           {item.description || "No description available"}
                         </p>
                       </div>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-150"
+                        className="w-full mt-auto py-1.5 px-2 text-[11px] font-semibold rounded-md border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors"
                       >
                         Request Booking
                       </button>
@@ -470,24 +470,24 @@ export default function Overview() {
             {loading ? (
               <p className="text-[13px] text-steel">Loading vehicles...</p>
             ) : filteredVehicles.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-[13px] text-steel">
+              <div className="rounded-lg border border-dashed border-line bg-white p-4 text-center text-[12px] text-steel">
                 {searchQuery
                   ? "No vehicles match your current search. Try adjusting your search."
                   : "No vehicles found in this category."}
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                 {filteredVehicles.map((item) => (
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
-                    className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
+                    className="flex flex-col h-full rounded-xl bg-white border border-line overflow-hidden">
+                    <div className="relative w-full h-20 sm:h-28 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
-                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
+                        className={`absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full ${
                           item.available
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                            : "bg-gray-50 text-gray-700 border border-gray-200/60"
+                            ? "bg-emerald-500 text-white shadow-xs"
+                            : "bg-gray-500 text-white shadow-xs"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -500,30 +500,30 @@ export default function Overview() {
                         />
                       ) : (
                         <div className="flex flex-col items-center text-steel gap-1">
-                          <ImageIcon size={20} className="text-gray-400" />
-                          <span className="text-xs">No image provided</span>
+                          <ImageIcon size={24} strokeWidth={1.5} className="text-gray-300 opacity-60" />
+                          <span className="text-[10px] text-gray-400">No image provided</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col flex-1 p-4 justify-between">
+                    <div className="flex flex-col flex-1 p-2.5 justify-between">
                       <div>
-                        <h3 className="font-bold text-slate-800 text-sm line-clamp-2 min-h-[2.5rem] mb-1">
+                        <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug min-h-[2rem] mb-0.5">
                           {item.name}
                         </h3>
-                        <p className="text-xs text-slate-500 font-medium mb-2">
+                        <p className="text-[10px] text-slate-500 font-medium mb-2">
                           <UserGroupIcon size={12} className="inline mr-1" />
                           Unit Details:{" "}
                           <span className="text-ink">
                             {item.unit_name || item.capacity || "N/A"}
                           </span>
                         </p>
-                        <p className="text-xs text-slate-600 line-clamp-2 min-h-[2rem] mb-4 overflow-hidden">
+                        <p className="text-[10px] text-slate-600 line-clamp-2 leading-tight mb-2 min-h-[2rem] overflow-hidden">
                           {item.description || "No description available"}
                         </p>
                       </div>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-150"
+                        className="w-full mt-auto py-1.5 px-2 text-[11px] font-semibold rounded-md border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors"
                       >
                         Request Booking
                       </button>
