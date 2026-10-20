@@ -200,7 +200,7 @@ export default function Overview() {
   return (
     <div className="p-4 md:p-6 w-full max-w-full">
       {/* Top Bar: Notification Bell right, hidden on mobile */}
-      <div className="flex items-center justify-end sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2.5">
         <div className="hidden sm:ml-auto sm:flex">
           <NotificationBell ref={bellRef} onClick={toggleDropdown} />
         </div>
@@ -241,7 +241,7 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
+              className="w-full max-w-full block text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs box-border outline-none focus:border-brand"
             />
           </div>
           <div className="flex overflow-x-auto gap-2 py-1 mb-2 no-scrollbar whitespace-nowrap w-full">
@@ -330,7 +330,7 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 lg:w-80 text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-sm outline-none focus:border-brand"
+              className="w-full max-w-full sm:w-64 sm:lg:w-80 text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-sm box-border outline-none focus:border-brand"
             />
           </div>
         </div>

@@ -456,7 +456,7 @@ export default function Resources() {
         className="group flex flex-col h-full overflow-hidden rounded-xl border border-line bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
       >
         {/* Thumbnail with status badge overlay */}
-        <div className="relative h-20 sm:h-28 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line">
+        <div className="relative overflow-hidden rounded-t-lg bg-paper flex items-center justify-center h-20 sm:h-28 w-full shrink-0">
           {item.image ? (
             <img
               src={item.image}
@@ -512,7 +512,7 @@ export default function Resources() {
         <div className="flex flex-col flex-1 p-3 space-y-1.5">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-1">
+              <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[2rem] leading-snug">
                 {item.name}
               </h3>
               {isMaintenance && (
@@ -576,21 +576,21 @@ export default function Resources() {
           {isMaintenance ? (
             <button
               disabled
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-gray-200 text-gray-500 py-1.5 px-2 text-xs font-medium cursor-not-allowed opacity-60"
+              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
             >
               <Wrench size={10} /> Under Maintenance
             </button>
           ) : isAdmin ? (
             <button
               onClick={() => handleOpenRequestModal(item, true)}
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand text-white hover:bg-brand-dark py-1.5 px-2 text-xs font-medium transition"
+              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-brand text-white hover:bg-brand-dark"
             >
               <Calendar size={10} /> Book
             </button>
           ) : (
             <button
               onClick={() => handleOpenRequestModal(item)}
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-1.5 px-2 text-xs font-medium transition"
+              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-brand-light text-brand hover:bg-brand hover:text-white"
             >
               <Calendar size={10} /> Request
             </button>
@@ -603,7 +603,7 @@ export default function Resources() {
   return (
     <div className="p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full mb-4">
         <h1 className="text-[20px] font-semibold text-ink">
         Facilities &amp; Vehicles
         </h1>
@@ -625,7 +625,7 @@ export default function Resources() {
           placeholder="Search resources by name or description..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+          className="w-full max-w-full block rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand bg-white"
         />
         {searchQuery && (
           <button
@@ -639,7 +639,7 @@ export default function Resources() {
       </div>
 
       {/* Segmented Control / Tab Filter */}
-      <div className="mb-4 flex flex-wrap gap-1 overflow-x-auto whitespace-nowrap rounded-lg bg-gray-100 p-1 border border-line">
+      <div className="mb-4 flex flex-wrap gap-1 overflow-x-auto whitespace-nowrap rounded-lg bg-gray-100 p-1 border border-line py-1.5 no-scrollbar">
         <button
           onClick={() => handleTabClick("all")}
           className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium transition ${
@@ -684,7 +684,7 @@ export default function Resources() {
 
       {/* Resource Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 max-w-full">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonResourceCard key={`skeleton-${i}`} />
           ))}
@@ -702,7 +702,7 @@ export default function Resources() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 max-w-full">
           {displayedItems.map(renderResourceCard)}
         </div>
       )}

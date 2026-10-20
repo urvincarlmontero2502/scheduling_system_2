@@ -470,7 +470,7 @@ export default function Bookings() {
               placeholder="Search by resource, applicant, purpose..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-line bg-white py-2.5 pl-9 pr-3 text-[13px] outline-none focus:border-brand"
+              className="w-full max-w-full block rounded-lg border border-line bg-white py-2.5 pl-9 pr-3 text-[13px] outline-none focus:border-brand box-border"
             />
           </div>
 
@@ -601,13 +601,13 @@ export default function Bookings() {
         {/* Content Section */}
         {loading ? (
           viewMode === "card" ? (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 max-w-full">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonBookingCard key={`skeleton-card-${i}`} />
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-line bg-white">
+            <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <table className="w-full min-w-[900px]">
                 <thead className="border-b border-line bg-gray-50">
                   <tr>
@@ -650,11 +650,11 @@ export default function Bookings() {
             <p className="text-[14px] text-steel italic">{getEmptyMessage()}</p>
           </div>
         ) : viewMode === "table" ? (
-          <div className="overflow-x-auto rounded-xl border border-line bg-white shadow-sm">
+          <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full min-w-[900px]">
               <thead className="border-b border-line bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                  <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel min-w-[150px]">
                     Resource
                   </th>
                   <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
@@ -733,7 +733,7 @@ export default function Bookings() {
 
                   return (
                     <tr key={bookingId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-[13px] font-medium text-ink">
+                      <td className="px-4 py-3 text-[13px] font-medium text-ink min-w-[150px] whitespace-normal">
                         {resourceName}
                       </td>
                       <td className="px-4 py-3 text-[13px]">{fullName}</td>
@@ -767,7 +767,7 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[12px] font-medium text-white hover:bg-emerald-700 transition"
+                                className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
                                 title="Approve"
                               >
                                 <Check size={12} /> Approve
@@ -777,7 +777,7 @@ export default function Bookings() {
                                   setRejectBooking(b);
                                   setRejectModalOpen(true);
                                 }}
-                                className="flex items-center justify-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-[12px] font-medium text-rose-600 hover:bg-rose-100 transition"
+                                className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
                                 title="Reject"
                               >
                                 <X size={12} /> Reject
@@ -803,7 +803,7 @@ export default function Bookings() {
           </div>
         ) : (
           // Card View
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 max-w-full">
             {filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
               const resourceName =
@@ -874,7 +874,7 @@ export default function Bookings() {
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
                         Resource
                       </span>
-                      <h3 className="text-[13px] font-bold text-gray-900 leading-tight truncate">
+                      <h3 className="text-[13px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[2.5rem]">
                         {resourceName}
                       </h3>
                     </div>
@@ -937,7 +937,7 @@ export default function Bookings() {
 
                   {/* Action Buttons */}
                   {canModerate && isPendingItem && (
-                    <div className="mt-auto flex gap-2 p-2 pt-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="mt-auto flex gap-2 p-2 pt-0 w-full" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() =>
                           handleStatusChange(bookingId, "approved")

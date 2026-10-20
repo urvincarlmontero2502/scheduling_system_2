@@ -91,7 +91,7 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-paper md:flex">
       {/* Mobile top bar */}
       <header
-        className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden"
+        className="w-full max-w-full left-0 right-0 top-0 sticky z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden"
         style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}>
         <button
           onClick={() => setOpen(true)}
