@@ -224,7 +224,7 @@ export default function Overview() {
       </div>
 
       {/* Main Content Area */}
-      <div className="space-y-4">
+      <div className="space-y-4 pb-8 sm:pb-12">
         {/* Mobile: Search full-width at top, pills below */}
         <div className="sm:hidden">
           <div className="relative w-full">
@@ -407,12 +407,12 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="relative overflow-hidden rounded-t-lg bg-slate-100">
+                    <div className="relative w-full h-28 sm:h-32 bg-slate-100/80 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
                       <span
-                        className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-full ${
+                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-semibold rounded-full ${
                           item.available
-                            ? "bg-emerald-500/90 text-white backdrop-blur-md shadow-sm"
-                            : "bg-gray-500/90 text-white backdrop-blur-md shadow-sm"
+                            ? "bg-emerald-500 text-white shadow-xs"
+                            : "bg-gray-500 text-white shadow-xs"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -430,29 +430,27 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-3 space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[32px]">
+                    <div className="flex flex-col flex-1 p-4 justify-between">
+                      <div>
+                        <h3 className="font-bold text-slate-800 text-sm line-clamp-2 min-h-[2.5rem] mb-1">
                           {item.name}
                         </h3>
+                        <p className="text-xs text-slate-500 font-medium mb-2">
+                          Capacity:{" "}
+                          <span className="text-ink">
+                            {item.capacity || "—"}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-600 line-clamp-2 min-h-[2rem] mb-4 overflow-hidden">
+                          {item.description || "No description available"}
+                        </p>
                       </div>
-                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
-                        Capacity:{" "}
-                        <span className="font-medium text-ink">
-                          {item.capacity || "—"}
-                        </span>
-                      </p>
-                      <p className="mt-1 text-[11px] sm:text-xs text-gray-600 line-clamp-2 overflow-hidden">
-                        {item.description || "No description available"}
-                      </p>
-                      <div className="w-full mt-auto pt-2">
-                        <button
-                          onClick={() => handleOpenBooking(item)}
-                          className="w-full py-1.5 px-2 text-xs font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
-                        >
-                          Request Booking
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleOpenBooking(item)}
+                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                      >
+                        Request Booking
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -483,12 +481,12 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="relative overflow-hidden rounded-t-lg bg-slate-100">
+                    <div className="relative w-full h-28 sm:h-32 bg-slate-100/80 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
                       <span
-                        className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-full ${
+                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-semibold rounded-full ${
                           item.available
-                            ? "bg-emerald-500/90 text-white backdrop-blur-md shadow-sm"
-                            : "bg-gray-500/90 text-white backdrop-blur-md shadow-sm"
+                            ? "bg-emerald-500 text-white shadow-xs"
+                            : "bg-gray-500 text-white shadow-xs"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -506,29 +504,27 @@ export default function Overview() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col p-3 space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[32px]">
+                    <div className="flex flex-col flex-1 p-4 justify-between">
+                      <div>
+                        <h3 className="font-bold text-slate-800 text-sm line-clamp-2 min-h-[2.5rem] mb-1">
                           {item.name}
                         </h3>
+                        <p className="text-xs text-slate-500 font-medium mb-2">
+                          Unit Details:{" "}
+                          <span className="text-ink">
+                            {item.unit_name || item.capacity || "—"}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-600 line-clamp-2 min-h-[2rem] mb-4 overflow-hidden">
+                          {item.description || "No description available"}
+                        </p>
                       </div>
-                      <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
-                        Unit Details:{" "}
-                        <span className="font-medium text-ink">
-                          {item.unit_name || item.capacity || "—"}
-                        </span>
-                      </p>
-                      <p className="mt-1 text-[11px] sm:text-xs text-gray-600 line-clamp-2 overflow-hidden">
-                        {item.description || "No description available"}
-                      </p>
-                      <div className="w-full mt-auto pt-2">
-                        <button
-                          onClick={() => handleOpenBooking(item)}
-                          className="w-full py-1.5 px-2 text-xs font-medium bg-emerald-600 text-white rounded-md text-center hover:bg-emerald-700 transition-colors"
-                        >
-                          Request Booking
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleOpenBooking(item)}
+                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                      >
+                        Request Booking
+                      </button>
                     </div>
                   </div>
                 ))}
