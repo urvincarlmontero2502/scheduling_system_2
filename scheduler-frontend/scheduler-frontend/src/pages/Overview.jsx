@@ -24,45 +24,58 @@ export default function Overview() {
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([
-      api.fetchBookings?.().catch(() => ({ data: [] })),
-      api.fetchResources?.().catch(() => ({ data: [] })),
-    ])
-      .then(([bookingsRes, resourcesRes]) => {
-        if (!isMounted) return;
+    const fetchOverviewData = () => {
+      Promise.all([
+        api.fetchBookings?.().catch(() => ({ data: [] })),
+        api.fetchResources?.().catch(() => ({ data: [] })),
+      ])
+        .then(([bookingsRes, resourcesRes]) => {
+          if (!isMounted) return;
 
-        const bookings = Array.isArray(bookingsRes?.data)
-          ? bookingsRes.data
-          : Array.isArray(bookingsRes)
-            ? bookingsRes
-            : [];
+          const bookings = Array.isArray(bookingsRes?.data)
+            ? bookingsRes.data
+            : Array.isArray(bookingsRes)
+              ? bookingsRes
+              : [];
 
-        // Yearly special events are not requests
-        const requests = bookings.filter((b) => !isSpecialEvent(b));
+          // Yearly special events are not requests
+          const requests = bookings.filter((b) => !isSpecialEvent(b));
 
-        const pendingCount = requests.filter(
-          (b) => b?.status?.toLowerCase() === "pending",
-        ).length;
+          const pendingCount = requests.filter(
+            (b) => b?.status?.toLowerCase() === "pending",
+          ).length;
 
-        const approvedCount = requests.filter(
-          (b) => b?.status?.toLowerCase() === "approved",
-        ).length;
+          const approvedCount = requests.filter(
+            (b) => b?.status?.toLowerCase() === "approved",
+          ).length;
 
-        setStats({
-          pending: pendingCount,
-          approved: approvedCount,
+          setStats({
+            pending: pendingCount,
+            approved: approvedCount,
+          });
+
+          setResources(
+            Array.isArray(resourcesRes?.data) ? resourcesRes.data : [],
+          );
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false);
         });
+    };
 
-        setResources(
-          Array.isArray(resourcesRes?.data) ? resourcesRes.data : [],
-        );
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
+    fetchOverviewData();
+
+    // Listen for cache invalidation events to refresh data
+    const handler = () => {
+      fetchOverviewData();
+    };
+    window.addEventListener("cacheInvalidated", handler);
+    window.addEventListener("bookingUpdated", handler);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("cacheInvalidated", handler);
+      window.removeEventListener("bookingUpdated", handler);
     };
   }, []);
 
@@ -104,7 +117,7 @@ export default function Overview() {
     (r) => r?.type?.toLowerCase() === "vehicle",
   );
 
-  // Apply search filter
+  // Apply search + status filter
   const applyFilters = (items) => {
     return items.filter((item) => {
       // Search filter
@@ -113,6 +126,13 @@ export default function Overview() {
         const name = (item?.name || "").toLowerCase();
         const description = (item?.description || "").toLowerCase();
         if (!name.includes(query) && !description.includes(query)) return false;
+      }
+      // Status filter
+      if (statusFilter === "available") {
+        return item?.available === true || item?.status === "available";
+      }
+      if (statusFilter === "maintenance") {
+        return item?.is_maintenance || item?.status === "maintenance";
       }
       return true;
     });
@@ -347,10 +367,12 @@ export default function Overview() {
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : item.is_maintenance || item.status === "maintenance"
+                            ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
                             : "bg-slate-100 text-slate-600 border border-slate-300/60"
                         }`}
                       >
-                        {item.available ? "Available" : "Maintenance"}
+                        {item.available ? "Available" : item.is_maintenance || item.status === "maintenance" ? "Maintenance" : "Unavailable"}
                       </span>
                       {item.image && item.image.trim() !== "" ? (
                         <img
@@ -437,10 +459,12 @@ export default function Overview() {
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : item.is_maintenance || item.status === "maintenance"
+                            ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
                             : "bg-slate-100 text-slate-600 border border-slate-300/60"
                         }`}
                       >
-                        {item.available ? "Available" : "Maintenance"}
+                        {item.available ? "Available" : item.is_maintenance || item.status === "maintenance" ? "Maintenance" : "Unavailable"}
                       </span>
                       {item.image && item.image.trim() !== "" ? (
                         <img

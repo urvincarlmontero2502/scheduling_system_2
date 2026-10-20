@@ -155,11 +155,15 @@ export const deleteResource = (id) => {
 };
 
 // Maintenance status toggle
-export const setResourceMaintenance = (id) =>
-  client.patch(`/resources/${id}/maintenance/on`);
+export const setResourceMaintenance = (id) => {
+  invalidateCache(CACHE_KEYS.RESOURCES);
+  return client.patch(`/resources/${id}/maintenance/on`);
+};
 
-export const setResourceAvailable = (id) =>
-  client.patch(`/resources/${id}/maintenance/off`);
+export const setResourceAvailable = (id) => {
+  invalidateCache(CACHE_KEYS.RESOURCES);
+  return client.patch(`/resources/${id}/maintenance/off`);
+};
 
 export const checkHealth = () => client.get("/health");
 export const getBarangays = () => client.get("/barangays");
