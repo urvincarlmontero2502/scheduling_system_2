@@ -82,12 +82,12 @@ export const SkeletonBookingRow = () => (
 
 /** Booking card skeleton for card-view loading */
 export const SkeletonBookingCard = () => (
-  <div className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
-    <div className="p-2.5">
-      <div className="flex items-start justify-between gap-1 mb-1.5">
+  <div className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs flex flex-col justify-between h-full">
+    <div>
+      <div className="flex items-start justify-between gap-1 mb-2">
         <div className="flex-1 min-w-0">
-          <Skeleton className="h-3 w-20 bg-slate-300/60 rounded mb-1" />
-          <Skeleton className="h-4 w-3/4 bg-slate-200/70 rounded-md" />
+          <Skeleton className="h-4 w-3/4 bg-slate-200/70 rounded-md mb-1" />
+          <Skeleton className="h-4 w-full bg-slate-200/70 rounded-md" />
         </div>
         <Skeleton className="h-5 w-12 bg-slate-300/60 rounded-md shrink-0" />
       </div>
@@ -95,15 +95,15 @@ export const SkeletonBookingCard = () => (
         <Skeleton className="h-4 w-24 bg-slate-200/60 rounded-md" />
         <Skeleton className="h-4 w-20 bg-slate-200/60 rounded-md" />
       </div>
-      <div className="p-2 bg-slate-50/80 rounded-lg space-y-1">
+      <div className="p-2 my-2 bg-slate-50/80 rounded-lg space-y-1">
         <Skeleton className="h-3 w-full bg-slate-200/50 rounded" />
         <Skeleton className="h-3 w-full bg-slate-200/50 rounded" />
         <Skeleton className="h-3 w-2/3 bg-slate-200/50 rounded" />
       </div>
-      <div className="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
-        <Skeleton className="h-7 w-full bg-slate-200/70 rounded-lg" />
-        <Skeleton className="h-7 w-full bg-slate-200/70 rounded-lg" />
-      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+      <Skeleton className="h-7 w-full bg-slate-200/70 rounded-lg" />
+      <Skeleton className="h-7 w-full bg-slate-200/70 rounded-lg" />
     </div>
   </div>
 );

@@ -415,20 +415,22 @@ export default function Bookings() {
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* Search & Barangay Filter Bar */}
+        <div className="relative w-full">
+          <Search
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white mb-2 shadow-2xs outline-none focus:border-brand"
+          />
+        </div>
+
+        {/* Filter & View Row */}
         <div className="flex items-center justify-between gap-2 mb-2 w-full">
-          <div className="relative flex-1 min-w-0">
-            <Search
-              size={14}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full text-xs py-1.5 pl-8 pr-3 rounded-lg border border-slate-200 bg-white mb-2 outline-none focus:border-brand"
-            />
-          </div>
           <select
             value={barangayFilter}
             onChange={(e) => setBarangayFilter(e.target.value)}
@@ -441,11 +443,6 @@ export default function Bookings() {
               </option>
             ))}
           </select>
-        </div>
-
-        {/* View Toggle */}
-        <div className="flex items-center justify-between gap-2 mb-2 w-full">
-          <div className="flex-1" />
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
             <button
               onClick={() => setViewMode("card")}
@@ -473,7 +470,7 @@ export default function Bookings() {
         </div>
 
         {/* Tab Bar */}
-        <div className="flex overflow-x-auto gap-1.5 py-1 mb-2 no-scrollbar w-full text-xs">
+        <div className="flex overflow-x-auto gap-1.5 py-1 mb-3 no-scrollbar w-full text-xs">
           <div className="inline-flex items-center gap-1 rounded-lg bg-gray-100 p-1 border border-line flex-shrink-0">
             <button
               onClick={() => setActiveTab("pending")}
@@ -716,7 +713,7 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700"
                                 title="Approve"
                               >
                                 <Check size={12} /> Approve
@@ -726,7 +723,7 @@ export default function Bookings() {
                                   setRejectBooking(b);
                                   setRejectModalOpen(true);
                                 }}
-                                className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50/50 flex items-center justify-center hover:bg-rose-100"
                                 title="Reject"
                               >
                                 <X size={12} /> Reject
@@ -736,7 +733,7 @@ export default function Bookings() {
                           {!canModerate && (
                             <button
                               onClick={() => {}}
-                              className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg border border-line text-steel hover:bg-gray-50"
+                              className="w-full py-1.5 text-xs font-semibold rounded-lg border border-line text-steel hover:bg-gray-50 flex items-center justify-center"
                               title="View"
                             >
                               <FileText size={12} /> View
@@ -815,15 +812,15 @@ export default function Bookings() {
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="cursor-pointer overflow-hidden rounded-xl border border-line bg-white shadow-sm transition-shadow hover:shadow-md flex flex-col"
+                  className="cursor-pointer bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs flex flex-col justify-between h-full"
                 >
                   {/* Resource + Status header */}
-                  <div className="flex items-start justify-between gap-1 mb-1.5 p-2.5">
+                  <div className="flex items-start justify-between gap-1 mb-2">
                     <div className="flex-1 min-w-0">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
                         Resource
                       </span>
-                      <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight flex-1">
+                      <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug min-h-[2.25rem] flex-1">
                         {resourceName}
                       </h3>
                     </div>
@@ -845,7 +842,7 @@ export default function Bookings() {
                   </div>
 
                   {/* Details block */}
-                  <div className="p-2 bg-slate-50/80 rounded-lg text-[10px] space-y-0.5 text-slate-600 mb-2">
+                  <div className="p-2 my-2 bg-slate-50/80 rounded-lg text-[10px] space-y-1 text-slate-600">
                     <div className="flex items-center gap-1.5">
                       <User size={10} className="shrink-0 text-slate-400" />
                       <span className="truncate">
@@ -874,14 +871,14 @@ export default function Bookings() {
                   {/* Action Buttons */}
                   {canModerate && isPendingItem && (
                             <div
-                      className="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100 p-2"
+                      className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 mt-auto"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         onClick={() =>
                           handleStatusChange(bookingId, "approved")
                         }
-                        className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                        className="w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -890,7 +887,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="mt-auto w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
+                        className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50/50 flex items-center justify-center hover:bg-rose-100"
                       >
                         <X size={12} /> Reject
                       </button>
