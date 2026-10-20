@@ -280,17 +280,17 @@ export default function Overview() {
 
           {/* Right: Search Input + Status Filter */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative">
+            <div className="relative w-full sm:w-auto flex items-center">
               <Search
                 size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4"
               />
               <input
                 type="text"
                 placeholder="Search resources..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-sm outline-none focus:border-emerald-500"
+                className="w-full text-sm py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-xs outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               />
             </div>
             <select
