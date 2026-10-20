@@ -617,16 +617,15 @@ export default function Resources() {
 
       {/* Search Bar */}
       <div className="relative mb-4">
-        <Search
-          size={14}
-          className="absolute left-2.5 top-1/2 -translate-y-[60%] text-steel"
-        />
+        <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none text-steel">
+          <Search size={14} />
+        </div>
         <input
           type="text"
           placeholder="Search resources by name or description..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-md border border-line pl-7 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+          className="w-full rounded-md border border-line pl-8 pr-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
         />
         {searchQuery && (
           <button
