@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
-import { Search, Building2, Car, Image as ImageIcon } from "lucide-react";
+import { Search, Building2, Car, Image as ImageIcon, Users as UserGroupIcon } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
@@ -407,12 +407,12 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="relative w-full h-28 sm:h-32 bg-slate-100/80 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
+                    <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
                       <span
-                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-semibold rounded-full ${
+                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
-                            ? "bg-emerald-500 text-white shadow-xs"
-                            : "bg-gray-500 text-white shadow-xs"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : "bg-gray-50 text-gray-700 border border-gray-200/60"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -436,9 +436,10 @@ export default function Overview() {
                           {item.name}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium mb-2">
+                          <UserGroupIcon size={12} className="inline mr-1" />
                           Capacity:{" "}
                           <span className="text-ink">
-                            {item.capacity || "—"}
+                            {item.capacity || "N/A"}
                           </span>
                         </p>
                         <p className="text-xs text-slate-600 line-clamp-2 min-h-[2rem] mb-4 overflow-hidden">
@@ -447,7 +448,7 @@ export default function Overview() {
                       </div>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-150"
                       >
                         Request Booking
                       </button>
@@ -481,12 +482,12 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="relative w-full h-28 sm:h-32 bg-slate-100/80 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
+                    <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg">
                       <span
-                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-semibold rounded-full ${
+                        className={`absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
-                            ? "bg-emerald-500 text-white shadow-xs"
-                            : "bg-gray-500 text-white shadow-xs"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            : "bg-gray-50 text-gray-700 border border-gray-200/60"
                         }`}
                       >
                         {item.available ? "Available" : "Booked"}
@@ -510,9 +511,10 @@ export default function Overview() {
                           {item.name}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium mb-2">
+                          <UserGroupIcon size={12} className="inline mr-1" />
                           Unit Details:{" "}
                           <span className="text-ink">
-                            {item.unit_name || item.capacity || "—"}
+                            {item.unit_name || item.capacity || "N/A"}
                           </span>
                         </p>
                         <p className="text-xs text-slate-600 line-clamp-2 min-h-[2rem] mb-4 overflow-hidden">
@@ -521,7 +523,7 @@ export default function Overview() {
                       </div>
                       <button
                         onClick={() => handleOpenBooking(item)}
-                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                        className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-150"
                       >
                         Request Booking
                       </button>
