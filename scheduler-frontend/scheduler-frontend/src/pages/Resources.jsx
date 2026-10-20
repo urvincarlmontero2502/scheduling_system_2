@@ -48,7 +48,8 @@ function formatCapacity(cap) {
 
 /** Resolve the display status of a resource */
 function getResourceStatus(item) {
-  if (item.is_maintenance || item.status === "maintenance") return "maintenance";
+  if (item.is_maintenance || item.status === "maintenance")
+    return "maintenance";
   if (item.available === false || item.status === "booked") return "booked";
   return "available";
 }
@@ -57,8 +58,12 @@ export default function Resources() {
   const { user } = useAuth();
   const toast = useToast();
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
-  const [resources, setResources] = useState(() => readCache(CACHE_KEYS.RESOURCES) || []);
-  const [loading, setLoading] = useState(() => (readCache(CACHE_KEYS.RESOURCES) ? false : true));
+  const [resources, setResources] = useState(
+    () => readCache(CACHE_KEYS.RESOURCES) || [],
+  );
+  const [loading, setLoading] = useState(() =>
+    readCache(CACHE_KEYS.RESOURCES) ? false : true,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -267,7 +272,9 @@ export default function Resources() {
   const handleMaintenanceToggle = (item) => {
     const resourceId = item.resource_id || item.id;
     if (!resourceId) {
-      toast.error("Error: Resource ID is missing. Please refresh and try again.");
+      toast.error(
+        "Error: Resource ID is missing. Please refresh and try again.",
+      );
       return;
     }
     const isCurrentlyMaintenance =
@@ -300,9 +307,7 @@ export default function Resources() {
 
     request
       .then(() => {
-        toast.success(
-          `Resource marked as ${actionText} successfully`,
-        );
+        toast.success(`Resource marked as ${actionText} successfully`);
         window.dispatchEvent(new Event("cacheInvalidated"));
       })
       .catch((err) => {
@@ -357,7 +362,10 @@ export default function Resources() {
     toast.success(`Resource ${actionText} successfully!`, { duration: 3000 });
 
     const request = editingResource
-      ? client.post(`/resources/${editingResource.resource_id || editingResource.id}`, data)
+      ? client.post(
+          `/resources/${editingResource.resource_id || editingResource.id}`,
+          data,
+        )
       : api.createResource(data);
 
     request
@@ -384,7 +392,8 @@ export default function Resources() {
         // --- Rollback: restore previous state ---
         setResources(prevResources);
         toast.error(
-          err?.response?.data?.message || "Failed to save resource. Please try again.",
+          err?.response?.data?.message ||
+            "Failed to save resource. Please try again.",
         );
       });
   };
@@ -453,8 +462,7 @@ export default function Resources() {
     return (
       <div
         key={item.resource_id || item.id}
-        className="group flex flex-col h-full overflow-hidden rounded-xl border border-line bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
-      >
+        className="group flex flex-col h-full overflow-hidden rounded-xl border border-line bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
         {/* Thumbnail with status badge overlay */}
         <div className="relative h-20 sm:h-36 w-full bg-paper flex items-center justify-center overflow-hidden border-b border-line">
           {item.image ? (
@@ -469,8 +477,7 @@ export default function Resources() {
             <div
               className={`flex flex-col items-center justify-center gap-2 text-steel ${
                 isMaintenance ? "opacity-60" : ""
-              }`}
-            >
+              }`}>
               <div
                 className={`rounded-lg p-2.5 ${
                   isMaintenance
@@ -478,8 +485,7 @@ export default function Resources() {
                     : resourceType === "vehicle"
                       ? "bg-amber-50 border border-amber-100"
                       : "bg-blue-50 border border-blue-100"
-                }`}
-              >
+                }`}>
                 {resourceType === "vehicle" ? (
                   <Car
                     size={20}
@@ -503,8 +509,7 @@ export default function Resources() {
 
           {/* Status badge overlay on thumbnail */}
           <span
-            className={`absolute top-1.5 right-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${statusConfig.className}`}
-          >
+            className={`absolute top-1.5 right-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${statusConfig.className}`}>
             {statusConfig.label}
           </span>
         </div>
@@ -526,8 +531,7 @@ export default function Resources() {
                 <button
                   onClick={() => handleOpenModal(item)}
                   className="text-steel hover:text-brand transition p-1"
-                  title="Edit Resource"
-                >
+                  title="Edit Resource">
                   <Edit2 size={12} />
                 </button>
                 <button
@@ -541,15 +545,13 @@ export default function Resources() {
                     isMaintenance
                       ? "Mark as Available"
                       : "Mark as Under Maintenance"
-                  }
-                >
+                  }>
                   <Wrench size={12} />
                 </button>
                 <button
                   onClick={() => handleDelete(item.resource_id || item.id)}
                   className="text-steel hover:text-red-500 transition p-1"
-                  title="Delete Resource"
-                >
+                  title="Delete Resource">
                   <Trash2 size={12} />
                 </button>
               </div>
@@ -576,22 +578,19 @@ export default function Resources() {
           {isMaintenance ? (
             <button
               disabled
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-gray-200 text-gray-500 py-1.5 text-[10px] font-medium cursor-not-allowed opacity-60"
-            >
+              className="w-full flex items-center justify-center gap-1 rounded-md bg-gray-200 text-gray-500 py-1.5 text-[10px] font-medium cursor-not-allowed opacity-60">
               <Wrench size={10} /> Under Maintenance
             </button>
           ) : isAdmin ? (
             <button
               onClick={() => handleOpenRequestModal(item, true)}
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand text-white hover:bg-brand-dark py-1.5 text-[10px] font-medium transition"
-            >
+              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand text-white hover:bg-brand-dark py-1.5 text-[10px] font-medium transition">
               <Calendar size={10} /> Book
             </button>
           ) : (
             <button
               onClick={() => handleOpenRequestModal(item)}
-              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-1.5 text-[10px] font-medium transition"
-            >
+              className="w-full flex items-center justify-center gap-1 rounded-md bg-brand-light text-brand hover:bg-brand hover:text-white py-1.5 text-[10px] font-medium transition">
               <Calendar size={10} /> Request
             </button>
           )}
@@ -610,8 +609,7 @@ export default function Resources() {
         {isAdmin && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90 transition"
-          >
+            className="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90 transition">
             <Plus size={16} /> Add Resource
           </button>
         )}
@@ -619,7 +617,10 @@ export default function Resources() {
 
       {/* Search Bar */}
       <div className="relative mb-4">
-        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-steel" />
+        <Search
+          size={14}
+          className="absolute left-2.5 top-1/2 -translate-y-[60%] text-steel"
+        />
         <input
           type="text"
           placeholder="Search resources by name or description..."
@@ -631,8 +632,7 @@ export default function Resources() {
           <button
             onClick={() => setSearchQuery("")}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-steel hover:text-ink"
-            title="Clear search"
-          >
+            title="Clear search">
             ×
           </button>
         )}
@@ -646,8 +646,7 @@ export default function Resources() {
             activeFilter === "all"
               ? "bg-white text-ink shadow-sm"
               : "text-steel hover:text-ink"
-          }`}
-        >
+          }`}>
           All ({displayedCount})
         </button>
         <button
@@ -656,8 +655,7 @@ export default function Resources() {
             activeFilter === "vehicle"
               ? "bg-white text-ink shadow-sm"
               : "text-steel hover:text-ink"
-          }`}
-        >
+          }`}>
           <Car size={15} /> Vehicles ({allVehicles.length})
         </button>
         <button
@@ -666,8 +664,7 @@ export default function Resources() {
             activeFilter === "facility"
               ? "bg-white text-ink shadow-sm"
               : "text-steel hover:text-ink"
-          }`}
-        >
+          }`}>
           <Building2 size={15} /> Facilities ({allFacilities.length})
         </button>
         <button
@@ -676,8 +673,7 @@ export default function Resources() {
             activeFilter === "maintenance"
               ? "bg-white text-yellow-800 shadow-sm border border-yellow-200"
               : "text-steel hover:text-ink"
-          }`}
-        >
+          }`}>
           🟡 In Maintenance ({maintenanceItems.length})
         </button>
       </div>
@@ -779,8 +775,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, type: e.target.value })
                   }
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand"
-                >
+                  className="w-full rounded-md border border-line px-3 py-2 text-[13px] focus:outline-none focus:border-brand">
                   <option value="facility">Facility</option>
                   <option value="vehicle">Vehicle</option>
                 </select>
@@ -838,14 +833,12 @@ export default function Resources() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-md border border-line px-4 py-2 text-[13px] text-steel hover:bg-paper"
-                >
+                  className="rounded-md border border-line px-4 py-2 text-[13px] text-steel hover:bg-paper">
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90"
-                >
+                  className="rounded-md bg-brand px-4 py-2 text-[13px] font-medium text-white hover:opacity-90">
                   {editingResource ? "Save Changes" : "Create Resource"}
                 </button>
               </div>
