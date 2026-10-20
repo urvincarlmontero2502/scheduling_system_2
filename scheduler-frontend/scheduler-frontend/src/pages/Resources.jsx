@@ -618,7 +618,7 @@ export default function Resources() {
 
       {/* Search Bar */}
       <div className="relative w-full mb-3 flex items-center">
-        <Search size={14} className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
+        <Search size={14} className="absolute left-3 top-[47%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4" />
         <input
           type="text"
           placeholder="Search resources..."
