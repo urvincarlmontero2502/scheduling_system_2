@@ -624,7 +624,7 @@ export default function Resources() {
           placeholder="Search resources..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full text-sm py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white mb-3 shadow-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+          className="w-full text-sm py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white mb-3 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
         />
       </div>
 

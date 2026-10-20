@@ -290,13 +290,13 @@ export default function Overview() {
                 placeholder="Search resources..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-sm py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-xs outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                className="w-full text-sm py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs py-1.5 px-3 rounded-lg border border-slate-200 bg-white shadow-sm outline-none focus:border-emerald-500"
+              className="text-xs py-1.5 px-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
             >
               <option value="all">Show: All Status</option>
               <option value="available">Available</option>
