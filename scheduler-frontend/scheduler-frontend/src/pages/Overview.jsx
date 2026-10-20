@@ -237,7 +237,7 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-line bg-white shadow-sm outline-none focus:border-brand"
+              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-sm outline-none focus:border-brand"
             />
           </div>
           <div className="flex overflow-x-auto gap-2 pt-2 pb-1 no-scrollbar whitespace-nowrap w-full">
@@ -279,7 +279,7 @@ export default function Overview() {
         </div>
 
         {/* Desktop: Category pills left, search right in same row */}
-        <div className="hidden sm:flex flex-col sm:flex-row sm:items-center justify-between gap-3 my-4">
+        <div className="hidden sm:flex items-center justify-between gap-4 w-full">
           <div className="flex overflow-x-auto gap-2 no-scrollbar whitespace-nowrap">
             <button
               onClick={() => {
@@ -326,7 +326,7 @@ export default function Overview() {
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 lg:w-80 text-xs py-2 pl-9 pr-3 rounded-lg border border-line bg-white shadow-sm outline-none focus:border-brand"
+              className="w-64 lg:w-80 text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-sm outline-none focus:border-brand"
             />
           </div>
         </div>
@@ -407,7 +407,16 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="h-20 sm:h-24 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
+                    <div className="relative overflow-hidden rounded-t-lg bg-slate-100">
+                      <span
+                        className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-full ${
+                          item.available
+                            ? "bg-emerald-500/90 text-white backdrop-blur-md shadow-sm"
+                            : "bg-gray-500/90 text-white backdrop-blur-md shadow-sm"
+                        }`}
+                      >
+                        {item.available ? "Available" : "Booked"}
+                      </span>
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -426,11 +435,6 @@ export default function Overview() {
                         <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[32px]">
                           {item.name}
                         </h3>
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] sm:text-[11px] font-medium ${item.available ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"
-                        }`}>
-                          {item.available ? "Available" : "Booked"}
-                        </span>
                       </div>
                       <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
                         Capacity:{" "}
@@ -479,7 +483,16 @@ export default function Overview() {
                     key={item.resource_id || item.id}
                     onClick={() => handleOpenBooking(item)}
                     className="flex flex-col h-full rounded-xl bg-white border border-line shadow-sm overflow-hidden">
-                    <div className="h-20 sm:h-24 w-full flex items-center justify-center bg-amber-50/50 rounded-t-lg overflow-hidden">
+                    <div className="relative overflow-hidden rounded-t-lg bg-slate-100">
+                      <span
+                        className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-full ${
+                          item.available
+                            ? "bg-emerald-500/90 text-white backdrop-blur-md shadow-sm"
+                            : "bg-gray-500/90 text-white backdrop-blur-md shadow-sm"
+                        }`}
+                      >
+                        {item.available ? "Available" : "Booked"}
+                      </span>
                       {item.image && item.image.trim() !== "" ? (
                         <img
                           src={item.image}
@@ -498,11 +511,6 @@ export default function Overview() {
                         <h3 className="text-xs sm:text-sm font-bold text-ink line-clamp-2 min-h-[32px]">
                           {item.name}
                         </h3>
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] sm:text-[11px] font-medium ${item.available ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"
-                        }`}>
-                          {item.available ? "Available" : "Booked"}
-                        </span>
                       </div>
                       <p className="mt-1 min-h-[2.5rem] text-[11px] sm:text-xs text-steel line-clamp-2">
                         Unit Details:{" "}
