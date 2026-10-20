@@ -602,23 +602,12 @@ export default function Resources() {
 
   return (
     <div className="p-4">
-      {/* Top Header & Action Row */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-slate-900">Facilities &amp; Vehicles</h1>
-        {isAdmin && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="py-2 px-4 text-xs font-semibold rounded-lg bg-emerald-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-emerald-800"
-          >
-            <Plus size={12} />
-            Add Resource
-          </button>
-        )}
-      </div>
+      {/* Clean Header Title */}
+      <h1 className="text-[20px] font-semibold text-slate-900 mb-4">Facilities &amp; Vehicles</h1>
 
-      {/* Search Bar & Filter Pills Row */}
+      {/* Action Toolbar Row: Search Bar + Filter Pills + Add Resource */}
       <div className="flex items-center gap-2 mb-6 w-full">
-        <div className="relative w-full max-w-md mb-4">
+        <div className="relative w-full max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <Search size={16} className="w-4 h-4" />
           </div>
@@ -638,8 +627,9 @@ export default function Resources() {
             </button>
           )}
         </div>
+
         {/* Filter Pills */}
-        <div className="flex flex-wrap gap-2 mb-4 rounded-lg bg-slate-100/80 p-1.5 border border-slate-200">
+        <div className="flex flex-wrap gap-2 rounded-lg bg-slate-100/80 p-1.5 border border-slate-200">
         <button
           onClick={() => handleTabClick("all")}
           className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
@@ -681,6 +671,15 @@ export default function Resources() {
           In Maintenance ({maintenanceItems.length})
         </button>
         </div>
+        {isAdmin && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="py-2 px-4 text-xs font-semibold rounded-lg bg-emerald-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-emerald-800"
+          >
+            <Plus size={12} />
+            Add Resource
+          </button>
+        )}
       </div>
 
       {/* Resource Grid */}
