@@ -73,6 +73,7 @@ class BookingController extends Controller
                     'id' => $b->booking_id,
                     'resource_id' => $b->resource_id,
                     'resource' => $b->resource->name ?? 'Unknown Resource',
+                    'resource_image' => $b->resource->image ? \Illuminate\Support\Facades\Storage::disk('assets')->url($b->resource->image) : null,
                     'full_name' => $b->full_name && $b->full_name !== ($b->user?->name ?? null) ? $b->full_name : '—',
                     'requester' => $b->full_name && $b->full_name !== ($b->user?->name ?? null) ? $b->full_name : '—',
                     'barangay' => $b->user?->barangay ?? $b->user?->name ?? 'Poblacion',
