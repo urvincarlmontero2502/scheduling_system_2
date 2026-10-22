@@ -474,16 +474,18 @@ export default function BookingHistory() {
       </header>
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
-        {/* Batch Print Controls Bar */}
-        <div className="flex flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-[13px] font-medium text-gray-700">
+        {/* Unified Control & Toolbar Strip */ }
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+          {/* Left: Batch Print group */ }
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[12px] font-medium text-slate-500">
               Batch Print:
             </span>
             <select
               value={printMode}
               onChange={(e) => setPrintMode(e.target.value)}
-              className="rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none">
+              className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+            >
               <option value="month">By Month</option>
               <option value="year">By Year</option>
             </select>
@@ -493,7 +495,7 @@ export default function BookingHistory() {
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none"
+                className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
               />
             ) : (
               <input
@@ -503,63 +505,67 @@ export default function BookingHistory() {
                 placeholder="YYYY"
                 min="2020"
                 max="2099"
-                className="w-28 rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none"
+                className="w-28 text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
               />
             )}
-          </div>
 
-          <button
-            onClick={handlePrintBatch}
-            className="flex items-center justify-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-[13px] font-medium text-white hover:bg-gray-950">
-            <Printer size={15} />
-            Print Selected Period
-          </button>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-md">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              placeholder="Search booking, requestor, resource..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-line bg-white py-2.5 pl-9 pr-3 text-[13px] outline-none focus:border-brand"
-            />
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-line bg-white px-3 py-2.5 text-[13px] outline-none">
-            <option value="all">All History</option>
-            <option value="completed">Completed</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          {canModerate && filteredBookings.length > 0 && (
             <button
-              onClick={handleDeleteAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition shadow-sm"
+              onClick={handlePrintBatch}
+              className="flex items-center justify-center gap-1.5 text-xs py-1.5 px-3 rounded-md bg-slate-800 text-white hover:bg-slate-900 transition"
             >
-              <Trash2 size={14} /> Delete All ({filteredBookings.length})
+              <Printer size={13} />
+              Print
             </button>
-          )}
+          </div>
+
+          {/* Right: Search + Status Filter + Delete All */ }
+          <div className="flex items-center gap-2">
+            {/* Search */ }
+            <div className="relative flex-1 max-w-sm">
+              <Search
+                size={14}
+                className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel"
+              />
+              <input
+                type="text"
+                placeholder="Search booking, requestor, resource..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full text-xs py-2 pl-9 pr-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+              />
+            </div>
+
+            {/* Status Filter */ }
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+            >
+              <option value="all">All History</option>
+              <option value="completed">Completed</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            {/* Delete All */ }
+            {canModerate && filteredBookings.length > 0 && (
+              <button
+                onClick={handleDeleteAll}
+                className="flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-md text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition"
+              >
+                <Trash2 size={13} /> Delete All ({filteredBookings.length})
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* History Table */}
-        <div className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+        {/* Modern Data Table */ }
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
           {loading ? (
             <div className="animate-pulse">
-              {/* Table skeleton — header + rows */}
-              <div className="border-b border-line bg-gray-50 px-4 py-3 flex items-center gap-4">
+              {/* Table skeleton — header + rows */ }
+              <div className="border-b border-slate-200/80 bg-gray-50 px-4 py-3.5 flex items-center gap-4">
                 <Skeleton className="h-3 w-8 bg-gray-200 rounded" />
                 <Skeleton className="h-3 w-16 bg-gray-200 rounded" />
                 <Skeleton className="h-3 w-20 bg-gray-200 rounded" />
@@ -567,7 +573,7 @@ export default function BookingHistory() {
                 <Skeleton className="h-3 w-12 bg-gray-200 rounded" />
               </div>
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={`skeleton-row-${i}`} className="border-b border-line px-4 py-4 flex items-center gap-4">
+                <div key={`skeleton-row-${i}`} className="border-b border-slate-200/80 px-4 py-4 flex items-center gap-4">
                   <Skeleton className="h-3 w-12 bg-gray-200 rounded" />
                   <Skeleton className="h-3 w-24 bg-gray-200 rounded" />
                   <Skeleton className="h-3 w-28 bg-gray-200 rounded" />
@@ -591,35 +597,35 @@ export default function BookingHistory() {
           ) : (
             <div className="overflow-x-auto whitespace-nowrap">
               <table className="w-full min-w-[850px]">
-                <thead className="border-b border-line bg-gray-50">
+                <thead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200/80 bg-slate-50/80">
                       ID
                     </th>
 
-                    <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200/80 bg-slate-50/80">
                       Requestor
                     </th>
 
-                    <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200/80 bg-slate-50/80">
                       Resource
                     </th>
 
-                    <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200/80 bg-slate-50/80">
                       Date
                     </th>
 
-                    <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200/80 bg-slate-50/80">
                       Status
                     </th>
 
-                    <th className="px-4 py-3 text-right text-[12px] font-semibold text-steel">
+                    <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200/80 bg-slate-50/80">
                       Actions
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-line">
+                <tbody>
                   {filteredBookings.map((booking) => {
                     const bookingId = booking.id || booking.booking_id;
 
@@ -644,64 +650,80 @@ export default function BookingHistory() {
                           booking.item_name ||
                           "Resource";
 
+                    const status = (booking.status || "").toLowerCase();
+
+                    const statusBadgeClass =
+                      status === "approved"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                        : status === "rejected"
+                          ? "bg-rose-50 text-rose-700 border border-rose-200/60"
+                          : status === "completed"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200/60"
+                            : status === "cancelled"
+                              ? "bg-slate-50 text-slate-700 border border-slate-200/60"
+                              : "bg-amber-50 text-amber-800 border border-amber-200/60";
+
                     return (
-                      <tr key={bookingId} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 text-[13px] font-medium">
+                      <tr
+                        key={bookingId}
+                        className="hover:bg-slate-50/60 transition-colors border-b border-slate-100 text-xs text-slate-700"
+                      >
+                        <td className="px-4 py-4 font-medium text-slate-800">
                           #{bookingId}
                         </td>
 
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
-                            <User size={15} className="text-gray-400" />
-
-                            <span className="text-[13px]">{requester}</span>
+                            <User size={13} className="text-slate-400" />
+                            <span>{requester}</span>
                           </div>
                         </td>
 
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
-                            <Building2 size={15} className="text-gray-400" />
-
-                            <span className="text-[13px]">{resource}</span>
+                            <Building2 size={13} className="text-slate-400" />
+                            <span>{resource}</span>
                           </div>
                         </td>
 
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
-                            <Calendar size={15} className="text-gray-400" />
-
-                            <span className="text-[13px]">
-                              {getDateValue(booking)}
-                            </span>
+                            <Calendar size={13} className="text-slate-400" />
+                            <span>{getDateValue(booking)}</span>
                           </div>
                         </td>
 
                         <td className="px-4 py-4">
-                          <StatusBadge status={booking.status} />
+                          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-medium ${statusBadgeClass}`}>
+                            {(booking.status || "unknown").toUpperCase()}
+                          </span>
                         </td>
 
                         <td className="px-4 py-4">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => setSelectedBooking(booking)}
-                              className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-[12px] font-medium text-steel hover:bg-gray-50">
+                              className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                              title="View"
+                            >
                               <Eye size={14} />
-                              View
                             </button>
-
                             <button
                               onClick={() => handlePrint(booking)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gray-800 px-3 py-2 text-[12px] font-medium text-white hover:bg-gray-900">
+                              className="p-1.5 text-slate-600 hover:text-brand hover:bg-brand/10 rounded-md transition-colors"
+                              title="Print"
+                            >
                               <Printer size={14} />
-                              Print
                             </button>
-
-                            <button
-                              onClick={() => handleDelete(bookingId)}
-                              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-[12px] font-medium text-red-600 hover:bg-red-50">
-                              <Trash2 size={14} />
-                              Delete
-                            </button>
+                            {canModerate && (
+                              <button
+                                onClick={() => handleDelete(bookingId)}
+                                className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
