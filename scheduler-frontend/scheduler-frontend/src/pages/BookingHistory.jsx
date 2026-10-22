@@ -284,6 +284,7 @@ export default function BookingHistory() {
       booking.cell_number || booking.contact || booking.phone || "N/A";
     const address =
       booking.where_do_you_live || booking.address || booking.location || "N/A";
+    const email = booking.email || booking.user?.email || "N/A";
     const purpose =
       booking.purpose ||
       booking.reason ||
@@ -350,6 +351,7 @@ export default function BookingHistory() {
               <tr><td>Full Name</td><td>${requester}</td></tr>
               <tr><td>Barangay</td><td>${barangay}</td></tr>
               <tr><td>Cell Number</td><td>${cellNumber}</td></tr>
+              <tr><td>Email</td><td>${email}</td></tr>
               <tr><td>Address</td><td>${address}</td></tr>
             </table>
           </div>
@@ -893,6 +895,18 @@ export default function BookingHistory() {
 
                 <p className="mt-1 text-[13px]">
                   {selectedBooking.purpose || "No purpose provided"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-steel">
+                  Email
+                </p>
+                <p className="mt-1 text-[13px]">
+                  {selectedBooking.email ||
+                    selectedBooking.user?.email ||
+                    selectedBooking.requester_email ||
+                    "N/A"}
                 </p>
               </div>
 
