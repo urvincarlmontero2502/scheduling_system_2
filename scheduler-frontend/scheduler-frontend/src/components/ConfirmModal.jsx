@@ -1,4 +1,5 @@
-import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 /**
  * Custom confirmation modal — replaces window.confirm() popups
@@ -32,7 +33,18 @@ export default function ConfirmModal({
   iconBg = "bg-amber-50",
   iconColor = "text-amber-600",
 }) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
   if (!open) return null;
+
+  const handleConfirm = async () => {
+    try {
+      setIsProcessing(true);
+      await onConfirm();
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div
@@ -56,15 +68,24 @@ export default function ConfirmModal({
         <div className="flex items-center gap-3 mt-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition-colors"
+            disabled={isProcessing}
+            className="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelText}
           </button>
           <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2 rounded-lg bg-[#0B6E4F] hover:bg-[#08523B] text-white text-xs font-medium transition-colors"
+            onClick={handleConfirm}
+            disabled={isProcessing}
+            className="flex-1 px-4 py-2 rounded-lg bg-[#0B6E4F] hover:bg-[#08523B] text-white text-xs font-medium transition-colors disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
-            {confirmText}
+            {isProcessing ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                {confirmText}...
+              </>
+            ) : (
+              confirmText
+            )}
           </button>
         </div>
       </div>
