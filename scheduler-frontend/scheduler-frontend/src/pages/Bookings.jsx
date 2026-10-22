@@ -414,36 +414,41 @@ export default function Bookings() {
       </header>
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
-        {/* Search & Barangay Filter Bar */}
-        <div className="relative w-full">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white mb-2 shadow-2xs outline-none focus:border-brand"
-          />
-        </div>
+        {/* Consolidated Control Toolbar */ }
+        <div className="flex items-center gap-3 w-full">
+          {/* Search Bar */ }
+          <div className="relative w-full max-w-md">
+            <Search
+              size={14}
+              className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel"
+            />
+            <input
+              type="text"
+              placeholder="Search resources, applicants..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
+            />
+          </div>
 
-        {/* Filter & View Row */}
-        <div className="flex items-center justify-between gap-2 mb-2 w-full">
-          <select
-            value={barangayFilter}
-            onChange={(e) => setBarangayFilter(e.target.value)}
-            className="text-xs py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white shrink-0 outline-none focus:border-brand"
-          >
-            <option value="all">All Barangays</option>
-            {barangayOptions.map((bg) => (
-              <option key={bg} value={bg}>
-                {bg}
-              </option>
-            ))}
-          </select>
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
+          {/* Barangay Filter */ }
+          <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={barangayFilter}
+              onChange={(e) => setBarangayFilter(e.target.value)}
+              className="text-xs py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white shrink-0 outline-none focus:border-brand"
+            >
+              <option value="all">All Barangays</option>
+              {barangayOptions.map((bg) => (
+                <option key={bg} value={bg}>
+                  {bg}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* View Mode Switcher */ }
+          <div className="ml-auto flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
             <button
               onClick={() => setViewMode("card")}
               className={`p-1.5 rounded transition text-sm font-medium ${
@@ -469,85 +474,81 @@ export default function Bookings() {
           </div>
         </div>
 
-        {/* Tab Bar */}
-        <div className="flex overflow-x-auto gap-1.5 py-1 mb-3 no-scrollbar w-full text-xs">
-          <div className="inline-flex items-center gap-1 rounded-lg bg-gray-100 p-1 border border-line flex-shrink-0">
-            <button
-              onClick={() => setActiveTab("pending")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+        {/* Segmented Status Filters */ }
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg border border-line w-fit mb-6">
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+              activeTab === "pending"
+                ? "bg-amber-500 text-white shadow-sm"
+                : "text-steel hover:text-ink"
+            }`}
+          >
+            Pending
+            <span
+              className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                 activeTab === "pending"
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
+                  ? "bg-amber-600 text-white"
+                  : "bg-amber-100 text-amber-800"
               }`}
             >
-              Pending
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === "pending"
-                    ? "bg-amber-600 text-white"
-                    : "bg-amber-100 text-amber-800"
-                }`}
-              >
-                {pendingCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("approved")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+              {pendingCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("approved")}
+            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+              activeTab === "approved"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-steel hover:text-ink"
+            }`}
+          >
+            Approved
+            <span
+              className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                 activeTab === "approved"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
+                  ? "bg-emerald-700 text-white"
+                  : "bg-emerald-100 text-emerald-800"
               }`}
             >
-              Approved
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === "approved"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}
-              >
-                {approvedCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("rejected")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+              {approvedCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("rejected")}
+            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+              activeTab === "rejected"
+                ? "bg-rose-600 text-white shadow-sm"
+                : "text-steel hover:text-ink"
+            }`}
+          >
+            Rejected
+            <span
+              className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                 activeTab === "rejected"
-                  ? "bg-rose-600 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
+                  ? "bg-rose-700 text-white"
+                  : "bg-rose-100 text-rose-800"
               }`}
             >
-              Rejected
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === "rejected"
-                    ? "bg-rose-700 text-white"
-                    : "bg-rose-100 text-rose-800"
-                }`}
-              >
-                {rejectedCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-                activeTab === "all"
-                  ? "bg-gray-800 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
-              }`}
-            >
-              All ({requests.length})
-            </button>
-          </div>
-
-
+              {rejectedCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
+              activeTab === "all"
+                ? "bg-gray-800 text-white shadow-sm"
+                : "text-steel hover:text-ink"
+            }`}
+          >
+            All ({requests.length})
+          </button>
         </div>
 
         {/* Content Section */}
         {loading ? (
           viewMode === "card" ? (
-            <div className="grid grid-cols-2 gap-2.5 w-full max-w-full px-1">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full max-w-full px-1">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonBookingCard key={`skeleton-card-${i}`} />
               ))}
@@ -676,6 +677,11 @@ export default function Bookings() {
 
                   const isPendingItem =
                     (b.status || "").toLowerCase() === "pending";
+                  const statusText = b.status || "pending";
+                  const statusColor = 
+                    statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                    statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
+                    "bg-amber-500";
 
                   return (
                     <tr key={bookingId} className="hover:bg-gray-50">
@@ -749,7 +755,7 @@ export default function Bookings() {
           </div>
         ) : (
           // Card View
-          <div className="grid grid-cols-2 gap-2.5 w-full max-w-full px-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full max-w-full px-1">
             {filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
               const resourceName =
@@ -769,12 +775,6 @@ export default function Bookings() {
                 "Unknown Requestor";
               const cellNumber =
                 b.cell_number || b.contact || b.phone || "N/A";
-              const addressValue =
-                b.where_do_you_live ||
-                b.address ||
-                b.location ||
-                b.user_address ||
-                "N/A";
               const purposeValue =
                 b.purpose ||
                 b.reason ||
@@ -807,78 +807,88 @@ export default function Bookings() {
 
               const isPendingItem =
                 (b.status || "").toLowerCase() === "pending";
+              const statusText = b.status || "pending";
+              const statusColor = 
+                statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
+                "bg-amber-500";
 
               return (
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="cursor-pointer bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs flex flex-col justify-between h-full"
+                  className="cursor-pointer bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col h-full"
                 >
-                  {/* Resource + Status header */}
-                  <div className="flex items-start justify-between gap-1 mb-2">
+                  {/* Header: Resource Name + Status badge overlay */ }
+                  <div className="flex items-start justify-between gap-2 p-3 pb-2">
                     <div className="flex-1 min-w-0">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
                         Resource
                       </span>
-                      <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug min-h-[2.25rem] flex-1">
+                      <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug min-h-[2.25rem]">
                         {resourceName}
                       </h3>
                     </div>
                     <div className="shrink-0">
-                      <StatusBadge status={b.status} className="px-1.5 py-0.5 text-[9px] font-semibold rounded-md" />
+                      <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-semibold rounded-full text-white ${statusColor}`}>
+                        {statusText}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Date & Time chips */}
-                  <div className="px-2.5 mb-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-md bg-slate-100 text-slate-700 shrink-0">
+                  {/* Date & Time pills */ }
+                  <div className="px-3 mb-2.5 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-50 border border-line">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-md bg-slate-100 text-slate-700 shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-50 border border-line">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
-                  {/* Details block */}
-                  <div className="p-2 my-2 bg-slate-50/80 rounded-lg text-[10px] space-y-1 text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <User size={10} className="shrink-0 text-slate-400" />
-                      <span className="truncate">
-                        <strong className="text-slate-700">Name:</strong>{" "}
-                        {fullName}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Building2 size={10} className="shrink-0 text-slate-400" />
-                      <span className="truncate">{barangayName}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Phone size={10} className="shrink-0 text-slate-400" />
-                      <span className="font-mono truncate">
-                        {cellNumber}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-1.5">
-                      <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
-                      <span className="line-clamp-2">
-                        {purposeValue}
-                      </span>
+                  {/* Requester Metadata Box */ }
+                  <div className="px-3 pb-3">
+                    <div className="bg-paper/50 p-3 rounded-lg border border-line/60 text-xs text-steal space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <User size={10} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          <strong className="text-slate-700">Requester:</strong>{" "}
+                          {fullName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Building2 size={10} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          <strong className="text-slate-700">Barangay:</strong> {barangayName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Phone size={10} className="shrink-0 text-slate-400" />
+                        <span className="font-mono truncate">
+                          <strong className="text-slate-700">Contact:</strong> {cellNumber}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
+                        <span className="line-clamp-2">
+                          <strong className="text-slate-700">Purpose:</strong> {purposeValue}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Action Button Row */ }
                   {canModerate && isPendingItem && (
-                            <div
-                      className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 mt-auto"
-                      onClick={(e) => e.stopPropagation()}
+                    <div
+                      className="grid grid-cols-2 gap-2 px-3 pb-3 pt-2 border-t border-slate-100"
                     >
                       <button
                         onClick={() =>
                           handleStatusChange(bookingId, "approved")
                         }
-                        className="w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700"
+                        className="flex-1 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -887,7 +897,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50/50 flex items-center justify-center hover:bg-rose-100"
+                        className="flex-1 py-1.5 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <X size={12} /> Reject
                       </button>
