@@ -188,7 +188,7 @@ export default function BookingHistory() {
 
     const searchText = `${resource} ${requester} ${
       booking.purpose || ""
-    } ${booking.id || booking.booking_id || ""}`.toLowerCase();
+    } ${booking.id || booking.booking_id || ""} ${booking.reference_id || ""}`.toLowerCase();
 
     const matchesSearch = searchText.includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || status === statusFilter;
@@ -293,6 +293,7 @@ export default function BookingHistory() {
     const date = getDateValue(booking);
     const time = getTimeValue(booking);
     const status = (booking.status || "unknown").toUpperCase();
+    const referenceId = booking.reference_id || `#${bookingId}`;
 
     const printWindow = window.open("", "_blank");
 
@@ -341,6 +342,7 @@ export default function BookingHistory() {
           </div>
           <div class="booking-id">
             Booking ID: <strong>#${bookingId}</strong>
+            <br />Reference ID: <strong>${referenceId}</strong>
           </div>
           <div class="section">
             <div class="section-title">REQUESTOR INFORMATION</div>
@@ -809,6 +811,9 @@ export default function BookingHistory() {
 
                 <p className="text-[12px] text-steel">
                   Booking #{selectedBooking.id || selectedBooking.booking_id}
+                </p>
+                <p className="text-[11px] text-steel">
+                  Ref: {selectedBooking.reference_id || `#${selectedBooking.id || selectedBooking.booking_id}`}
                 </p>
               </div>
 
