@@ -287,10 +287,9 @@ export default function Resources() {
       ? api.setResourceAvailable?.(resourceId)
       : api.setResourceMaintenance?.(resourceId);
 
-    // --- Optimistic: update local state + cache immediately ---
-    const cached = readCache(CACHE_KEYS.RESOURCES) || [];
-    const prevResources = [...cached];
-    const updated = cached.map((r) =>
+    // --- Optimistic: update local state + cache immediately (from current state, not cache) ---
+    const prevResources = [...resources];
+    const updated = resources.map((r) =>
       String(r.resource_id || r.id) === String(resourceId)
         ? {
             ...r,
@@ -687,7 +686,7 @@ export default function Resources() {
         )}
       </div>
 
-      {/* Resource Grid */}
+      {/* Resource Grid */ }
       {loading ? (
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -695,23 +694,18 @@ export default function Resources() {
           ))}
         </div>
       ) : !isInitialized ? (
-        // Still initializing — don't show empty state, show skeleton
+        // Still initializing — show skeleton instead of empty state
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonResourceCard key={`skeleton-${i}`} />
+            <SkeletonResourceCard key={`skeleton-init-${i}`} />
           ))}
         </div>
       ) : displayedCount === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-12 text-center">
-          <Building2 size={40} className="text-slate-500 mb-2 opacity-40" />
-          <h2 className="text-sm font-semibold text-slate-700">
-            No resources found
-          </h2>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm">
-            {searchQuery
-              ? "Try adjusting your search terms."
-              : "Get started by adding your first facility or vehicle using the button above."}
-          </p>
+        // No data after initialization — show skeleton loading style
+        <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonResourceCard key={`skeleton-empty-${i}`} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
