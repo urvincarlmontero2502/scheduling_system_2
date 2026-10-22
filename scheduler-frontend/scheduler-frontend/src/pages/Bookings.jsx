@@ -866,7 +866,7 @@ export default function Bookings() {
                   onClick={() => setSelectedBooking(b)}
                   className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
-                  {/* Resource Image Banner */ }
+                  {/* Resource Image Banner — matching Overview.jsx style */ }
                   <div className="relative w-full h-36 rounded-lg overflow-hidden bg-slate-100 mb-3 border border-slate-100">
                     {resourceImage ? (
                       <img
@@ -875,17 +875,15 @@ export default function Bookings() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1 bg-slate-100">
-                        <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                        <span className="text-[11px] font-medium text-slate-400">No image provided</span>
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                        <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
+                        <span className="text-xs">No image provided</span>
                       </div>
                     )}
-                    {/* Floating Status Badge */ }
-                    <div className="absolute top-2.5 right-2.5 z-10 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white shadow-xs">
+                    {/* Floating Status Badge — matching Overview pattern */ }
+                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-amber-500 text-white shadow-xs">
                       {b.status || 'PENDING'}
-                    </div>
+                    </span>
                   </div>
 
                   {/* Header with Resource Title */ }
