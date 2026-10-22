@@ -24,6 +24,7 @@ import {
 import VehicleBookingModal from "../components/VehicleBookingModal";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import { SkeletonResourceCard } from "../components/Skeleton";
+import ConfirmModal from "../components/ConfirmModal";
 
 /** Status badge configuration */
 const STATUS_VARIANTS = {
@@ -68,6 +69,8 @@ export default function Resources() {
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
   const [resourceType, setResourceType] = useState(null);
   const [isDirectUse, setIsDirectUse] = useState(false);
@@ -281,7 +284,14 @@ export default function Resources() {
       ? "available"
       : "under maintenance";
 
-    if (!window.confirm(`Mark "${item.name}" as ${actionText}?`)) return;
+    // Open custom confirmation modal instead of window.confirm
+    setConfirmModalData({ item, resourceId, isCurrentlyMaintenance, actionText });
+    setConfirmModalOpen(true);
+  };
+
+  const confirmMaintenanceToggle = () => {
+    if (!confirmModalData) return;
+    const { item, resourceId, isCurrentlyMaintenance, actionText } = confirmModalData;
 
     const request = isCurrentlyMaintenance
       ? api.setResourceAvailable?.(resourceId)
@@ -308,6 +318,8 @@ export default function Resources() {
           `Resource marked as ${actionText} successfully`,
         );
         window.dispatchEvent(new Event("cacheInvalidated"));
+        setConfirmModalOpen(false);
+        setConfirmModalData(null);
       })
       .catch((err) => {
         // --- Rollback ---
@@ -858,6 +870,22 @@ export default function Resources() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Custom Confirmation Modal */ }
+      {confirmModalOpen && confirmModalData && (
+        <ConfirmModal
+          open={confirmModalOpen}
+          onClose={() => {
+            setConfirmModalOpen(false);
+            setConfirmModalData(null);
+          }}
+          onConfirm={confirmMaintenanceToggle}
+          title="Confirm Status Change"
+          message={`Are you sure you want to mark "${confirmModalData.item.name}" as ${confirmModalData.actionText}?`}
+          confirmText="Confirm"
+          cancelText="Cancel"
+        />
       )}
     </div>
   );
