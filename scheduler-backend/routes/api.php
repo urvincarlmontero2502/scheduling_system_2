@@ -188,4 +188,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/barangays', [\App\Http\Controllers\AuthController::class, 'getBarangays']);
     Route::post('/barangays', [\App\Http\Controllers\AuthController::class, 'createBarangay'])
         ->middleware('admin');
+
+    // Admin: list all users
+    Route::get('/users', [\App\Http\Controllers\AuthController::class, 'listUsers'])
+        ->middleware('admin');
 });

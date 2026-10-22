@@ -709,4 +709,16 @@ class AuthController extends Controller
         $barangay = Barangay::create($validated);
         return response()->json($barangay, 201);
     }
+
+    /**
+     * List all users (admin only).
+     */
+    public function listUsers(Request $request)
+    {
+        $users = User::select('user_id', 'full_name', 'email', 'role', 'barangay', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($users);
+    }
 }
