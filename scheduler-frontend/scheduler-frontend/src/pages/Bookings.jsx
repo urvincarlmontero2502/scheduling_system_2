@@ -15,7 +15,6 @@ import {
   X,
   Building2,
   Phone,
-  MapPin,
   FileText,
   Calendar,
   Clock,
@@ -414,135 +413,160 @@ export default function Bookings() {
       </header>
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
-        {/* Consolidated Control Toolbar */ }
-        <div className="flex items-center gap-3 w-full">
-          {/* Search Bar */ }
-          <div className="relative w-full max-w-md">
-            <Search
-              size={14}
-              className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel"
-            />
-            <input
-              type="text"
-              placeholder="Search resources, applicants..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full text-xs py-2 pl-9 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
-            />
+        {/* KPI Summary Cards Row */ }
+        <div className="grid grid-cols-2 gap-4 mb-4 lg:grid-cols-4">
+          <div
+            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
+          >
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-3xl font-bold text-slate-900">
+                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : pendingCount}
+              </p>
+              <Clock size={20} className="text-slate-300 opacity-50" />
+            </div>
+            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
+              Pending Requests
+            </p>
+          </div>
+          <div
+            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
+          >
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-3xl font-bold text-slate-900">
+                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : approvedCount}
+              </p>
+              <Check size={20} className="text-slate-300 opacity-50" />
+            </div>
+            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
+              Approved Requests
+            </p>
+          </div>
+          <div
+            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
+          >
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-3xl font-bold text-slate-900">
+                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : rejectedCount}
+              </p>
+              <X size={20} className="text-slate-300 opacity-50" />
+            </div>
+            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
+              Rejected Requests
+            </p>
+          </div>
+          <div
+            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
+          >
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-3xl font-bold text-slate-900">
+                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : requests.length}
+              </p>
+              <FileText size={20} className="text-slate-300 opacity-50" />
+            </div>
+            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
+              Total Requests
+            </p>
+          </div>
+        </div>
+
+        {/* Consolidated Toolbar — matches Overview.jsx layout */ }
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          {/* Left: Status Filter Pills */ }
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full sm:w-auto">
+            <button
+              onClick={() => setActiveTab("pending")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "pending"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              Pending ({pendingCount})
+            </button>
+            <button
+              onClick={() => setActiveTab("approved")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "approved"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              Approved ({approvedCount})
+            </button>
+            <button
+              onClick={() => setActiveTab("rejected")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "rejected"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              Rejected ({rejectedCount})
+            </button>
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "all"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              All ({requests.length})
+            </button>
           </div>
 
-          {/* Barangay Filter */ }
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right: Search & Dropdown & View Mode */ }
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-64">
+              <Search
+                size={14}
+                className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4 flex items-center"
+              />
+              <input
+                type="text"
+                placeholder="Search resources, applicants..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full text-xs py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
+              />
+            </div>
             <select
               value={barangayFilter}
               onChange={(e) => setBarangayFilter(e.target.value)}
-              className="text-xs py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white shrink-0 outline-none focus:border-brand"
+              className="text-xs py-1.5 px-2.5 rounded-lg border border-gray-200 bg-white shrink-0 outline-none focus:border-brand"
             >
-              <option value="all">All Barangays</option>
+              <option value="all">Show: All Barangays</option>
               {barangayOptions.map((bg) => (
                 <option key={bg} value={bg}>
                   {bg}
                 </option>
               ))}
             </select>
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
+              <button
+                onClick={() => setViewMode("card")}
+                className={`p-1.5 rounded transition text-sm font-medium ${
+                  viewMode === "card"
+                    ? "bg-white shadow border border-line text-ink"
+                    : "text-steel hover:text-ink"
+                }`}
+                title="Card View"
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded transition text-sm font-medium ${
+                  viewMode === "table"
+                    ? "bg-white shadow border border-line text-ink"
+                    : "text-steel hover:text-ink"
+                }`}
+                title="Table View"
+              >
+                <Table2 size={14} />
+              </button>
+            </div>
           </div>
-
-          {/* View Mode Switcher */ }
-          <div className="ml-auto flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
-            <button
-              onClick={() => setViewMode("card")}
-              className={`p-1.5 rounded transition text-sm font-medium ${
-                viewMode === "card"
-                  ? "bg-white shadow border border-line text-ink"
-                  : "text-steel hover:text-ink"
-              }`}
-              title="Card View"
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-1.5 rounded transition text-sm font-medium ${
-                viewMode === "table"
-                  ? "bg-white shadow border border-line text-ink"
-                  : "text-steel hover:text-ink"
-              }`}
-              title="Table View"
-            >
-              <Table2 size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Segmented Status Filters */ }
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg border border-line w-fit mb-6">
-          <button
-            onClick={() => setActiveTab("pending")}
-            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-              activeTab === "pending"
-                ? "bg-amber-500 text-white shadow-sm"
-                : "text-steel hover:text-ink"
-            }`}
-          >
-            Pending
-            <span
-              className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                activeTab === "pending"
-                  ? "bg-amber-600 text-white"
-                  : "bg-amber-100 text-amber-800"
-              }`}
-            >
-              {pendingCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("approved")}
-            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-              activeTab === "approved"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "text-steel hover:text-ink"
-            }`}
-          >
-            Approved
-            <span
-              className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                activeTab === "approved"
-                  ? "bg-emerald-700 text-white"
-                  : "bg-emerald-100 text-emerald-800"
-              }`}
-            >
-              {approvedCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("rejected")}
-            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-              activeTab === "rejected"
-                ? "bg-rose-600 text-white shadow-sm"
-                : "text-steel hover:text-ink"
-            }`}
-          >
-            Rejected
-            <span
-              className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                activeTab === "rejected"
-                  ? "bg-rose-700 text-white"
-                  : "bg-rose-100 text-rose-800"
-              }`}
-            >
-              {rejectedCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-              activeTab === "all"
-                ? "bg-gray-800 text-white shadow-sm"
-                : "text-steel hover:text-ink"
-            }`}
-          >
-            All ({requests.length})
-          </button>
         </div>
 
         {/* Content Section */}
@@ -807,11 +831,6 @@ export default function Bookings() {
 
               const isPendingItem =
                 (b.status || "").toLowerCase() === "pending";
-              const statusText = b.status || "pending";
-              const statusColor = 
-                statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
-                statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
-                "bg-amber-500";
 
               return (
                 <div
@@ -819,30 +838,28 @@ export default function Bookings() {
                   onClick={() => setSelectedBooking(b)}
                   className="cursor-pointer bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col h-full"
                 >
-                  {/* Header: Resource Name + Status badge overlay */ }
+                  {/* Header: Status badge at top right */ }
                   <div className="flex items-start justify-between gap-2 p-3 pb-2">
                     <div className="flex-1 min-w-0">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
                         Resource
                       </span>
-                      <h3 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug min-h-[2.25rem]">
+                      <h3 className="text-[15px] font-semibold text-slate-800 leading-snug min-h-[2.25rem]">
                         {resourceName}
                       </h3>
                     </div>
                     <div className="shrink-0">
-                      <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-semibold rounded-full text-white ${statusColor}`}>
-                        {statusText}
-                      </span>
+                      <StatusBadge status={b.status} className="px-2 py-0.5 text-[9px] font-medium rounded-full" />
                     </div>
                   </div>
 
-                  {/* Date & Time pills */ }
+                  {/* Date & Time tag strip — soft grey pills */ }
                   <div className="px-3 mb-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-50 border border-line">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-50 border border-line">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs">
                       <Clock size={10} />
                       {timeValue}
                     </span>
@@ -850,7 +867,7 @@ export default function Bookings() {
 
                   {/* Requester Metadata Box */ }
                   <div className="px-3 pb-3">
-                    <div className="bg-paper/50 p-3 rounded-lg border border-line/60 text-xs text-steal space-y-1">
+                    <div className="bg-slate-50/80 p-3 rounded-lg border border-slate-100 text-xs text-slate-600 space-y-1">
                       <div className="flex items-center gap-1.5">
                         <User size={10} className="shrink-0 text-slate-400" />
                         <span className="truncate">
@@ -879,16 +896,12 @@ export default function Bookings() {
                     </div>
                   </div>
 
-                  {/* Action Button Row */ }
+                  {/* Action Buttons — balanced side-by-side */ }
                   {canModerate && isPendingItem && (
-                    <div
-                      className="grid grid-cols-2 gap-2 px-3 pb-3 pt-2 border-t border-slate-100"
-                    >
+                    <div className="grid grid-cols-2 gap-2 px-3 pb-3 pt-2 border-t border-slate-100">
                       <button
-                        onClick={() =>
-                          handleStatusChange(bookingId, "approved")
-                        }
-                        className="flex-1 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center justify-center gap-1"
+                        onClick={() => handleStatusChange(bookingId, "approved")}
+                        className="flex-1 py-2 rounded-md bg-[#0B6E4F] hover:bg-[#08523B] text-white font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -897,7 +910,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex-1 py-1.5 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium text-xs transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <X size={12} /> Reject
                       </button>
