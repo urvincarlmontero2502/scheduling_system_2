@@ -87,6 +87,7 @@ class BookingController extends Controller
                     'end_time' => $b->end_time,
                     'time' => ($b->start_time && $b->end_time) ? "{$b->start_time} - {$b->end_time}" : 'All Day',
                     'status' => $b->status,
+                    'email' => $b->user->email ?? $b->cell_number ?? 'N/A',
                     'reference_id' => $b->reference_id,
                     'is_special_event' => $b->is_special_event ?? false,
                     'attendees' => $b->attendees,
