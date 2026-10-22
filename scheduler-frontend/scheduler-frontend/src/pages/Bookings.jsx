@@ -413,17 +413,18 @@ export default function Bookings() {
       </header>
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
-        {/* KPI Summary Cards Row */ }
+        {/* KPI Summary Cards Row — clickable to toggle filters */ }
         <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
           {[
-            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading },
-            { label: "Approved Requests", value: approvedCount, Icon: Check, loading },
-            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading },
-            { label: "Total Requests", value: requests.length, Icon: FileText, loading },
+            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading, tab: "pending" },
+            { label: "Approved Requests", value: approvedCount, Icon: Check, loading, tab: "approved" },
+            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading, tab: "rejected" },
+            { label: "Total Requests", value: requests.length, Icon: FileText, loading, tab: "all" },
           ].map((stat) => (
             <div
               key={stat.label}
-              className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${stat.loading ? "animate-pulse" : ""}`}
+              onClick={() => stat.tab && setActiveTab(stat.tab)}
+              className={`cursor-pointer relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs hover:border-slate-300 transition-all ${stat.loading ? "animate-pulse" : ""}`}
             >
               <div className="flex items-center justify-between">
                 <p className="font-mono text-2xl font-bold text-slate-900">
@@ -814,68 +815,66 @@ export default function Bookings() {
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="cursor-pointer bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow transition-all duration-200 flex flex-col h-full"
+                  className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
-                  {/* Header: Status badge at top right */ }
-                  <div className="flex items-start justify-between gap-2 p-3 pb-2">
+                  {/* Header with Status badge at top right */ }
+                  <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[15px] font-semibold text-slate-800 mb-2">
+                      <h3 className="text-[15px] font-semibold text-slate-800">
                         {resourceName}
                       </h3>
                     </div>
                     <div className="shrink-0">
-                      <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full text-white ${statusColor}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-white shadow-xs ${statusColor}`}>
                         {statusText}
                       </span>
                     </div>
                   </div>
 
-                  {/* Date & Time tags — clean gray chips */ }
-                  <div className="px-3 mb-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+                  {/* Date & Time tags */ }
+                  <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
                   {/* Requester Info Box */ }
-                  <div className="px-3 pb-3">
-                    <div className="bg-slate-50/70 p-3.5 rounded-lg border border-slate-100 text-xs text-slate-600 space-y-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <User size={10} className="shrink-0 text-slate-400" />
-                        <span className="truncate">
-                          <strong className="text-slate-700">Requester:</strong>{" "}
-                          {fullName}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Building2 size={10} className="shrink-0 text-slate-400" />
-                        <span className="truncate">
-                          <strong className="text-slate-700">Barangay:</strong> {barangayName}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Phone size={10} className="shrink-0 text-slate-400" />
-                        <span className="font-mono truncate">
-                          <strong className="text-slate-700">Contact:</strong> {cellNumber}
-                        </span>
-                      </div>
-                      <div className="flex items-start gap-1.5">
-                        <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
-                        <span className="line-clamp-2">
-                          <strong className="text-slate-700">Purpose:</strong> {purposeValue}
-                        </span>
-                      </div>
+                  <div className="bg-slate-50/80 p-3.5 rounded-lg border border-slate-100/80 text-xs text-slate-600 space-y-1.5 my-3">
+                    <div className="flex items-center gap-1.5">
+                      <User size={10} className="shrink-0 text-slate-400" />
+                      <span className="truncate">
+                        <strong className="text-slate-700">Requester:</strong>{" "}
+                        {fullName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Building2 size={10} className="shrink-0 text-slate-400" />
+                      <span className="truncate">
+                        <strong className="text-slate-700">Barangay:</strong> {barangayName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Phone size={10} className="shrink-0 text-slate-400" />
+                      <span className="font-mono truncate">
+                        <strong className="text-slate-700">Contact:</strong> {cellNumber}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
+                      <span className="line-clamp-2">
+                        <strong className="text-slate-700">Purpose:</strong> {purposeValue}
+                      </span>
                     </div>
                   </div>
 
                   {/* Action Buttons */ }
                   {canModerate && isPendingItem && (
-                    <div className="grid grid-cols-2 gap-2 px-3 pb-3 pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => handleStatusChange(bookingId, "approved")}
                         className="flex-1 py-2 rounded-md bg-[#0B6E4F] hover:bg-[#08523B] text-white font-medium text-xs transition flex items-center justify-center gap-1"
