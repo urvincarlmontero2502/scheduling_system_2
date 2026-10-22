@@ -117,10 +117,9 @@ export default function Resources() {
   useEffect(() => {
     loadResources();
 
-    // Listen for cache invalidation events
+    // Listen for cache invalidation events — re-fetch from API to ensure fresh data
     const handler = () => {
-      const cached = readCache(CACHE_KEYS.RESOURCES);
-      if (cached) setResources(cached);
+      loadResources();
     };
     window.addEventListener("cacheInvalidated", handler);
     window.addEventListener("bookingUpdated", handler);
