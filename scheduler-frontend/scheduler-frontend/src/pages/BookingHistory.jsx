@@ -781,6 +781,28 @@ export default function BookingHistory() {
           <div
             className="w-full max-w-lg rounded-xl bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}>
+            {/* Resource Image Banner Header */ }
+            <div className="relative w-full h-44 rounded-t-xl overflow-hidden bg-slate-100 mb-4">
+              {selectedBooking.resource?.image_url ? (
+                <img
+                  src={selectedBooking.resource?.image_url}
+                  alt={selectedBooking.resource?.name || "Resource"}
+                  className="w-full h-full object-cover"
+                />
+              ) : getResourceImage(selectedBooking, resources) ? (
+                <img
+                  src={getResourceImage(selectedBooking, resources)}
+                  alt={selectedBooking.resource || "Resource"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="bg-slate-100 flex flex-col items-center justify-center text-slate-400 gap-1.5 h-full">
+                  <ImageIcon size={32} strokeWidth={1.5} />
+                  <span className="text-xs">No image provided</span>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
               <div>
                 <h2 className="text-[16px] font-semibold">Booking Details</h2>
@@ -817,11 +839,11 @@ export default function BookingHistory() {
                 </p>
 
                 <div className="mt-1 flex items-center gap-3">
-                  {getResourceImage(selectedBooking, resources) ? (
+                  {selectedBooking.resource?.image_url || getResourceImage(selectedBooking, resources) ? (
                     <img
-                      src={getResourceImage(selectedBooking, resources)}
-                      alt={selectedBooking.resource || "Resource"}
-                      className="h-12 w-12 rounded object-cover"
+                      src={selectedBooking.resource?.image_url || getResourceImage(selectedBooking, resources)}
+                      alt={selectedBooking.resource?.name || "Resource"}
+                      className="w-8 h-8 rounded-md object-cover border border-slate-200"
                     />
                   ) : (
                     <ImageIcon size={20} className="text-slate-400" />
