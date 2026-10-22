@@ -22,6 +22,7 @@ import {
   Search,
   LayoutGrid,
   Table2,
+  ImageIcon,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import StatusBadge from "../components/StatusBadge";
@@ -29,6 +30,18 @@ import {
   SkeletonBookingCard,
   SkeletonBookingTableRow,
 } from "../components/Skeleton";
+
+// Helper to look up resource image by resource_id or name
+function getResourceImage(booking, resources) {
+  const rid = booking.resource_id;
+  const name = booking.resource || booking.resource_name || booking.item_name || "";
+  const match =
+    (rid != null && resources.find((r) => String(r.id || r.resource_id) === String(rid))) ||
+    resources.find((r) =>
+      (r.name || r.resource_name || r.item_name || "").toLowerCase() === name.toLowerCase()
+    );
+  return match?.image || "";
+}
 
 // Helper function to convert 24hr time (e.g., "17:00") to 12hr AM/PM format (e.g., "5:00 PM")
 function formatTimeTo12Hour(timeStr) {
@@ -191,6 +204,7 @@ export default function Bookings() {
     const cached = readCache(CACHE_KEYS.BOOKINGS);
     return !(cached && cached.length > 0);
   });
+  const [resources, setResources] = useState([]);
   const [activeTab, setActiveTab] = useState("pending");
   const [viewMode, setViewMode] = useState("card");
   const [search, setSearch] = useState("");
@@ -232,6 +246,20 @@ export default function Bookings() {
         toast.error("Unable to load bookings");
       })
       .finally(() => setLoading(false));
+
+    // Fetch resources for image lookup
+    api
+      .fetchResources()
+      .then((res) => {
+        const d = res?.data;
+        const data = Array.isArray(d)
+          ? d
+          : Array.isArray(d?.data)
+            ? d.data
+            : [];
+        setResources(data);
+      })
+      .catch(() => {});
 
     // Listen for cache invalidation events from other pages
     const handler = () => {
@@ -809,6 +837,7 @@ export default function Bookings() {
                 statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
                 statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
                 "bg-amber-500";
+              const resourceImage = getResourceImage(b, resources);
 
               return (
                 <div
@@ -816,18 +845,31 @@ export default function Bookings() {
                   onClick={() => setSelectedBooking(b)}
                   className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
-                  {/* Header with Status badge at top right */ }
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[15px] font-semibold text-slate-800">
-                        {resourceName}
-                      </h3>
-                    </div>
-                    <div className="shrink-0">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-white shadow-xs ${statusColor}`}>
-                        {statusText}
-                      </span>
-                    </div>
+                  {/* Resource Image Banner */ }
+                  <div className="relative w-full h-32 mb-3 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                    {resourceImage ? (
+                      <img
+                        src={resourceImage}
+                        alt={resourceName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
+                        <ImageIcon size={28} strokeWidth={1.5} />
+                        <span className="text-[10px] mt-1">No image</span>
+                      </div>
+                    )}
+                    {/* Status badge at top right of image */ }
+                    <span className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-white shadow-xs ${statusColor}`}>
+                      {statusText}
+                    </span>
+                  </div>
+
+                  {/* Header with Resource Title */ }
+                  <div className="mb-3">
+                    <h3 className="text-[15px] font-semibold text-slate-800">
+                      {resourceName}
+                    </h3>
                   </div>
 
                   {/* Date & Time tags */ }

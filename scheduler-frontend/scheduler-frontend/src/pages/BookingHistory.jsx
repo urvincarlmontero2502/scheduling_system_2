@@ -9,6 +9,7 @@ import {
   User,
   Building2,
   FileText,
+  ImageIcon,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import StatusBadge from "../components/StatusBadge";
@@ -20,6 +21,18 @@ import {
   writeCache,
   CACHE_KEYS,
 } from "../utils/cache";
+
+// Helper to look up resource image by resource_id or name
+function getResourceImage(booking, resources) {
+  const rid = booking.resource_id;
+  const name = booking.resource || booking.resource_name || booking.item_name || "";
+  const match =
+    (rid != null && resources.find((r) => String(r.id || r.resource_id) === String(rid))) ||
+    resources.find((r) =>
+      (r.name || r.resource_name || r.item_name || "").toLowerCase() === name.toLowerCase()
+    );
+  return match?.image || "";
+}
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -100,6 +113,7 @@ function getTimeValue(booking) {
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState([]);
+  const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -130,6 +144,19 @@ export default function BookingHistory() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // Fetch resources for image lookup
+    api
+      .fetchResources()
+      .then((res) => {
+        const data = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+            ? res.data.data
+            : [];
+        setResources(data);
+      })
+      .catch(() => {});
       return () => {}; // cleanup placeholder for safety
   }, []);
 
@@ -650,6 +677,8 @@ export default function BookingHistory() {
                           booking.item_name ||
                           "Resource";
 
+                    const resourceImage = getResourceImage(booking, resources);
+
                     const status = (booking.status || "").toLowerCase();
 
                     const statusBadgeClass =
@@ -681,7 +710,15 @@ export default function BookingHistory() {
 
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
-                            <Building2 size={13} className="text-slate-400" />
+                            {resourceImage ? (
+                              <img
+                                src={resourceImage}
+                                alt={resource}
+                                className="h-8 w-8 rounded object-cover"
+                              />
+                            ) : (
+                              <ImageIcon size={16} className="text-slate-400" />
+                            )}
                             <span>{resource}</span>
                           </div>
                         </td>
@@ -779,12 +816,23 @@ export default function BookingHistory() {
                   Resource
                 </p>
 
-                <p className="mt-1 text-[14px] font-medium">
-                  {selectedBooking.resource ||
-                    selectedBooking.resource_name ||
-                    selectedBooking.item_name ||
-                    "Resource"}
-                </p>
+                <div className="mt-1 flex items-center gap-3">
+                  {getResourceImage(selectedBooking, resources) ? (
+                    <img
+                      src={getResourceImage(selectedBooking, resources)}
+                      alt={selectedBooking.resource || "Resource"}
+                      className="h-12 w-12 rounded object-cover"
+                    />
+                  ) : (
+                    <ImageIcon size={20} className="text-slate-400" />
+                  )}
+                  <p className="text-[14px] font-medium">
+                    {selectedBooking.resource ||
+                      selectedBooking.resource_name ||
+                      selectedBooking.item_name ||
+                      "Resource"}
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
