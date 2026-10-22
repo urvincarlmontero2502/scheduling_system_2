@@ -38,6 +38,8 @@ const STATUS_CONFIG = {
 export default function BookingDetailModal({ booking, onClose, onApprove, onReject }) {
   if (!booking) return null;
 
+  console.log("Selected Booking Data:", booking);
+
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
 
@@ -56,7 +58,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
   const barangayName =
     booking.barangay || booking.user?.barangay || booking.user?.full_name || booking.user?.name || "Poblacion";
   const cellNumber = booking.cell_number || booking.contact || booking.phone || "N/A";
-  const email = booking.email || booking.user?.email || "N/A";
+  const email = booking.email || booking.applicant_email || booking.user?.email || "N/A";
   const address =
     booking.where_do_you_live || booking.address || booking.location || booking.user_address || "N/A";
   const purposeValue =
