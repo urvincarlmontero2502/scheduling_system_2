@@ -61,6 +61,7 @@ export default function Resources() {
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
   const [resources, setResources] = useState(() => readCache(CACHE_KEYS.RESOURCES) || []);
   const [loading, setLoading] = useState(() => (readCache(CACHE_KEYS.RESOURCES) ? false : true));
+  const [isInitialized, setIsInitialized] = useState(() => Boolean(readCache(CACHE_KEYS.RESOURCES)));
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -80,13 +81,13 @@ export default function Resources() {
     image: null,
   });
 
-  const loadResources = () => {
+  const loadResources = (silent = false) => {
     // If we have cached data, don't show loading spinner (stale-while-revalidate)
     const cached = readCache(CACHE_KEYS.RESOURCES);
     if (cached && cached.length > 0) {
       setResources(cached);
-      setLoading(false);
-    } else {
+      if (!silent) setLoading(false);
+    } else if (!silent) {
       setLoading(true);
     }
 
@@ -109,17 +110,20 @@ export default function Resources() {
       .catch((err) => {
         console.error("Failed to fetch resources", err);
         // Show user-friendly error toast instead of silently failing
-        toast.error("Unable to load resources");
+        if (!silent) toast.error("Unable to load resources");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setIsInitialized(true);
+      });
   };
 
   useEffect(() => {
     loadResources();
 
-    // Listen for cache invalidation events — re-fetch from API to ensure fresh data
+    // Listen for cache invalidation events — re-fetch from API silently (don't flash loading)
     const handler = () => {
-      loadResources();
+      loadResources(true);
     };
     window.addEventListener("cacheInvalidated", handler);
     window.addEventListener("bookingUpdated", handler);
@@ -685,6 +689,13 @@ export default function Resources() {
 
       {/* Resource Grid */}
       {loading ? (
+        <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonResourceCard key={`skeleton-${i}`} />
+          ))}
+        </div>
+      ) : !isInitialized ? (
+        // Still initializing — don't show empty state, show skeleton
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonResourceCard key={`skeleton-${i}`} />
