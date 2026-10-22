@@ -88,8 +88,8 @@ export default function VehicleBookingModal({
   const [bookings, setBookings] = useState([]);
   const [suggestedSlots, setSuggestedSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
-
-  // Load bookings so the calendar can show pending / approved days
+  const [submitError, setSubmitError] = useState(null);
+  const [submitAlternatives, setSubmitAlternatives] = useState([]);
   useEffect(() => {
     if (!isOpen) return;
     setCurrentMonthDate(new Date());
@@ -406,9 +406,6 @@ export default function VehicleBookingModal({
     formData.email &&
     formData.address.trim() &&
     !conflict;
-
-  const [submitError, setSubmitError] = useState(null);
-  const [submitAlternatives, setSubmitAlternatives] = useState([]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

@@ -88,6 +88,8 @@ export default function FacilityBookingModal({
   const [bookings, setBookings] = useState([]);
   const [suggestedSlots, setSuggestedSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitAlternatives, setSubmitAlternatives] = useState([]);
 
   // Load bookings so the calendar can show pending / approved days
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function FacilityBookingModal({
     }
   }, [formData.start_date, isOpen, selectedFacility]);
 
-  // EARLY RETURN — after ALL hooks to prevent React error #310
+  // EARLY RETURN — before hooks is OK because this is after ALL hooks
   if (!isOpen || !selectedFacility) return null;
 
   // Days of this resource that have approved / pending bookings
@@ -409,9 +411,6 @@ export default function FacilityBookingModal({
     (!formData.attendees ||
       !selectedFacility?.capacity ||
       parseInt(formData.attendees) <= parseInt(selectedFacility.capacity));
-
-  const [submitError, setSubmitError] = useState(null);
-  const [submitAlternatives, setSubmitAlternatives] = useState([]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
