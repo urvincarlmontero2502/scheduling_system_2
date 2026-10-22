@@ -25,6 +25,7 @@ class BookingRequest extends Model
         'is_special_event',
         'attendees',
         'priority',
+        'reference_id',
     ];
 
     protected function casts(): array

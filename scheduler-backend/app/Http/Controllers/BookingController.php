@@ -87,6 +87,7 @@ class BookingController extends Controller
                     'end_time' => $b->end_time,
                     'time' => ($b->start_time && $b->end_time) ? "{$b->start_time} - {$b->end_time}" : 'All Day',
                     'status' => $b->status,
+                    'reference_id' => $b->reference_id,
                     'is_special_event' => $b->is_special_event ?? false,
                     'attendees' => $b->attendees,
                     'priority' => $b->priority ?? 'normal',
@@ -325,6 +326,10 @@ class BookingController extends Controller
                 'attendees' => $validated['attendees'] ?? null,
                 'priority' => $validated['priority'] ?? 'normal',
             ]);
+
+            // Generate human-readable reference ID: JBG-YYYY-NNNN
+            $referenceId = 'JBG-' . date('Y') . '-' . str_pad($booking->booking_id, 4, '0', STR_PAD_LEFT);
+            $booking->update(['reference_id' => $referenceId]);
 
             // Notify administrators of new pending booking request
             $admins = User::where('role', 'admin')->get();
