@@ -289,7 +289,7 @@ export default function Resources() {
     setConfirmModalOpen(true);
   };
 
-  const confirmMaintenanceToggle = () => {
+  const confirmMaintenanceToggle = async () => {
     if (!confirmModalData) return;
     const { item, resourceId, isCurrentlyMaintenance, actionText } = confirmModalData;
 
@@ -312,35 +312,36 @@ export default function Resources() {
     writeCache(CACHE_KEYS.RESOURCES, updated);
     setResources(updated);
 
-    request
-      .then(() => {
-        toast.success(
-          `Resource marked as ${actionText} successfully`,
-        );
-        window.dispatchEvent(new Event("cacheInvalidated"));
-        setConfirmModalOpen(false);
-        setConfirmModalData(null);
-      })
-      .catch((err) => {
-        // --- Rollback ---
-        writeCache(CACHE_KEYS.RESOURCES, prevResources);
-        setResources(prevResources);
+    // Close modal immediately and disable interactions
+    setConfirmModalOpen(false);
+    setConfirmModalData(null);
 
-        let msg;
-        if (err?.response?.status === 403) {
-          msg = "You don't have permission to modify resource status.";
-        } else if (err?.response?.status === 404) {
-          msg = "Resource not found. It may have been deleted.";
-        } else if (err?.code === "ERR_NETWORK") {
-          msg = "Network error: Could not connect to the server.";
-        } else {
-          msg =
-            err?.response?.data?.message ||
-            err?.message ||
-            "Failed to update resource status.";
-        }
-        toast.error(msg);
-      });
+    try {
+      await request;
+      toast.success(
+        `Resource marked as ${actionText} successfully`,
+      );
+      window.dispatchEvent(new Event("cacheInvalidated"));
+    } catch (err) {
+      // --- Rollback ---
+      writeCache(CACHE_KEYS.RESOURCES, prevResources);
+      setResources(prevResources);
+
+      let msg;
+      if (err?.response?.status === 403) {
+        msg = "You don't have permission to modify resource status.";
+      } else if (err?.response?.status === 404) {
+        msg = "Resource not found. It may have been deleted.";
+      } else if (err?.code === "ERR_NETWORK") {
+        msg = "Network error: Could not connect to the server.";
+      } else {
+        msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to update resource status.";
+      }
+      toast.error(msg);
+    }
   };
 
   const handleSubmit = (e) => {
