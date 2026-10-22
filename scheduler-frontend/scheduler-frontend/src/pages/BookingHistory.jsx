@@ -743,7 +743,10 @@ export default function BookingHistory() {
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-end gap-1">
                             <button
-                              onClick={() => setSelectedBooking(booking)}
+                              onClick={() => {
+                                console.log("Selected Booking Data:", booking);
+                                setSelectedBooking(booking);
+                              }}
                               className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
                               title="View"
                             >
