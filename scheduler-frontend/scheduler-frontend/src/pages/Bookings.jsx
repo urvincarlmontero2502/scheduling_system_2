@@ -33,14 +33,25 @@ import {
 
 // Helper to look up resource image by resource_id or name
 function getResourceImage(booking, resources) {
+  // First check if the booking already has a resource_image from the API
+  if (booking.resource_image) {
+    return booking.resource_image;
+  }
+  // Check if the resource object on the booking has an image_url
+  if (booking.resource?.image_url || booking.resource?.image) {
+    return booking.resource.image_url || booking.resource.image;
+  }
+  // Fallback: look up in resources array by ID or name
   const rid = booking.resource_id;
   const name = booking.resource || booking.resource_name || booking.item_name || "";
   const match =
     (rid != null && resources.find((r) => String(r.id || r.resource_id) === String(rid))) ||
     resources.find((r) =>
-      (r.name || r.resource_name || r.item_name || "").toLowerCase() === name.toLowerCase()
+      (r.name || r.resource_name || r.item_name || "")
+        .toLowerCase() === name.toLowerCase()
     );
-  return match?.image || "";
+  // Check all possible image keys
+  return match?.image || match?.image_url || match?.photo_url || match?.photo || "";
 }
 
 // Helper function to convert 24hr time (e.g., "17:00") to 12hr AM/PM format (e.g., "5:00 PM")
@@ -838,6 +849,7 @@ export default function Bookings() {
                 statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
                 "bg-amber-500";
               const resourceImage = getResourceImage(b, resources);
+              console.log("Booking Card Data:", b);
 
               return (
                 <div
@@ -846,21 +858,27 @@ export default function Bookings() {
                   className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
                   {/* Resource Image Banner */ }
-                  <div className="relative w-full h-32 mb-3 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="relative w-full h-44 rounded-t-xl overflow-hidden bg-slate-100 mb-4">
                     {resourceImage ? (
                       <img
                         src={resourceImage}
                         alt={resourceName}
-                        className="h-full w-full object-cover"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
-                        <ImageIcon size={28} strokeWidth={1.5} />
-                        <span className="text-[10px] mt-1">No image</span>
-                      </div>
+                      <img
+                        src="/placeholder-resource.png"
+                        alt={resourceName || "Resource"}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = "";
+                          e.target.parentNode.innerHTML =
+                            '<div class="bg-slate-100 flex flex-col items-center justify-center text-slate-400 gap-1.5 h-full"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 14l4-4 4 4v6a2 2 0 01-2 2H6a2 2 0 01-2-2V10a2 2 0 012-2z"></path></svg><span class="text-xs mt-1">No image provided</span></div>';
+                        }}
+                      />
                     )}
-                    {/* Status badge at top right of image */ }
-                    <span className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-white shadow-xs ${statusColor}`}>
+                    {/* Status badge floating in top-right corner */ }
+                    <span className={`absolute top-3 right-3 z-10 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-white shadow-xs ${statusColor}`}>
                       {statusText}
                     </span>
                   </div>
