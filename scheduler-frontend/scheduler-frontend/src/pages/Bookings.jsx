@@ -414,59 +414,32 @@ export default function Bookings() {
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* KPI Summary Cards Row */ }
-        <div className="grid grid-cols-2 gap-4 mb-4 lg:grid-cols-4">
-          <div
-            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-mono text-3xl font-bold text-slate-900">
-                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : pendingCount}
+        <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
+          {[
+            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading },
+            { label: "Approved Requests", value: approvedCount, Icon: Check, loading },
+            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading },
+            { label: "Total Requests", value: requests.length, Icon: FileText, loading },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${stat.loading ? "animate-pulse" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-2xl font-bold text-slate-900">
+                  {stat.loading ? (
+                    <span className="inline-block h-7 w-10 bg-slate-200 rounded-md"></span>
+                  ) : (
+                    stat.value
+                  )}
+                </p>
+                {stat.Icon && <stat.Icon size={18} className="text-slate-300 opacity-50" />}
+              </div>
+              <p className="mt-1 text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                {stat.label}
               </p>
-              <Clock size={20} className="text-slate-300 opacity-50" />
             </div>
-            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
-              Pending Requests
-            </p>
-          </div>
-          <div
-            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-mono text-3xl font-bold text-slate-900">
-                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : approvedCount}
-              </p>
-              <Check size={20} className="text-slate-300 opacity-50" />
-            </div>
-            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
-              Approved Requests
-            </p>
-          </div>
-          <div
-            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-mono text-3xl font-bold text-slate-900">
-                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : rejectedCount}
-              </p>
-              <X size={20} className="text-slate-300 opacity-50" />
-            </div>
-            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
-              Rejected Requests
-            </p>
-          </div>
-          <div
-            className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-mono text-3xl font-bold text-slate-900">
-                {loading ? <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span> : requests.length}
-              </p>
-              <FileText size={20} className="text-slate-300 opacity-50" />
-            </div>
-            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
-              Total Requests
-            </p>
-          </div>
+          ))}
         </div>
 
         {/* Consolidated Toolbar — matches Overview.jsx layout */ }
@@ -831,43 +804,47 @@ export default function Bookings() {
 
               const isPendingItem =
                 (b.status || "").toLowerCase() === "pending";
+              const statusText = b.status || "pending";
+              const statusColor =
+                statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
+                "bg-amber-500";
 
               return (
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="cursor-pointer bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col h-full"
+                  className="cursor-pointer bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow transition-all duration-200 flex flex-col h-full"
                 >
                   {/* Header: Status badge at top right */ }
                   <div className="flex items-start justify-between gap-2 p-3 pb-2">
                     <div className="flex-1 min-w-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
-                        Resource
-                      </span>
-                      <h3 className="text-[15px] font-semibold text-slate-800 leading-snug min-h-[2.25rem]">
+                      <h3 className="text-[15px] font-semibold text-slate-800 mb-2">
                         {resourceName}
                       </h3>
                     </div>
                     <div className="shrink-0">
-                      <StatusBadge status={b.status} className="px-2 py-0.5 text-[9px] font-medium rounded-full" />
+                      <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-semibold uppercase rounded-full text-white ${statusColor}`}>
+                        {statusText}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Date & Time tag strip — soft grey pills */ }
+                  {/* Date & Time tags — clean gray chips */ }
                   <div className="px-3 mb-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
-                  {/* Requester Metadata Box */ }
+                  {/* Requester Info Box */ }
                   <div className="px-3 pb-3">
-                    <div className="bg-slate-50/80 p-3 rounded-lg border border-slate-100 text-xs text-slate-600 space-y-1">
+                    <div className="bg-slate-50/70 p-3.5 rounded-lg border border-slate-100 text-xs text-slate-600 space-y-1.5">
                       <div className="flex items-center gap-1.5">
                         <User size={10} className="shrink-0 text-slate-400" />
                         <span className="truncate">
@@ -896,7 +873,7 @@ export default function Bookings() {
                     </div>
                   </div>
 
-                  {/* Action Buttons — balanced side-by-side */ }
+                  {/* Action Buttons */ }
                   {canModerate && isPendingItem && (
                     <div className="grid grid-cols-2 gap-2 px-3 pb-3 pt-2 border-t border-slate-100">
                       <button
