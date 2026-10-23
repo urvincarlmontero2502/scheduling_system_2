@@ -88,7 +88,7 @@ class BookingController extends Controller
                     'end_time' => $b->end_time,
                     'time' => ($b->start_time && $b->end_time) ? "{$b->start_time} - {$b->end_time}" : 'All Day',
                     'status' => $b->status,
-                    'email' => $b->email ?? $b->applicant_email ?? $b->user?->email ?? 'N/A',
+                    'email' => $b->email ?? $b->user->email ?? 'N/A',
                     'reference_id' => $b->reference_id,
                     'is_special_event' => $b->is_special_event ?? false,
                     'attendees' => $b->attendees,
@@ -196,11 +196,7 @@ class BookingController extends Controller
                     'string'
                 ],
 
-                'email' => [
-                    'nullable',
-                    'string',
-                    'email'
-                ],
+                'email' => ['nullable', 'email', 'string'],
 
                 'status' => [
                     'nullable',
@@ -331,7 +327,7 @@ class BookingController extends Controller
                 'end_time' => $validated['end_time'] ?? null,
                 'cell_number' => $validated['cell_number'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'email' => $request->input('email') ?? $request->input('applicant_email') ?? $user->email,
+                'email' => ($validated['email'] ?? null) ?: ($user->email ?? 'N/A'),
                 'status' => $validated['status'] ?? 'pending',
                 'attendees' => $validated['attendees'] ?? null,
                 'priority' => $validated['priority'] ?? 'normal',
