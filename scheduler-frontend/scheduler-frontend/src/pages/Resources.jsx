@@ -539,17 +539,17 @@ export default function Resources() {
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleOpenModal(item)}
-                  className="text-slate-400 hover:text-emerald-700 transition p-1"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   title="Edit Resource"
                 >
                   <Edit2 size={12} />
                 </button>
                 <button
                   onClick={() => handleMaintenanceToggle(item)}
-                  className={`transition p-1 ${
+                  className={`p-1.5 rounded-lg transition-colors ${
                     isMaintenance
-                      ? "text-orange-600 hover:text-orange-700"
-                      : "text-slate-500 hover:text-orange-600"
+                      ? "text-orange-600 hover:text-orange-700 hover:bg-slate-100"
+                      : "text-slate-500 hover:text-orange-600 hover:bg-slate-100"
                   }`}
                   title={
                     isMaintenance
@@ -561,7 +561,7 @@ export default function Resources() {
                 </button>
                 <button
                   onClick={() => handleDelete(item.resource_id || item.id)}
-                  className="text-slate-500 hover:text-red-500 transition p-1"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors"
                   title="Delete Resource"
                 >
                   <Trash2 size={12} />
@@ -570,17 +570,26 @@ export default function Resources() {
             )}
           </div>
 
-          <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
-            <UserGroupIcon size={12} className="inline" />
-            {item.type === "vehicle" ? "Unit Details:" : "Capacity:"}{" "}
-            <span className="font-medium text-slate-700">
-              {item.type === "facility"
-                ? formatCapacity(item.capacity)
-                : item.unit_name || item.capacity
-                  ? `${item.unit_name || item.capacity}`
-                  : "N/A"}
-            </span>
-          </p>
+          {(() => {
+            const unitDetails =
+              item.type === "facility"
+                ? item.capacity
+                  ? formatCapacity(item.capacity)
+                  : item.unit_name || item.unit_details
+                : item.unit_name || item.unit_details || item.capacity;
+            const displayDetails = unitDetails && unitDetails !== "N/A" ? unitDetails : null;
+            return displayDetails ? (
+              <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
+                <UserGroupIcon size={12} className="inline" />
+                {item.type === "vehicle" ? "Unit Details:" : "Capacity:"}{" "}
+                <span className="font-medium text-slate-700">
+                  {item.type === "facility"
+                    ? formatCapacity(item.capacity)
+                    : `${item.unit_name || item.capacity}`}
+                </span>
+              </p>
+            ) : null;
+          })()}
           <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2.5rem]">
             {item.description || "No description provided."}
           </p>
