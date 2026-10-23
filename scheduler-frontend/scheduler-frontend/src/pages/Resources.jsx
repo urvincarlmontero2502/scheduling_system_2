@@ -734,9 +734,40 @@ export default function Resources() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
-          {displayedItems.map(renderResourceCard)}
-        </div>
+        // Split into facilities and vehicles sections with headings (A-Z sorted within each)
+        (() => {
+          const facilitiesList = displayedItems
+            .filter((item) => (item?.type || "").toLowerCase() === "facility")
+            .sort((a, b) => (a?.name || "").localeCompare(b?.name || ""));
+          const vehiclesList = displayedItems
+            .filter((item) => (item?.type || "").toLowerCase() === "vehicle")
+            .sort((a, b) => (a?.name || "").localeCompare(b?.name || ""));
+
+          return (
+            <div className="space-y-8">
+              {facilitiesList.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+                    <Building2 size={18} className="text-emerald-700" /> Facilities Overview
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
+                    {facilitiesList.map(renderResourceCard)}
+                  </div>
+                </div>
+              )}
+              {vehiclesList.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+                    <Car size={18} className="text-emerald-700" /> Vehicles Overview
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
+                    {vehiclesList.map(renderResourceCard)}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()
       )}
 
       {/* Vehicle Booking Modal (uses dedicated component) */}
