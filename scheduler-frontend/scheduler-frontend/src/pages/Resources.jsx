@@ -648,7 +648,7 @@ export default function Resources() {
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
-            <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-slate-500"}`} /> All Resources ({displayedCount})
+            <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-slate-500"}`} /> All Resources
           </button>
           <button
             onClick={() => handleTabClick("vehicle")}
@@ -658,7 +658,7 @@ export default function Resources() {
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
-            <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-slate-500"}`} /> Vehicles ({allVehicles.length})
+            <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-slate-500"}`} /> Vehicles Overview
           </button>
           <button
             onClick={() => handleTabClick("facility")}
@@ -668,7 +668,7 @@ export default function Resources() {
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
-            <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-slate-500"}`} /> Facilities ({allFacilities.length})
+            <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-slate-500"}`} /> Facilities Overview
           </button>
           <button
             onClick={() => handleTabClick("maintenance")}
