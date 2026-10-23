@@ -378,7 +378,7 @@ export default function Overview() {
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => !isMaintenance && handleOpenBooking(item)}
-                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
+                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden transition transform hover:shadow-md hover:-translate-y-0.5 ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
                     <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
@@ -479,7 +479,7 @@ export default function Overview() {
                   <div
                     key={item.resource_id || item.id}
                     onClick={() => !isMaintenance && handleOpenBooking(item)}
-                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
+                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden transition transform hover:shadow-md hover:-translate-y-0.5 ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
                     <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
                       <span
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${

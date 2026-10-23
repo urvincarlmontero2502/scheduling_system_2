@@ -471,7 +471,7 @@ export default function Resources() {
     return (
       <div
         key={item.resource_id || item.id}
-        className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex flex-col justify-between h-full"
+        className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex flex-col justify-between h-full transition transform hover:shadow-md hover:-translate-y-0.5"
       >
         {/* Thumbnail with status badge overlay */}
         <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-lg mb-2">
