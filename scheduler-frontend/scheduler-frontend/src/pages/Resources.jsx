@@ -627,40 +627,40 @@ export default function Resources() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleTabClick("all")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "all"
-                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
             <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-slate-500"}`} /> All Resources ({displayedCount})
           </button>
           <button
             onClick={() => handleTabClick("vehicle")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "vehicle"
-                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
             <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-slate-500"}`} /> Vehicles ({allVehicles.length})
           </button>
           <button
             onClick={() => handleTabClick("facility")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "facility"
-                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
             <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-slate-500"}`} /> Facilities ({allFacilities.length})
           </button>
           <button
             onClick={() => handleTabClick("maintenance")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all shrink-0 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "maintenance"
-                ? "bg-emerald-700 text-white border border-emerald-700 shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
             In Maintenance ({maintenanceItems.length})
