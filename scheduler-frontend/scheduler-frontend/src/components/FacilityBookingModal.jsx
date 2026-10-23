@@ -10,7 +10,7 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon,
+  Building2,
   Loader2,
   Clock,
   Sparkles,
@@ -491,8 +491,10 @@ export default function FacilityBookingModal({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-0.5 text-steel">
-                    <ImageIcon size={22} />
+                  <div className="flex flex-col items-center justify-center gap-2 text-steel">
+                    <div className="rounded-lg bg-blue-50 p-2.5 border border-blue-100">
+                      <Building2 size={20} className="text-blue-400" />
+                    </div>
                     <span className="text-[11px]">No image provided</span>
                   </div>
                 )}
@@ -507,10 +509,11 @@ export default function FacilityBookingModal({
                     {selectedFacility.capacity || "—"}
                   </span>
                 </p>
-                <p className="line-clamp-2 text-[11.5px] leading-relaxed text-steel">
-                  {selectedFacility.description ||
-                    "No description provided for this resource."}
-                </p>
+                {selectedFacility.description && selectedFacility.description !== "N/A" && (
+                  <p className="line-clamp-2 text-[11.5px] leading-relaxed text-steel">
+                    {selectedFacility.description}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">

@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
+  Car,
   Loader2,
   Clock,
   Sparkles,
@@ -472,8 +473,10 @@ export default function VehicleBookingModal({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-0.5 text-steel">
-                    <ImageIcon size={22} />
+                  <div className="flex flex-col items-center justify-center gap-2 text-steel">
+                    <div className="rounded-lg bg-amber-50 p-2.5 border border-amber-100">
+                      <Car size={20} className="text-amber-400" />
+                    </div>
                     <span className="text-[11px]">No image provided</span>
                   </div>
                 )}
@@ -490,10 +493,11 @@ export default function VehicleBookingModal({
                       "—"}
                   </span>
                 </p>
-                <p className="line-clamp-2 text-[11.5px] leading-relaxed text-steel">
-                  {selectedVehicle.description ||
-                    "No description provided for this resource."}
-                </p>
+                {selectedVehicle.description && selectedVehicle.description !== "N/A" && (
+                  <p className="line-clamp-2 text-[11.5px] leading-relaxed text-steel">
+                    {selectedVehicle.description}
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
