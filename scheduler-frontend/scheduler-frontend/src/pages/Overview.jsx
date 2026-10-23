@@ -93,6 +93,7 @@ export default function Overview() {
       purpose: payload.purpose,
       full_name: payload.full_name || null,
       cell_number: payload.cell_number,
+      email: payload.email || null,
       address: payload.address || null,
     };
 

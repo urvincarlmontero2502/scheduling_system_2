@@ -206,6 +206,7 @@ export default function Resources() {
       purpose: payload.purpose,
       full_name: payload.full_name || null,
       cell_number: payload.cell_number,
+      email: payload.email || null,
       address: payload.address || null,
       status: payload.status || "pending",
     };
