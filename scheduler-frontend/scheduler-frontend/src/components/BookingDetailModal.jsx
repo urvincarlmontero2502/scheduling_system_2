@@ -38,8 +38,6 @@ const STATUS_CONFIG = {
 export default function BookingDetailModal({ booking, onClose, onApprove, onReject }) {
   if (!booking) return null;
 
-  console.log("Selected Booking Data:", booking);
-
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
 

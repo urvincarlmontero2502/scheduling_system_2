@@ -858,7 +858,6 @@ export default function Bookings() {
                 statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
                 "bg-amber-500";
               const resourceImage = getResourceImage(b, resources);
-              console.log("Booking Card Payload:", b);
 
               return (
                 <div
