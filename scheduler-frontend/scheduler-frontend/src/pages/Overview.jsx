@@ -289,7 +289,7 @@ export default function Overview() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              All Resources ({resources.length})
+              All Resources
             </button>
             <button
               onClick={() => {
@@ -301,7 +301,7 @@ export default function Overview() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              Facilities ({facilities.length})
+              Facilities Overview
             </button>
             <button
               onClick={() => {
@@ -313,7 +313,7 @@ export default function Overview() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              Vehicles ({vehicles.length})
+              Vehicles Overview
             </button>
           </div>
 
@@ -349,7 +349,6 @@ export default function Overview() {
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
               <Building2 size={18} className="text-emerald-700" /> Facilities Overview
-              ({facilities.length})
             </h2>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
@@ -449,8 +448,7 @@ export default function Overview() {
         {(mainFilter === "all" || mainFilter === "vehicle") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-              <Car size={18} className="text-emerald-700" /> Vehicles Overview (
-              {filteredVehicles.length})
+              <Car size={18} className="text-emerald-700" /> Vehicles Overview
             </h2>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
