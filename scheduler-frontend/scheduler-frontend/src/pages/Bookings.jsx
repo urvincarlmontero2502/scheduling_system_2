@@ -503,7 +503,7 @@ export default function Bookings() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              Pending ({pendingCount})
+              Pending
             </button>
             <button
               onClick={() => setActiveTab("approved")}
@@ -513,7 +513,7 @@ export default function Bookings() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              Approved ({approvedCount})
+              Approved
             </button>
             <button
               onClick={() => setActiveTab("rejected")}
@@ -523,7 +523,7 @@ export default function Bookings() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              Rejected ({rejectedCount})
+              Rejected
             </button>
             <button
               onClick={() => setActiveTab("all")}
@@ -533,7 +533,7 @@ export default function Bookings() {
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
-              All ({requests.length})
+              All
             </button>
           </div>
 
