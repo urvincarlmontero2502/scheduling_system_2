@@ -153,8 +153,12 @@ export default function Overview() {
     });
   };
 
-  const facilities = applyFilters(allFacilities);
-  const vehicles = applyFilters(allVehicles);
+  const facilities = applyFilters(allFacilities).sort((a, b) =>
+    (a?.name || "").localeCompare(b?.name || ""),
+  );
+  const vehicles = applyFilters(allVehicles).sort((a, b) =>
+    (a?.name || "").localeCompare(b?.name || ""),
+  );
 
   // Helper function to categorize vehicles based on their names (with typo handling for 'abulance')
   const getVehicleCategory = (name = "") => {

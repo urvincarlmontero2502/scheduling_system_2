@@ -438,22 +438,28 @@ export default function Resources() {
   let displayedItems = [];
   let displayedCount = 0;
 
+  // Sort displayed items alphabetically by name (A to Z)
+  const sortByName = (items) =>
+    [...items].sort((a, b) =>
+      (a?.name || "").localeCompare(b?.name || ""),
+    );
+
   switch (activeFilter) {
     case "maintenance":
-      displayedItems = maintenanceItems;
+      displayedItems = sortByName(maintenanceItems);
       displayedCount = maintenanceItems.length;
       break;
     case "vehicle":
-      displayedItems = allVehicles;
+      displayedItems = sortByName(allVehicles);
       displayedCount = allVehicles.length;
       break;
     case "facility":
-      displayedItems = allFacilities;
+      displayedItems = sortByName(allFacilities);
       displayedCount = allFacilities.length;
       break;
     case "all":
     default:
-      displayedItems = resources.filter(matchesSearch);
+      displayedItems = sortByName(resources.filter(matchesSearch));
       displayedCount = resources.filter(matchesSearch).length;
       break;
   }
