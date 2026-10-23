@@ -621,9 +621,9 @@ export default function Resources() {
       {/* Clean Header Title */}
       <h1 className="text-[20px] font-semibold text-slate-900 mb-4">Facilities &amp; Vehicles</h1>
 
-      {/* Action Toolbar Row: Filter Pills + Search Bar | Add Resource */ }
+      {/* Action Toolbar Row: Filter Pills + Search Bar | Add Resource */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 w-full">
-        {/* Filter Pills */ }
+        {/* Filter Pills */}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleTabClick("all")}
@@ -667,7 +667,7 @@ export default function Resources() {
           </button>
         </div>
 
-        {/* Search Bar */ }
+        {/* Search Bar */}
         <div className="relative w-full max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <Search size={16} className="w-4 h-4" />
@@ -688,9 +688,7 @@ export default function Resources() {
             </button>
           )}
         </div>
-      </div>
-      {isAdmin && (
-        <div className="flex justify-end mb-6">
+        {isAdmin && (
           <button
             onClick={() => handleOpenModal()}
             className="py-2 px-4 text-xs font-semibold rounded-lg bg-emerald-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-emerald-800"
@@ -698,11 +696,8 @@ export default function Resources() {
             <Plus size={12} />
             Add Resource
           </button>
-        </div>
-      )}
+        )}
       </div>
-
-      {/* Resource Grid */ }
       {loading ? (
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
