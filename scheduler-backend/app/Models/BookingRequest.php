@@ -21,6 +21,7 @@ class BookingRequest extends Model
         'end_time',
         'cell_number',
         'address',
+        'email',
         'status',
         'is_special_event',
         'attendees',
