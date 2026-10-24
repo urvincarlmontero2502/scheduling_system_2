@@ -133,6 +133,7 @@ Route::get('/diagnostics/oauth-tokens', function () {
         'table_exists' => true,
         'accessible' => true,
         'token_count' => 0,
+        'insert_test' => false,
         'error' => null,
     ];
 
@@ -146,6 +147,36 @@ Route::get('/diagnostics/oauth-tokens', function () {
             $count = DB::connection()
                 ->select("SELECT COUNT(*) as cnt FROM google_oauth_temp_tokens");
             $result['token_count'] = (int) $count[0]->cnt;
+
+            // Test write access (insert + delete)
+            $testToken = \Illuminate\Support\Str::random(64);
+            try {
+                DB::table('google_oauth_temp_tokens')->insert([
+                    'token' => $testToken,
+                    'email' => 'diagnostic@test.local',
+                    'google_id' => 'test123',
+                    'full_name' => 'Diagnostic Test',
+                    'avatar' => null,
+                    'expires_at' => now()->addMinutes(1),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $result['insert_test'] = true;
+
+                // Verify we can read it back
+                $check = DB::table('google_oauth_temp_tokens')
+                    ->where('token', $testToken)
+                    ->first();
+                $result['read_test'] = !is_null($check);
+
+                // Clean up
+                DB::table('google_oauth_temp_tokens')
+                    ->where('token', $testToken)
+                    ->delete();
+            } catch (\Exception $e) {
+                $result['insert_test'] = false;
+                $result['insert_error'] = $e->getMessage();
+            }
         }
     } catch (\Exception $e) {
         $result['accessible'] = false;
