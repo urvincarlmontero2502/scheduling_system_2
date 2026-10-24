@@ -15,7 +15,8 @@ class EnsureUserIsAdmin
             if ($request->user() && $request->user()->isBarangayAdmin()) {
                 $path = $request->path();
                 // barangay_admin can only access registration request routes
-                if (str_starts_with($path, 'registration-requests')) {
+                // Check both with and without the 'api/' prefix
+                if (str_contains($path, 'registration-requests')) {
                     return $next($request);
                 }
             }
