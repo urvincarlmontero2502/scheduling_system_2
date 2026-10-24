@@ -714,8 +714,12 @@ class AuthController extends Controller
             }
 
             if ($tableExists) {
-                // Create the pending registration request (NOT a user yet)
-                $registrationRequest = \App\Models\RegistrationRequest::create($regData);
+                // Create or update the pending registration request (NOT a user yet)
+                // Uses updateOrCreate keyed by email to avoid unique constraint violations
+                $registrationRequest = \App\Models\RegistrationRequest::updateOrCreate(
+                    ['email' => $tempRecord->email],
+                    $regData
+                );
 
                 // Delete the temporary token
                 DB::table('google_oauth_temp_tokens')
