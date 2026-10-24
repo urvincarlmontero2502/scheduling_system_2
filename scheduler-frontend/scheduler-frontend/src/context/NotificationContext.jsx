@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import * as api from '../api/notifications'
 import { useAuth } from './AuthContext'
 
@@ -113,6 +113,9 @@ export function NotificationProvider({ children }) {
     setDropdownOpen(false)
   }, [])
 
+  // Bell ref for dropdown positioning (shared across components)
+  const bellRef = useRef(null)
+
   // Recalculate unread count whenever notifications change
   useEffect(() => {
     refreshUnreadCount()
@@ -132,6 +135,7 @@ export function NotificationProvider({ children }) {
         toggleDropdown,
         closeDropdown,
         dropdownOpen,
+        bellRef,
       }}
     >
       {children}

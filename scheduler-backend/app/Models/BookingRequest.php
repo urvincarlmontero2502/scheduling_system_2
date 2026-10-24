@@ -21,10 +21,12 @@ class BookingRequest extends Model
         'end_time',
         'cell_number',
         'address',
+        'email',
         'status',
         'is_special_event',
         'attendees',
         'priority',
+        'reference_id',
     ];
 
     protected function casts(): array

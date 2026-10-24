@@ -1,19 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { createPortal } from "react-dom"
-import { X, CheckCheck, Trash2, Clock, CheckCircle, XCircle, Wrench, FileText } from "lucide-react"
+import { X, Trash2, Clock, CheckCircle, XCircle, Wrench, FileText } from "lucide-react"
 import { useNotifications } from "../context/NotificationContext"
 
 // Simple time-ago formatter (no external deps)
 const timeAgo = (date) => {
   if (!date) return ""
-  // Handle both Unix timestamps (seconds), ISO-8601, and MySQL datetime (space-separated)
   let then;
   if (typeof date === "number") {
-    // If timestamp is in seconds (13 digits or less), multiply by 1000
     then = new Date(date < 1e12 ? date * 1000 : date);
   } else if (typeof date === "string") {
-    // Convert MySQL datetime (space) to ISO-8601 (T) for reliable parsing
     const isoDate = date.replace(" ", "T");
     then = new Date(isoDate);
   } else {
@@ -41,7 +38,6 @@ const timeAgo = (date) => {
 export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const {
     notifications,
-    unreadCount,
     loading,
     markAsRead,
     markAllAsRead,
@@ -51,9 +47,9 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const navigate = useNavigate()
   const [isDesktop, setIsDesktop] = useState(false)
 
-  // Check if we're on desktop (md breakpoint)
+  // Check if we're on desktop (sm breakpoint = 640px)
   useEffect(() => {
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 640)
     checkDesktop()
     window.addEventListener("resize", checkDesktop)
     return () => window.removeEventListener("resize", checkDesktop)
@@ -63,7 +59,6 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const currentPath = useLocation().pathname
   useEffect(() => {
     if (open) onClose()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPath])
 
   // Force re-render to recompute bell position on resize or scroll (desktop only)
@@ -162,19 +157,10 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-line">
         <h3 className="text-sm font-semibold text-ink">Notifications</h3>
-        <div className="flex items-center gap-2">
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              className="rounded-lg p-1 text-steel hover:bg-paper hover:text-ink"
-              title="Mark all as read"
-            >
-              <CheckCheck size={16} />
-            </button>
-          )}
+        <div className="flex items-center space-x-3">
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-steel hover:bg-paper hover:text-ink"
+            className="text-steel hover:text-ink"
             title="Close"
           >
             <X size={16} />
@@ -183,7 +169,7 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
       </div>
 
       {/* Body */}
-      <div className="max-h-[calc(100vh-2rem)] overflow-y-auto">
+      <div className="max-h-[70vh] overflow-y-auto">
         {loading && notifications.length === 0 ? (
           <div className="p-4 text-center text-sm text-steel">
             Loading notifications...
@@ -203,8 +189,7 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
                   onClick={() => handleNotificationClick(id, notif.booking_id)}
                   className={`group cursor-pointer px-4 py-3 transition-colors hover:bg-slate-50 ${
                     isUnread ? "bg-brand-light/40" : ""
-                  }`}
-                >
+                  }`}>
                   <div className="flex items-start gap-3">
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center">
                       {getTypeIcon(notif.type)}
@@ -255,54 +240,20 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
     </>
   )
 
-  // Desktop: use portal with absolute positioning anchored to the bell
-  if (isDesktop) {
-    const bellRect = anchorEl?.current?.getBoundingClientRect()
-
-    if (!bellRect) {
-      // Fallback positioning if anchor not found
-      return createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-30 bg-black/30"
-            onClick={onClose}
-            aria-hidden="true"
-          />
-          <div
-            ref={dropdownRef}
-            className="fixed z-40 w-96 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-white shadow-xl"
-            style={{
-              top: "calc(64px + 1rem)",
-              right: "1rem",
-              maxHeight: "calc(100vh - 2rem)",
-            }}
-          >
-            {panelContent}
-          </div>
-        </>,
-        document.body
-      )
-    }
-
-    // Position: to the RIGHT of the sidebar, left = sidebar right edge + 8px
-    // Top aligned to the bell's top, clamped so it never goes off the bottom
-    const sidebarRight = bellRect.right
-    const clampedTop = Math.max(16, Math.min(bellRect.top, window.innerHeight - 32))
-
+  // Mobile: centered modal-style panel that fills most of the viewport width
+  if (!isDesktop) {
     return createPortal(
       <>
         <div
-          className="fixed inset-0 z-30 bg-black/30"
+          className="fixed inset-0 z-50 bg-black/30"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
           ref={dropdownRef}
-          className="fixed z-40 w-96 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-white shadow-xl"
+          className="fixed inset-x-3 top-16 z-50 mx-auto max-w-md rounded-xl border border-line bg-white shadow-xl"
           style={{
-            left: `${sidebarRight + 8}px`,
-            top: `${clampedTop}px`,
-            maxHeight: `calc(100vh - ${clampedTop + 16}px)`,
+            maxHeight: "calc(100vh - 4rem)",
           }}
         >
           {panelContent}
@@ -312,26 +263,43 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
     )
   }
 
-  // Mobile: original fixed positioning (unchanged)
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/30"
-        aria-hidden="true"
-      />
+  // Desktop: compute bell position for dropdown anchoring
+  const bellRect = anchorEl?.current?.getBoundingClientRect()
 
-      {/* Dropdown */}
+  if (!bellRect) {
+    return createPortal(
       <div
         ref={dropdownRef}
-        className="fixed z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-white shadow-xl"
+        className="fixed z-50 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-xl border border-line bg-white shadow-xl"
         style={{
           top: "calc(64px + 1rem)",
           right: "1rem",
+          maxHeight: "calc(100vh - 2rem)",
         }}
       >
         {panelContent}
-      </div>
-    </>
+      </div>,
+      document.body
+    )
+  }
+
+  // Position below the bell, with the panel's right edge aligned to the bell's right edge
+  // This makes the dropdown open LEFTWARD from the bell — preventing it from going off-screen
+  const bellBottom = bellRect.bottom + window.scrollY
+  const clampedTop = Math.max(16, Math.min(bellBottom + 8, window.innerHeight - 32))
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed z-50 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96 origin-top-right rounded-xl border border-line bg-white shadow-xl"
+      style={{
+        top: `${clampedTop}px`,
+        right: `${window.innerWidth - bellRect.right - 8}px`,
+        maxHeight: `calc(100vh - ${clampedTop + 16}px)`,
+      }}
+    >
+      {panelContent}
+    </div>,
+    document.body
   )
 }

@@ -6,10 +6,11 @@ import {
   MapPin,
   User,
   Phone,
+  Mail,
   Home,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon,
+  Building2,
   Loader2,
   Clock,
   Sparkles,
@@ -72,8 +73,11 @@ export default function FacilityBookingModal({
     start_time: "08:00",
     end_time: "17:00",
     purpose: "",
-    full_name: "",
+    first_name: "",
+    middle_name: "",
+    last_name: "",
     cell_number: "",
+    email: "",
     address: "",
     attendees: "",
     priority: "normal",
@@ -84,6 +88,8 @@ export default function FacilityBookingModal({
   const [bookings, setBookings] = useState([]);
   const [suggestedSlots, setSuggestedSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitAlternatives, setSubmitAlternatives] = useState([]);
 
   // Load bookings so the calendar can show pending / approved days
   useEffect(() => {
@@ -151,7 +157,7 @@ export default function FacilityBookingModal({
     }
   }, [formData.start_date, isOpen, selectedFacility]);
 
-  // EARLY RETURN — after ALL hooks to prevent React error #310
+  // EARLY RETURN — before hooks is OK because this is after ALL hooks
   if (!isOpen || !selectedFacility) return null;
 
   // Days of this resource that have approved / pending bookings
@@ -317,7 +323,7 @@ export default function FacilityBookingModal({
         dateString < formData.end_date;
 
       let cellStyles =
-        "relative h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-medium transition cursor-pointer ";
+        "relative h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-medium transition cursor-pointer ";
       if (isStart || isEnd) {
         cellStyles += "bg-brand text-white font-bold shadow-sm";
       } else if (isInRange) {
@@ -350,7 +356,7 @@ export default function FacilityBookingModal({
     }
 
     return (
-      <div className="rounded-lg border border-line bg-white p-2.5 shadow-sm">
+      <div className="rounded-lg border border-line bg-white p-2 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <button
             type="button"
@@ -368,7 +374,7 @@ export default function FacilityBookingModal({
             <ChevronRight size={14} />
           </button>
         </div>
-        <div className="mb-1 grid grid-cols-7 border-b border-line pb-1 text-center text-[10px] font-semibold text-steel">
+        <div className="mb-0.5 grid grid-cols-7 border-b border-line pb-0.5 text-center text-[9px] font-semibold text-steel">
           <span>S</span>
           <span>M</span>
           <span>T</span>
@@ -380,7 +386,7 @@ export default function FacilityBookingModal({
         <div className="grid grid-cols-7 justify-items-center gap-y-0.5">
           {days}
         </div>
-        <div className="mt-2 flex items-center justify-center gap-4 border-t border-line pt-2 text-[10.5px] text-steel">
+        <div className="mt-1 flex items-center justify-center gap-3 border-t border-line pt-1 text-[9.5px] text-steel">
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{" "}
             Approved
@@ -397,8 +403,9 @@ export default function FacilityBookingModal({
     formData.start_date &&
     formData.end_date &&
     formData.purpose.trim() &&
-    formData.full_name.trim() &&
+    (formData.first_name.trim() || formData.last_name.trim()) &&
     formData.cell_number.length === 11 &&
+    formData.email &&
     formData.address.trim() &&
     !conflict &&
     (!formData.attendees ||
@@ -409,6 +416,9 @@ export default function FacilityBookingModal({
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
+    setSubmitError(null);
+    setSubmitAlternatives([]);
+
     const formatLocalDate = (dateStr) => {
       if (!dateStr) return "";
       const [year, month, day] = dateStr.split("-").map(Number);
@@ -423,17 +433,25 @@ export default function FacilityBookingModal({
       item_id: selectedFacility.resource_id || selectedFacility.id,
       type: "facility",
       ...formData,
+      full_name: `${formData.first_name}${formData.middle_name ? " " + formData.middle_name : ""} ${formData.last_name}`.trim(),
       start_date: formatLocalDate(formData.start_date),
       end_date: formatLocalDate(formData.end_date),
       status: isDirectUse ? "approved" : "pending",
     };
 
     Promise.resolve(onSubmit(payload))
+      .then(() => {
+        onClose();
+      })
       .catch((err) => {
-        if (err?.response?.status === 409) {
-          const data = err.response.data;
-          const slots = data?.suggested_slots || [];
-          setSuggestedSlots(slots);
+        if (err?.type === "conflict") {
+          setSubmitError(err.message);
+          setSubmitAlternatives(err.alternatives || []);
+        } else if (err?.type === "error") {
+          setSubmitError(err.message);
+          setSubmitAlternatives([]);
+        } else {
+          setSubmitError("Failed to submit booking request.");
         }
       })
       .finally(() => setSubmitting(false));
@@ -444,9 +462,9 @@ export default function FacilityBookingModal({
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4"
       onClick={onClose}>
       <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl"
+        className="w-[95%] max-w-5xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white z-10">
           <div>
             <h2 className="text-[15px] font-semibold text-ink">
               {isDirectUse ? "Direct Allocation" : "Request Booking"}: {selectedFacility.name}
@@ -459,11 +477,12 @@ export default function FacilityBookingModal({
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-5 py-4 md:grid-cols-2">
-            {/* LEFT: image + details */}
-            <div className="space-y-3">
-              <div className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:items-start">
+            {/* LEFT: image + details - sticky on desktop */}
+            <div className="md:col-span-5 md:sticky md:top-0 space-y-4">
+              <div className="relative flex h-32 sm:h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
                 {selectedFacility.image &&
                 selectedFacility.image.trim() !== "" ? (
                   <img
@@ -472,8 +491,10 @@ export default function FacilityBookingModal({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-0.5 text-steel">
-                    <ImageIcon size={22} />
+                  <div className="flex flex-col items-center justify-center gap-2 text-steel">
+                    <div className="rounded-lg bg-blue-50 p-2.5 border border-blue-100">
+                      <Building2 size={20} className="text-blue-400" />
+                    </div>
                     <span className="text-[11px]">No image provided</span>
                   </div>
                 )}
@@ -488,10 +509,11 @@ export default function FacilityBookingModal({
                     {selectedFacility.capacity || "—"}
                   </span>
                 </p>
-                <p className="line-clamp-2 text-[11.5px] leading-relaxed text-steel">
-                  {selectedFacility.description ||
-                    "No description provided for this resource."}
-                </p>
+                {selectedFacility.description && selectedFacility.description !== "N/A" && (
+                  <p className="line-clamp-2 text-[11.5px] leading-relaxed text-steel">
+                    {selectedFacility.description}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
@@ -521,7 +543,7 @@ export default function FacilityBookingModal({
               </div>
             </div>
             {/* RIGHT: calendar + form */}
-            <div className="space-y-2.5">
+            <div className="md:col-span-7 space-y-3.5">
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink">
                   <CalendarIcon size={14} className="text-brand" /> Select Date
@@ -556,18 +578,45 @@ export default function FacilityBookingModal({
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                    <User size={13} className="text-brand" /> Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="John Doe"
-                    value={formData.full_name}
-                    onChange={(e) => update("full_name", e.target.value)}
-                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
-                  />
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                      <User size={13} className="text-brand" /> First Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Juan"
+                      value={formData.first_name}
+                      onChange={(e) => update("first_name", e.target.value)}
+                      className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[12px] font-medium text-ink">
+                      Middle Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="M (initial)"
+                      value={formData.middle_name}
+                      onChange={(e) => update("middle_name", e.target.value)}
+                      className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[12px] font-medium text-ink">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Cruz"
+                      value={formData.last_name}
+                      onChange={(e) => update("last_name", e.target.value)}
+                      className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
@@ -588,21 +637,34 @@ export default function FacilityBookingModal({
                     className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
                   />
                 </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                    <Mail size={13} className="text-brand" /> Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g., juan.cruz@example.com"
+                    value={formData.email || ""}
+                    onChange={(e) => update("email", e.target.value)}
+                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
+                    <Home size={13} className="text-brand" /> Address
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="123 Street Name, City"
+                    value={formData.address}
+                    onChange={(e) => update("address", e.target.value)}
+                    className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                  <Home size={13} className="text-brand" /> Where do you live
-                  (Address)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="123 Street Name, City"
-                  value={formData.address}
-                  onChange={(e) => update("address", e.target.value)}
-                  className="w-full rounded-md border border-line px-3 py-1.5 text-[12.5px] outline-none focus:border-brand"
-                />
-              </div>
+              {/* Attendees */}
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
                   <User size={13} className="text-brand" /> Expected
@@ -630,10 +692,12 @@ export default function FacilityBookingModal({
                     select a larger facility.
                   </p>
                 )}
-              </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
+          {/* Close grid + scroll body, open fixed footer */}
+          </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-white z-10">
             {conflict && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <div className="rounded-lg border border-status-rejected/30 bg-status-rejected/5 px-3 py-2.5">
@@ -689,6 +753,31 @@ export default function FacilityBookingModal({
             {loadingSlots && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <p className="text-[11px] text-steel">Checking availability...</p>
+              </div>
+            )}
+            {submitError && (
+              <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
+                <div className="rounded-lg border border-rose-200/50 bg-rose-50 px-3 py-2.5">
+                  <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-rose-700">
+                    <Clock size={13} />
+                    {submitError}
+                  </p>
+                  {submitAlternatives.length > 0 && (
+                    <div className="mt-1.5">
+                      <p className="text-[10.5px] font-medium text-rose-600">Alternative resources available:</p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {submitAlternatives.map((alt) => (
+                          <span
+                            key={alt.resource_id || alt.id}
+                            className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-800"
+                          >
+                            {alt.name || alt.resource_name || "Resource"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             <button

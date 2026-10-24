@@ -15,15 +15,14 @@ import {
   X,
   Building2,
   Phone,
-  MapPin,
   FileText,
   Calendar,
   Clock,
   User,
-  Trash2,
   Search,
   LayoutGrid,
   Table2,
+  ImageIcon,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import StatusBadge from "../components/StatusBadge";
@@ -31,6 +30,38 @@ import {
   SkeletonBookingCard,
   SkeletonBookingTableRow,
 } from "../components/Skeleton";
+
+// Helper to look up resource image by resource_id or name
+function getResourceImage(booking, resources) {
+  // Check all possible image keys on the booking object directly
+  const directImage =
+    booking.resource?.image_url ||
+    booking.resource?.image ||
+    booking.facility?.image_url ||
+    booking.vehicle?.image_url ||
+    booking.image_url;
+
+  if (directImage) {
+    return directImage;
+  }
+
+  // Fallback: look up in resources array by ID or name
+  const rid = booking.resource_id;
+  const name = booking.resource || booking.resource_name || booking.item_name || "";
+  const match =
+    (rid != null && resources.find((r) => String(r.id || r.resource_id) === String(rid))) ||
+    resources.find((r) =>
+      (r.name || r.resource_name || r.item_name || "")
+        .toLowerCase() === name.toLowerCase()
+    );
+  // Check all possible image keys
+  return match?.image || match?.image_url || match?.photo_url || match?.photo || "";
+}
+
+// Console log for debugging
+function logBookingDebug(booking) {
+  console.log("Booking Card Payload:", booking);
+}
 
 // Helper function to convert 24hr time (e.g., "17:00") to 12hr AM/PM format (e.g., "5:00 PM")
 function formatTimeTo12Hour(timeStr) {
@@ -193,6 +224,7 @@ export default function Bookings() {
     const cached = readCache(CACHE_KEYS.BOOKINGS);
     return !(cached && cached.length > 0);
   });
+  const [resources, setResources] = useState([]);
   const [activeTab, setActiveTab] = useState("pending");
   const [viewMode, setViewMode] = useState("card");
   const [search, setSearch] = useState("");
@@ -234,6 +266,20 @@ export default function Bookings() {
         toast.error("Unable to load bookings");
       })
       .finally(() => setLoading(false));
+
+    // Fetch resources for image lookup
+    api
+      .fetchResources()
+      .then((res) => {
+        const d = res?.data;
+        const data = Array.isArray(d)
+          ? d
+          : Array.isArray(d?.data)
+            ? d.data
+            : [];
+        setResources(data);
+      })
+      .catch(() => {});
 
     // Listen for cache invalidation events from other pages
     const handler = () => {
@@ -323,49 +369,6 @@ export default function Bookings() {
 
   // Real requests only: special events are never counted, listed or bulk-deleted
   const requests = bookings.filter((b) => !isSpecialEvent(b));
-
-  async function handleDeleteAllApproved() {
-    const approvedBookings = requests.filter(
-      (b) => (b.status || "").toLowerCase() === "approved",
-    );
-
-    if (approvedBookings.length === 0) {
-      toast.info("No approved bookings to delete.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete all ${approvedBookings.length} approved booking(s)? This action cannot be undone.`,
-    );
-    if (!confirmed) return;
-
-    const approvedIds = approvedBookings.map((b) => b.id || b.booking_id);
-    const prevBookings = [...bookings];
-
-    // Optimistically remove approved bookings from state + cache
-    const updated = bookings.filter(
-      (b) => !approvedIds.includes(b.id || b.booking_id),
-    );
-    setBookings(updated);
-    writeCache(CACHE_KEYS.BOOKINGS, updated);
-
-    try {
-      await Promise.all(
-        approvedIds.map((id) =>
-          api.deleteBooking
-            ? api.deleteBooking(id)
-            : api.updateBookingStatus(id, "deleted"),
-        ),
-      );
-      toast.success(`${approvedBookings.length} booking(s) deleted successfully`);
-      window.dispatchEvent(new Event("cacheInvalidated"));
-    } catch {
-      // Revert on failure
-      setBookings(prevBookings);
-      writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
-      toast.error("Failed to delete some bookings. Please try again.");
-    }
-  }
 
   // Count metrics for tabs
   const pendingCount = requests.filter(
@@ -458,37 +461,109 @@ export default function Bookings() {
       </header>
 
       <div className="px-4 sm:px-6 py-6 space-y-6">
-        {/* Search & Barangay Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full md:w-64">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Search by resource, applicant, purpose..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-line bg-white py-2.5 pl-9 pr-3 text-[13px] outline-none focus:border-brand"
-            />
+        {/* KPI Summary Cards Row — clickable to toggle filters */ }
+        <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
+          {[
+            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading, tab: "pending" },
+            { label: "Approved Requests", value: approvedCount, Icon: Check, loading, tab: "approved" },
+            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading, tab: "rejected" },
+            { label: "Total Requests", value: requests.length, Icon: FileText, loading, tab: "all" },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              onClick={() => stat.tab && setActiveTab(stat.tab)}
+              className={`cursor-pointer relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs hover:border-slate-300 transition-all ${stat.loading ? "animate-pulse" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-2xl font-bold text-slate-900">
+                  {stat.loading ? (
+                    <span className="inline-block h-7 w-10 bg-slate-200 rounded-md"></span>
+                  ) : (
+                    stat.value
+                  )}
+                </p>
+                {stat.Icon && <stat.Icon size={18} className="text-slate-300 opacity-50" />}
+              </div>
+              <p className="mt-1 text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Consolidated Toolbar — matches Overview.jsx layout */ }
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          {/* Left: Status Filter Pills */ }
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full sm:w-auto">
+            <button
+              onClick={() => setActiveTab("pending")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "pending"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setActiveTab("approved")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "approved"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              Approved
+            </button>
+            <button
+              onClick={() => setActiveTab("rejected")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "rejected"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              Rejected
+            </button>
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                activeTab === "all"
+                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+              }`}
+            >
+              All
+            </button>
           </div>
 
-          <select
-            value={barangayFilter}
-            onChange={(e) => setBarangayFilter(e.target.value)}
-            className="rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none focus:border-brand"
-          >
-            <option value="all">All Barangays</option>
-            {barangayOptions.map((bg) => (
-              <option key={bg} value={bg}>
-                {bg}
-              </option>
-            ))}
-          </select>
-
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-[12px] text-steel">View:</span>
+          {/* Right: Search & Dropdown & View Mode */ }
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-64">
+              <Search
+                size={14}
+                className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4 flex items-center"
+              />
+              <input
+                type="text"
+                placeholder="Search resources, applicants..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full text-xs py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
+              />
+            </div>
+            <select
+              value={barangayFilter}
+              onChange={(e) => setBarangayFilter(e.target.value)}
+              className="text-xs py-1.5 px-2.5 rounded-lg border border-gray-200 bg-white shrink-0 outline-none focus:border-brand"
+            >
+              <option value="all">Show: All Barangays</option>
+              {barangayOptions.map((bg) => (
+                <option key={bg} value={bg}>
+                  {bg}
+                </option>
+              ))}
+            </select>
             <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
               <button
                 onClick={() => setViewMode("card")}
@@ -499,7 +574,7 @@ export default function Bookings() {
                 }`}
                 title="Card View"
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={14} />
               </button>
               <button
                 onClick={() => setViewMode("table")}
@@ -510,104 +585,22 @@ export default function Bookings() {
                 }`}
                 title="Table View"
               >
-                <Table2 size={16} />
+                <Table2 size={14} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tab Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
-          <div className="inline-flex items-center gap-1 rounded-lg bg-gray-100 p-1 border border-line">
-            <button
-              onClick={() => setActiveTab("pending")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-                activeTab === "pending"
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
-              }`}
-            >
-              Pending
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === "pending"
-                    ? "bg-amber-600 text-white"
-                    : "bg-amber-100 text-amber-800"
-                }`}
-              >
-                {pendingCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("approved")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-                activeTab === "approved"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
-              }`}
-            >
-              Approved
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === "approved"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}
-              >
-                {approvedCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("rejected")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-                activeTab === "rejected"
-                  ? "bg-rose-600 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
-              }`}
-            >
-              Rejected
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === "rejected"
-                    ? "bg-rose-700 text-white"
-                    : "bg-rose-100 text-rose-800"
-                }`}
-              >
-                {rejectedCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg transition ${
-                activeTab === "all"
-                  ? "bg-gray-800 text-white shadow-sm"
-                  : "text-steel hover:text-ink"
-              }`}
-            >
-              All ({requests.length})
-            </button>
-          </div>
-
-          {canModerate && approvedCount > 0 && (
-            <button
-              onClick={handleDeleteAllApproved}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition shadow-sm"
-            >
-              <Trash2 size={14} /> Delete All Approved ({approvedCount})
-            </button>
-          )}
-        </div>
-
         {/* Content Section */}
         {loading ? (
           viewMode === "card" ? (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonBookingCard key={`skeleton-card-${i}`} />
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-line bg-white">
+            <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <table className="w-full min-w-[900px]">
                 <thead className="border-b border-line bg-gray-50">
                   <tr>
@@ -650,11 +643,11 @@ export default function Bookings() {
             <p className="text-[14px] text-steel italic">{getEmptyMessage()}</p>
           </div>
         ) : viewMode === "table" ? (
-          <div className="overflow-x-auto rounded-xl border border-line bg-white shadow-sm">
+          <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full min-w-[900px]">
               <thead className="border-b border-line bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
+                  <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel min-w-[150px]">
                     Resource
                   </th>
                   <th className="px-4 py-3 text-left text-[12px] font-semibold text-steel">
@@ -730,10 +723,15 @@ export default function Bookings() {
 
                   const isPendingItem =
                     (b.status || "").toLowerCase() === "pending";
+                  const statusText = b.status || "pending";
+                  const statusColor = 
+                    statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                    statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
+                    "bg-amber-500";
 
                   return (
                     <tr key={bookingId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-[13px] font-medium text-ink">
+                      <td className="px-4 py-3 text-[13px] font-medium text-ink min-w-[150px] whitespace-normal">
                         {resourceName}
                       </td>
                       <td className="px-4 py-3 text-[13px]">{fullName}</td>
@@ -767,7 +765,7 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[12px] font-medium text-white hover:bg-emerald-700 transition"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700"
                                 title="Approve"
                               >
                                 <Check size={12} /> Approve
@@ -777,7 +775,7 @@ export default function Bookings() {
                                   setRejectBooking(b);
                                   setRejectModalOpen(true);
                                 }}
-                                className="flex items-center justify-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-[12px] font-medium text-rose-600 hover:bg-rose-100 transition"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50/50 flex items-center justify-center hover:bg-rose-100"
                                 title="Reject"
                               >
                                 <X size={12} /> Reject
@@ -787,7 +785,7 @@ export default function Bookings() {
                           {!canModerate && (
                             <button
                               onClick={() => {}}
-                              className="flex items-center justify-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[12px] font-medium text-steel hover:bg-gray-50 transition"
+                              className="w-full py-1.5 text-xs font-semibold rounded-lg border border-line text-steel hover:bg-gray-50 flex items-center justify-center"
                               title="View"
                             >
                               <FileText size={12} /> View
@@ -803,8 +801,7 @@ export default function Bookings() {
           </div>
         ) : (
           // Card View
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {filteredBookings.map((b) => {
+          <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">{filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
               const resourceName =
                 b.resource || b.resource_name || b.item_name || "Resource";
@@ -823,12 +820,6 @@ export default function Bookings() {
                 "Unknown Requestor";
               const cellNumber =
                 b.cell_number || b.contact || b.phone || "N/A";
-              const addressValue =
-                b.where_do_you_live ||
-                b.address ||
-                b.location ||
-                b.user_address ||
-                "N/A";
               const purposeValue =
                 b.purpose ||
                 b.reason ||
@@ -861,88 +852,93 @@ export default function Bookings() {
 
               const isPendingItem =
                 (b.status || "").toLowerCase() === "pending";
+              const statusText = b.status || "pending";
+              const statusColor =
+                statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
+                "bg-amber-500";
+              const resourceImage = getResourceImage(b, resources);
 
               return (
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="cursor-pointer overflow-hidden rounded-xl border border-line bg-white shadow-sm transition-shadow hover:shadow-md flex flex-col"
+                  className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
-                  {/* Resource + Status header */}
-                  <div className="flex justify-between items-start gap-2 p-2.5">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-steel">
-                        Resource
-                      </span>
-                      <h3 className="text-[13px] font-bold text-gray-900 leading-tight truncate">
-                        {resourceName}
-                      </h3>
-                    </div>
-                    <div className="shrink-0">
-                      <StatusBadge status={b.status} />
-                    </div>
+                  {/* Resource Image Banner — matching Overview.jsx style */ }
+                  <div className="relative w-full h-36 rounded-lg overflow-hidden bg-slate-100 mb-3 border border-slate-100">
+                    {resourceImage ? (
+                      <img
+                        src={resourceImage}
+                        alt={resourceName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                        <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
+                        <span className="text-xs">No image provided</span>
+                      </div>
+                    )}
+                    {/* Floating Status Badge — matching Overview pattern */ }
+                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-amber-500 text-white shadow-xs">
+                      {b.status || 'PENDING'}
+                    </span>
                   </div>
 
-                  {/* Date & Time chips */}
-                  <div className="px-2.5 mb-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-1 text-[10px] font-medium text-blue-800">
+                  {/* Header with Resource Title */ }
+                  <div className="mb-3">
+                    <h3 className="text-[15px] font-semibold text-slate-800">
+                      {resourceName}
+                    </h3>
+                  </div>
+
+                  {/* Date & Time tags */ }
+                  <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 border border-purple-200 px-2 py-1 text-[10px] font-medium text-purple-800">
+                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
-                  {/* Details block */}
-                  <div className="space-y-1.5 rounded-md bg-gray-50 p-2.5 text-[11px] mb-3">
+                  {/* Requester Info Box */ }
+                  <div className="bg-slate-50/80 p-3.5 rounded-lg border border-slate-100/80 text-xs text-slate-600 space-y-1.5 my-3">
                     <div className="flex items-center gap-1.5">
-                      <User size={12} className="shrink-0 text-gray-400" />
-                      <span>
-                        <strong className="text-gray-700">Name:</strong>{" "}
+                      <User size={10} className="shrink-0 text-slate-400" />
+                      <span className="truncate">
+                        <strong className="text-slate-700">Requester:</strong>{" "}
                         {fullName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Building2
-                        size={12}
-                        className="shrink-0 text-gray-400"
-                      />
-                      <span>
-                        <strong className="text-gray-700">Brgy:</strong>{" "}
-                        {barangayName}
+                      <Building2 size={10} className="shrink-0 text-slate-400" />
+                      <span className="truncate">
+                        <strong className="text-slate-700">Barangay:</strong> {barangayName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Phone size={12} className="shrink-0 text-gray-400" />
-                      <span className="font-mono">
-                        <strong className="text-gray-700 font-sans">
-                          Cell:
-                        </strong>{" "}
-                        {cellNumber}
+                      <Phone size={10} className="shrink-0 text-slate-400" />
+                      <span className="font-mono truncate">
+                        <strong className="text-slate-700">Contact:</strong> {cellNumber}
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5">
-                      <FileText
-                        size={12}
-                        className="shrink-0 text-gray-400 mt-0.5"
-                      />
+                      <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
                       <span className="line-clamp-2">
-                        <strong className="text-gray-700">Purpose:</strong>{" "}
-                        {purposeValue}
+                        <strong className="text-slate-700">Purpose:</strong> {purposeValue}
                       </span>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons */ }
                   {canModerate && isPendingItem && (
-                    <div className="mt-auto flex gap-2 p-2 pt-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2 mt-2">
                       <button
-                        onClick={() =>
-                          handleStatusChange(bookingId, "approved")
-                        }
-                        className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-emerald-700 transition"
+                        onClick={() => handleStatusChange(bookingId, "approved")}
+                        className="flex-1 py-2 rounded-md bg-[#0B6E4F] hover:bg-[#08523B] text-white font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -951,7 +947,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-100 transition"
+                        className="flex-1 py-2 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <X size={12} /> Reject
                       </button>

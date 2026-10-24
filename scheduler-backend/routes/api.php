@@ -202,4 +202,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('admin');
     Route::post('/registration-requests/{requestId}/reject', [RegistrationController::class, 'reject'])
         ->middleware('admin');
+
+    // Admin: list all users
+    Route::get('/users', [\App\Http\Controllers\AuthController::class, 'listUsers'])
+        ->middleware('admin');
 });

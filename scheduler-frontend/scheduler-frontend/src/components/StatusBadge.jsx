@@ -18,14 +18,14 @@ const LABELS = {
   confirmed: 'Confirmed',
 }
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, className = "" }) {
   const normalizedStatus = (status || "").toLowerCase().trim()
   const style = STYLES[normalizedStatus] || 'text-steel bg-line'
   const label = LABELS[normalizedStatus] || status || 'Unknown'
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[13px] font-medium ${style}`}
+      className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[13px] font-medium ${style} ${className}`}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {label}

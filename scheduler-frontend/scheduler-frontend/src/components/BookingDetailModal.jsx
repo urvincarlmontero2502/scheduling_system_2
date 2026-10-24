@@ -249,7 +249,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
 
         {/* Footer - Actions */}
         <div
-          className="border-t border-line px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-end gap-2"
+          className="border-t border-line px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-end gap-2 w-full"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
         >
           <button
@@ -262,13 +262,13 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
             <>
               <button
                 onClick={handleRejectClick}
-                className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition"
+                className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
               >
                 <X size={14} /> Reject
               </button>
               <button
                 onClick={handleApprove}
-                className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition"
+                className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 <Check size={14} /> Approve
               </button>
@@ -276,7 +276,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
           ) : (
             <button
               onClick={() => {}}
-              className="w-full sm:w-auto h-11 flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-medium text-steel bg-gray-100 rounded-lg"
+              className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg bg-gray-100"
               disabled
             >
               <FileText size={14} /> No actions available
