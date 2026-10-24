@@ -43,16 +43,21 @@ class BarangayAndAdminSeeder extends Seeder
         ];
 
         // 3. Loop and create individual accounts for each barangay
+        //    Poblacion is special: its admin is a barangay_admin who can approve/reject
+        //    registration requests. Others are regular staff (user role).
         foreach ($barangays as $brgy) {
             // Generate a clean email handle (e.g., "a.beltran@system.local")
             $slug = strtolower(str_replace(['.', ' '], ['', ''], $brgy));
+
+            // Poblacion gets barangay_admin role so it can manage registration requests
+            $role = ($brgy === 'Poblacion') ? 'barangay_admin' : 'user';
 
             User::updateOrCreate(
                 ['email' => "{$slug}@system.local"],
                 [
                     'full_name' => "{$brgy} Representative",
                     'password_hash' => $tempPassword,
-                    'role' => 'user',
+                    'role' => $role,
                     'barangay' => $brgy,
                 ]
             );
