@@ -127,6 +127,34 @@ Route::get('/diagnostics/resources-schema', function () {
     return response()->json($result);
 });
 
+// Diagnostic: check oauth temp tokens table accessibility
+Route::get('/diagnostics/oauth-tokens', function () {
+    $result = [
+        'table_exists' => true,
+        'accessible' => true,
+        'token_count' => 0,
+        'error' => null,
+    ];
+
+    try {
+        $tableExists = DB::connection()
+            ->select("SELECT 1 FROM information_schema.tables WHERE table_name = 'google_oauth_temp_tokens' LIMIT 1");
+
+        $result['table_exists'] = !empty($tableExists);
+
+        if ($result['table_exists']) {
+            $count = DB::connection()
+                ->select("SELECT COUNT(*) as cnt FROM google_oauth_temp_tokens");
+            $result['token_count'] = (int) $count[0]->cnt;
+        }
+    } catch (\Exception $e) {
+        $result['accessible'] = false;
+        $result['error'] = $e->getMessage();
+    }
+
+    return response()->json($result);
+});
+
 // Public: get barangays list (no auth required — needed during registration flow)
 Route::get('/barangays', [AuthController::class, 'getBarangays']);
 
