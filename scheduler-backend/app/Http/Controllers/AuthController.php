@@ -587,12 +587,33 @@ class AuthController extends Controller
             'barangay' => ['required', 'string', 'max:255'],
         ]);
 
+        // Log the attempt (without sensitive data)
+        \Log::info('completeGoogleRegistration called', [
+            'barangay' => $validated['barangay'],
+            'token_length' => strlen($validated['temporary_token']),
+        ]);
+
         // Look up the temporary token
-        $tempRecord = DB::table('google_oauth_temp_tokens')
-            ->where('token', $validated['temporary_token'])
-            ->first();
+        try {
+            $tempRecord = DB::table('google_oauth_temp_tokens')
+                ->where('token', $validated['temporary_token'])
+                ->first();
+        } catch (\Exception $e) {
+            \Log::error('google_oauth_temp_tokens lookup failed', [
+                'error' => $e->getMessage(),
+                'table_exists' => DB::getSchemaBuilder()->hasTable('google_oauth_temp_tokens'),
+            ]);
+            return response()->json([
+                'message' => 'System is not ready for registration. Please try signing in with Google again.',
+                'error_detail' => 'Database table unavailable. Please contact support.',
+            ], 500);
+        }
 
         if (!$tempRecord) {
+            \Log::warning('Registration token not found', [
+                'barangay' => $validated['barangay'],
+                'token_length' => strlen($validated['temporary_token']),
+            ]);
             return response()->json([
                 'message' => 'Invalid or expired registration token. Please try signing in with Google again.',
             ], 400);
