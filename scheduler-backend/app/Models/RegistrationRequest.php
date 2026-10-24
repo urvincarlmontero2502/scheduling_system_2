@@ -51,6 +51,7 @@ class RegistrationRequest extends Model
         'Magsaysay'     => 'bmagsaysayjabonga@gmail.com',
         'Baleguian'     => 'blgubaleguian@gmail.com',
         'Santo Nino'    => 'santonino583@gmail.com',
+        'Poblacion'     => 'poblacion@system.local',
     ];
 
     /**
