@@ -162,7 +162,6 @@ Route::get('/diagnostics/oauth-tokens', function () {
                     'updated_at' => now(),
                 ]);
                 $result['insert_test'] = true;
-                $result['test_token'] = $testToken;
 
                 // Verify we can read it back
                 $check = DB::table('google_oauth_temp_tokens')
@@ -170,8 +169,10 @@ Route::get('/diagnostics/oauth-tokens', function () {
                     ->first();
                 $result['read_test'] = !is_null($check);
 
-                // Leave the token in place for testing (don't delete)
-                // It will expire in 15 minutes
+                // Clean up the test token
+                DB::table('google_oauth_temp_tokens')
+                    ->where('token', $testToken)
+                    ->delete();
             } catch (\Exception $e) {
                 $result['insert_test'] = false;
                 $result['insert_error'] = $e->getMessage();
