@@ -267,4 +267,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin: list all users
     Route::get('/users', [\App\Http\Controllers\AuthController::class, 'listUsers'])
         ->middleware('admin');
+
+    // Admin-only: secure test email endpoint (rate-limited)
+    Route::post('/admin/test-email', [\App\Http\Controllers\AuthController::class, 'sendTestEmail'])
+        ->middleware(['admin', 'throttle:3,1']);
 });

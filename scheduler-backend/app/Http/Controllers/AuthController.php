@@ -645,23 +645,27 @@ class AuthController extends Controller
             ], 409);
         }
 
-        // Check if a pending registration request already exists for this email
+        // Check if a registration request already exists for this email (any status)
         $existingRequest = DB::table('registration_requests')
             ->where('email', $tempRecord->email)
-            ->where('status', 'pending')
             ->first();
 
         if ($existingRequest) {
-            // Return the existing registration request instead of creating a duplicate
-            DB::table('google_oauth_temp_tokens')
-                ->where('token', $validated['temporary_token'])
-                ->delete();
+            // If it's still pending, return it - user should wait for approval
+            if ($existingRequest->status === 'pending') {
+                DB::table('google_oauth_temp_tokens')
+                    ->where('token', $validated['temporary_token'])
+                    ->delete();
 
-            return response()->json([
-                'message' => 'Your registration request is still pending approval. Please wait for an admin to review your request.',
-                'registration_request_id' => $existingRequest->request_id,
-                'status' => 'pending',
-            ], 200);
+                return response()->json([
+                    'message' => 'Your registration request is still pending approval. Please wait for an admin to review your request.',
+                    'registration_request_id' => $existingRequest->request_id,
+                    'status' => 'pending',
+                ], 200);
+            }
+
+            // If it's already approved/rejected, allow them to resubmit
+            // The updateOrCreate below will create a new pending request
         }
 
         try {
@@ -716,6 +720,7 @@ class AuthController extends Controller
             if ($tableExists) {
                 // Create or update the pending registration request (NOT a user yet)
                 // Uses updateOrCreate keyed by email to avoid unique constraint violations
+                // Also handles resubmission of previously approved/rejected requests
                 $registrationRequest = \App\Models\RegistrationRequest::updateOrCreate(
                     ['email' => $tempRecord->email],
                     $regData
@@ -844,7 +849,43 @@ class AuthController extends Controller
         $users = User::select('user_id', 'full_name', 'email', 'role', 'barangay', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get();
-
         return response()->json($users);
+    }
+
+    /**
+     * Send a test email to the authenticated admin's own email address.
+     * Secure, one-per-third-of-a-minute endpoint for verifying mail delivery
+     * without needing Render Shell access.
+     */
+    public function sendTestEmail(Request $request)
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::raw(
+                'This is a test email from the Jabonga Scheduling System.' . "\n\n" .
+                'Time sent: ' . now()->toDateTimeString() . ' (UTC+8)' . "\n" .
+                'If you received this, your email transport is configured correctly.',
+                function ($message) {
+                    $message->to($request->user()->email)
+                        ->subject('Test Email - Jabonga Scheduling System');
+                }
+            );
+
+            \Illuminate\Support\Facades\Log::info('Test email sent', [
+                'recipient_domain' => explode('@', $request->user()->email)[1] ?? 'unknown',
+                'user_id' => $request->user()->user_id,
+            ]);
+
+            return response()->json(['sent' => true]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Test email failed', [
+                'recipient_domain' => explode('@', $request->user()->email)[1] ?? 'unknown',
+                'error' => substr($e->getMessage(), 0, 255), // Sanitize output
+            ]);
+
+            return response()->json([
+                'sent' => false,
+                'error' => class_basename($e) . ': ' . substr($e->getMessage(), 0, 255),
+            ], 500);
+        }
     }
 }

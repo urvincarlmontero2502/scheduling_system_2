@@ -19,6 +19,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Support\Facades\Mail::extend('brevo', function () {
+            return (new \Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory)->create(
+                new \Symfony\Component\Mailer\Transport\Dsn(
+                    'brevo+api://default', '', config('services.brevo.key')
+                )
+            );
+        });
     }
 }
