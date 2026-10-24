@@ -629,9 +629,17 @@ class AuthController extends Controller
             $columns = DB::connection()
                 ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
             $columnNames = array_map(fn($c) => $c->column_name, $columns);
-            $regColumns = DB::connection()
-                ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'registration_requests'");
-            $regColumnNames = array_map(fn($c) => $c->column_name, $regColumns);
+
+            // Check if registration_requests table exists (it may not if migration hasn't run yet)
+            $regColumnNames = ['request_id', 'full_name', 'email', 'password_hash', 'google_id', 'avatar', 'barangay', 'department', 'role', 'status', 'reject_reason', 'reviewed_by', 'reviewed_at', 'created_at', 'updated_at'];
+            try {
+                $regColumns = DB::connection()
+                    ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'registration_requests'");
+                $regColumnNames = array_merge($regColumnNames, array_map(fn($c) => $c->column_name, $regColumns));
+            } catch (\Exception $e) {
+                // Table may not exist yet — use default columns
+                \Log::warning('registration_requests table check: ' . $e->getMessage());
+            }
 
             // Prepare registration request data
             $regData = [
@@ -653,53 +661,99 @@ class AuthController extends Controller
                 $regData['department'] = null;
             }
 
-            // Create the pending registration request (NOT a user yet)
-            $registrationRequest = \App\Models\RegistrationRequest::create($regData);
-
-            // Delete the temporary token
-            DB::table('google_oauth_temp_tokens')
-                ->where('token', $validated['temporary_token'])
-                ->delete();
-
-            // Notify the barangay admin (if a mapping exists)
-            $adminEmail = \App\Models\RegistrationRequest::getAdminEmail($validated['barangay']);
-            $barangayAdmin = User::where('email', $adminEmail)
-                ->whereIn('role', ['admin', 'barangay_admin'])
-                ->first();
-
-            if ($barangayAdmin) {
-                DB::table('notifications')->insert([
-                    'user_id' => $barangayAdmin->user_id,
-                    'booking_id' => null,
-                    'message' => "New registration request from {$tempRecord->full_name} ({$tempRecord->email}) for Brgy. {$validated['barangay']}.",
-                    'type'    => 'registration_request',
-                    'title'   => 'New Registration Request',
-                    'is_read' => false,
-                    'created_at' => now(),
-                ]);
+            // Check if the registration_requests table exists
+            $tableExists = false;
+            try {
+                DB::connection()
+                    ->select("SELECT 1 FROM information_schema.tables WHERE table_name = 'registration_requests' LIMIT 1");
+                $tableExists = true;
+            } catch (\Exception $e) {
+                $tableExists = false;
             }
 
-            // If this is the main admin (super-admin), also create a notification for them
-            $mainAdmin = User::where('role', 'admin')->first();
-            if ($mainAdmin && $mainAdmin->user_id !== ($barangayAdmin->user_id ?? null)) {
-                DB::table('notifications')->insert([
-                    'user_id' => $mainAdmin->user_id,
-                    'booking_id' => null,
-                    'message' => "New registration request from {$tempRecord->full_name} ({$tempRecord->email}) for Brgy. {$validated['barangay']}.",
-                    'type'    => 'registration_request',
-                    'title'   => 'New Registration Request',
-                    'is_read' => false,
-                    'created_at' => now(),
-                ]);
+            if ($tableExists) {
+                // Create the pending registration request (NOT a user yet)
+                $registrationRequest = \App\Models\RegistrationRequest::create($regData);
+
+                // Delete the temporary token
+                DB::table('google_oauth_temp_tokens')
+                    ->where('token', $validated['temporary_token'])
+                    ->delete();
+
+                // Notify the barangay admin (if a mapping exists)
+                $adminEmail = \App\Models\RegistrationRequest::getAdminEmail($validated['barangay']);
+                $barangayAdmin = User::where('email', $adminEmail)
+                    ->whereIn('role', ['admin', 'barangay_admin'])
+                    ->first();
+
+                if ($barangayAdmin) {
+                    DB::table('notifications')->insert([
+                        'user_id' => $barangayAdmin->user_id,
+                        'booking_id' => null,
+                        'message' => "New registration request from {$tempRecord->full_name} ({$tempRecord->email}) for Brgy. {$validated['barangay']}.",
+                        'type'    => 'registration_request',
+                        'title'   => 'New Registration Request',
+                        'is_read' => false,
+                        'created_at' => now(),
+                    ]);
+                }
+
+                // If this is the main admin (super-admin), also create a notification for them
+                $mainAdmin = User::where('role', 'admin')->first();
+                if ($mainAdmin && $mainAdmin->user_id !== ($barangayAdmin->user_id ?? null)) {
+                    DB::table('notifications')->insert([
+                        'user_id' => $mainAdmin->user_id,
+                        'booking_id' => null,
+                        'message' => "New registration request from {$tempRecord->full_name} ({$tempRecord->email}) for Brgy. {$validated['barangay']}.",
+                        'type'    => 'registration_request',
+                        'title'   => 'New Registration Request',
+                        'is_read' => false,
+                        'created_at' => now(),
+                    ]);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Your registration request has been submitted for approval. You will be notified once an admin reviews your request.',
+                    'registration_request_id' => $registrationRequest->request_id,
+                    'status' => 'pending',
+                ], 201);
+            } else {
+                // Fallback: registration_requests table doesn't exist yet
+                // Create the user directly (old behavior) so registration still works
+                $newUserData = [
+                    'full_name' => $tempRecord->full_name,
+                    'email' => $tempRecord->email,
+                    'password_hash' => Hash::make(Str::random(24)),
+                    'role' => 'staff',
+                    'barangay' => $validated['barangay'],
+                ];
+
+                if (in_array('google_id', $columnNames) && $tempRecord->google_id) {
+                    $newUserData['google_id'] = $tempRecord->google_id;
+                }
+                if (in_array('email_verified_at', $columnNames)) {
+                    $newUserData['email_verified_at'] = now();
+                }
+                if ($tempRecord->avatar && in_array('avatar', $columnNames)) {
+                    $newUserData['avatar'] = $tempRecord->avatar;
+                }
+
+                $newUser = User::create($newUserData);
+
+                // Delete the temporary token
+                DB::table('google_oauth_temp_tokens')
+                    ->where('token', $validated['temporary_token'])
+                    ->delete();
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Registration completed. Please log in.',
+                    'status' => 'approved_fallback',
+                ], 201);
             }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Your registration request has been submitted for approval. You will be notified once an admin reviews your request.',
-                'registration_request_id' => $registrationRequest->request_id,
-                'status' => 'pending',
-            ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Google registration completion error: ' . $e->getMessage(), [

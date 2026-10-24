@@ -127,6 +127,9 @@ Route::get('/diagnostics/resources-schema', function () {
     return response()->json($result);
 });
 
+// Public: get barangays list (no auth required — needed during registration flow)
+Route::get('/barangays', [AuthController::class, 'getBarangays']);
+
 Route::middleware('auth:sanctum')->group(function () {
 
     // Authentication
@@ -186,7 +189,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('path', '.*');
 
     // Barangay management
-    Route::get('/barangays', [AuthController::class, 'getBarangays']);
     Route::post('/barangays', [AuthController::class, 'createBarangay'])
         ->middleware('admin');
 
