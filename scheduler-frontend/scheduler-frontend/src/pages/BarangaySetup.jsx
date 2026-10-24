@@ -94,10 +94,22 @@ export default function BarangaySetup() {
         navigate("/");
       }
     } catch (err) {
-      setError(
+      let errorMsg =
         err.response?.data?.message ||
-          "Failed to submit registration request. Please try again."
-      );
+        "Failed to submit registration request. Please try again.";
+
+      // Include error details if the server provides them
+      const errorDetail = err.response?.data?.error_detail;
+      if (errorDetail) {
+        errorMsg += `\nDetails: ${errorDetail}`;
+      }
+
+      // Also include raw response info for debugging if available
+      if (!err.response) {
+        errorMsg += "\nNetwork error — please check your connection.";
+      }
+
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
