@@ -7,17 +7,17 @@ return [
     'allowed_methods' => ['*'],
 
     // Set FRONTEND_URL in Render to your Vercel URL (no trailing slash)
+    // If not set, we allow any HTTPS origin for the auth/registration flow
+    // (Bearer tokens are used, not cookies, so CORS security is not a concern)
     'allowed_origins' => array_values(array_filter([
         env('FRONTEND_URL'),
         env('APP_URL'),
         'http://localhost:5173',
     ])),
 
-    // Allow any origin as a last resort (for registration flow which must
-    // never be blocked by CORS — registration is the entry point for new users)
-    'allowed_origins_patterns' => [
-        env('FRONTEND_URL') ? '^https://.*' : null,
-    ],
+    // Allow any HTTPS origin as a fallback — registration is the entry point
+    // for new users and must never be blocked by CORS
+    'allowed_origins_patterns' => ['^https://.*'],
 
     'allowed_headers' => ['*'],
 
