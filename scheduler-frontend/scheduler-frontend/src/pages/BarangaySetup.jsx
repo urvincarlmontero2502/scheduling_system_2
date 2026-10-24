@@ -82,10 +82,9 @@ export default function BarangaySetup() {
 
         // Clean up the temporary registration token
         localStorage.removeItem("google_registration_token");
-        localStorage.setItem("registration_submitted", "true");
 
-        // Redirect to login with a message about pending approval
-        navigate("/login?registration=pending");
+        // Redirect to registration status page (thank you / pending approval)
+        navigate("/registration-status?status=pending");
       } else {
         // Existing user updating their barangay
         await api.updateUser({ barangay: selectedBarangay });

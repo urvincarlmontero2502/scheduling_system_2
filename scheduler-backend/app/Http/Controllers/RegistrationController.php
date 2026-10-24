@@ -63,7 +63,7 @@ class RegistrationController extends Controller
 
         $registrationRequest = RegistrationRequest::where('request_id', $requestId)->firstOrFail();
 
-        // Authorization: admin can approve all; barangay_admin only their barangay
+        // Authorization: admin *** approve all; barangay_admin only their barangay
         if ($user->role === 'barangay_admin' && $registrationRequest->barangay !== $user->barangay) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
@@ -103,8 +103,7 @@ class RegistrationController extends Controller
             $registrationRequest->reviewed_at = now();
             $registrationRequest->save();
 
-            // Create notification for the newly approved user
-            // Use DB::table since booking_id is not applicable (no booking involved)
+            // Create in-app notification for the newly approved user
             DB::table('notifications')->insert([
                 'user_id'   => $newUser->user_id,
                 'booking_id' => null,
@@ -114,6 +113,15 @@ class RegistrationController extends Controller
                 'is_read'   => false,
                 'created_at' => now(),
             ]);
+
+            // Send approval email to the user
+            try {
+                Mail::to($newUser->email)
+                    ->cc($user->email)
+                    ->send(new \App\Mail\RegistrationApproved($registrationRequest, $newUser, $user));
+            } catch (\Exception $mailErr) {
+                \Log::warning('Registration approval email failed: ' . $mailErr->getMessage());
+            }
 
             DB::commit();
 
@@ -154,10 +162,14 @@ class RegistrationController extends Controller
         $registrationRequest->reviewed_at = now();
         $registrationRequest->save();
 
-        // Note: We don't create a notification for the rejected user here
-        // because the user account doesn't exist yet (registration was not approved).
-        // The rejection reason is stored in the registration_requests table.
-        // The admin who rejected can see this in the processed requests.
+        // Send rejection email to the applicant (no user account exists yet)
+        try {
+            Mail::to($registrationRequest->email)
+                ->cc($user->email)
+                ->send(new \App\Mail\RegistrationRejected($registrationRequest, $user));
+        } catch (\Exception $mailErr) {
+            \Log::warning('Registration rejection email failed: ' . $mailErr->getMessage());
+        }
 
         return response()->json([
             'message' => 'Registration rejected.',

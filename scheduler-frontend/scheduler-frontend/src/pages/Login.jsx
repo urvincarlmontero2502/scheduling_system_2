@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CalendarClock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { CalendarClock, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
@@ -19,6 +19,7 @@ export default function Login() {
   const from = location.state?.from?.pathname || "/";
   const urlParams = new URLSearchParams(location.search);
   const registrationPending = urlParams.get("registration") === "pending";
+  const registrationApproved = urlParams.get("registration") === "approved";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -87,6 +88,19 @@ export default function Login() {
                 Your registration request has been submitted and is pending
                 approval by the barangay admin. You will receive an email once
                 your account is approved.
+              </p>
+            </div>
+          )}
+
+          {registrationApproved && (
+            <div className="mb-4 flex items-start gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2.5">
+              <CheckCircle
+                size={16}
+                className="mt-0.5 flex-shrink-0 text-green-600"
+              />
+              <p className="text-[12.5px] text-green-800">
+                Your registration has been approved! You can now log in with
+                your email address and password.
               </p>
             </div>
           )}
