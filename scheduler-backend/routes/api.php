@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
@@ -185,7 +186,20 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('path', '.*');
 
     // Barangay management
-    Route::get('/barangays', [\App\Http\Controllers\AuthController::class, 'getBarangays']);
-    Route::post('/barangays', [\App\Http\Controllers\AuthController::class, 'createBarangay'])
+    Route::get('/barangays', [AuthController::class, 'getBarangays']);
+    Route::post('/barangays', [AuthController::class, 'createBarangay'])
+        ->middleware('admin');
+
+    // Registration Requests (user approval workflow)
+    // Barangay admins can access their own barangay's requests; super-admins see all
+    Route::get('/registration-requests', [RegistrationController::class, 'index'])
+        ->middleware('admin');
+    Route::get('/registration-requests/processed', [RegistrationController::class, 'processed'])
+        ->middleware('admin');
+    Route::get('/registration-requests/{requestId}', [RegistrationController::class, 'show'])
+        ->middleware('admin');
+    Route::post('/registration-requests/{requestId}/approve', [RegistrationController::class, 'approve'])
+        ->middleware('admin');
+    Route::post('/registration-requests/{requestId}/reject', [RegistrationController::class, 'reject'])
         ->middleware('admin');
 });

@@ -17,6 +17,8 @@ export default function Login() {
   const [showForgotModal, setShowForgotModal] = useState(false);
 
   const from = location.state?.from?.pathname || "/";
+  const urlParams = new URLSearchParams(location.search);
+  const registrationPending = urlParams.get("registration") === "pending";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -74,6 +76,21 @@ export default function Login() {
         <form
           onSubmit={handleSubmit}
           className="border border-line rounded-lg bg-white p-6 pb-8">
+          {/* Pending Approval Info */}
+          {registrationPending && (
+            <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <AlertCircle
+                size={16}
+                className="mt-0.5 flex-shrink-0 text-amber-600"
+              />
+              <p className="text-[12.5px] text-amber-800">
+                Your registration request has been submitted and is pending
+                approval by the barangay admin. You will receive an email once
+                your account is approved.
+              </p>
+            </div>
+          )}
+
           <label className="mb-1.5 block text-[13px] font-medium text-steel">
             Email
           </label>

@@ -34,6 +34,21 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if the user is an admin (super-admin) or barangay admin.
+     * Both roles can manage registration requests, but barangay_admin
+     * is limited to their own barangay.
+     */
+    public function isApprover(): bool
+    {
+        return $this->role === 'admin' || $this->role === 'barangay_admin';
+    }
+
+    public function isBarangayAdmin(): bool
+    {
+        return $this->role === 'barangay_admin';
+    }
+
+    /**
      * Resolve profile image URL with fallback to generated avatar.
      * Checks Google avatar first, then uploaded profile_image, then ui-avatars.com fallback.
      */

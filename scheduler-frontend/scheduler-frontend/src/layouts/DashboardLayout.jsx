@@ -12,6 +12,7 @@ import {
   User,
   X,
   Loader,
+  FileCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -33,6 +34,12 @@ const NAV_ITEMS = [
     label: "Facilities & Vehicles",
     icon: Building2,
     roles: ["admin"],
+  },
+  {
+    to: "/registration-requests",
+    label: "Registration Requests",
+    icon: FileCheck,
+    roles: ["admin", "barangay_admin"],
   },
 ];
 

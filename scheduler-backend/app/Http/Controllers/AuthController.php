@@ -573,11 +573,12 @@ class AuthController extends Controller
     }
 
     /**
-     * Complete Google OAuth registration by creating the user with their
-     * selected barangay.
+     * Complete Google OAuth registration by creating a registration request
+     * (pending approval) with the selected barangay.
      *
-     * Accepts the temporary token from handleGoogleCallback and the selected
-     * barangay, then creates the permanent user record and issues a Sanctum token.
+     * Instead of immediately creating a user, this stores a pending registration
+     * request that must be approved by a barangay admin or super-admin.
+     * A notification is sent to the barangay admin for the selected barangay.
      */
     public function completeGoogleRegistration(Request $request)
     {
@@ -600,7 +601,6 @@ class AuthController extends Controller
         // Check if the token has expired
         $expiresAt = \Carbon\Carbon::parse($tempRecord->expires_at);
         if ($expiresAt->isPast()) {
-            // Clean up expired token
             DB::table('google_oauth_temp_tokens')
                 ->where('token', $validated['temporary_token'])
                 ->delete();
@@ -610,10 +610,9 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Check if a user with this email already exists (race condition check)
+        // Check if a user with this email already exists
         $existingUser = User::where('email', $tempRecord->email)->first();
         if ($existingUser) {
-            // Clean up temp token
             DB::table('google_oauth_temp_tokens')
                 ->where('token', $validated['temporary_token'])
                 ->delete();
@@ -626,63 +625,90 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check which columns exist to avoid SQL errors
+            // Check which columns exist in users table to avoid SQL errors
             $columns = DB::connection()
                 ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
             $columnNames = array_map(fn($c) => $c->column_name, $columns);
+            $regColumns = DB::connection()
+                ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'registration_requests'");
+            $regColumnNames = array_map(fn($c) => $c->column_name, $regColumns);
 
-            $newUserData = [
-                'full_name' => $tempRecord->full_name,
-                'email' => $tempRecord->email,
-                'password_hash' => Hash::make(Str::random(24)), // Secure random placeholder
-                'role' => 'staff',
-                'barangay' => $validated['barangay'], // User's selected barangay
+            // Prepare registration request data
+            $regData = [
+                'full_name'      => $tempRecord->full_name,
+                'email'          => $tempRecord->email,
+                'password_hash'  => Hash::make(Str::random(24)),
+                'barangay'       => $validated['barangay'],
+                'role'           => 'staff',
+                'status'         => 'pending',
             ];
 
-            if (in_array('google_id', $columnNames)) {
-                $newUserData['google_id'] = $tempRecord->google_id;
+            if (in_array('google_id', $regColumnNames) && $tempRecord->google_id) {
+                $regData['google_id'] = $tempRecord->google_id;
             }
-            if (in_array('email_verified_at', $columnNames)) {
-                $newUserData['email_verified_at'] = now(); // Google verified the email
+            if (in_array('avatar', $regColumnNames) && $tempRecord->avatar) {
+                $regData['avatar'] = $tempRecord->avatar;
             }
-            if ($tempRecord->avatar && in_array('avatar', $columnNames)) {
-                $newUserData['avatar'] = $tempRecord->avatar;
+            if (in_array('department', $regColumnNames)) {
+                $regData['department'] = null;
             }
 
-            $user = User::create($newUserData);
-
-            // Generate token for immediate access
-            $expiresAt = now()->addDays(30);
-            $token = $user->createToken('spa-token', ['*'], $expiresAt)->plainTextToken;
+            // Create the pending registration request (NOT a user yet)
+            $registrationRequest = \App\Models\RegistrationRequest::create($regData);
 
             // Delete the temporary token
             DB::table('google_oauth_temp_tokens')
                 ->where('token', $validated['temporary_token'])
                 ->delete();
 
+            // Notify the barangay admin (if a mapping exists)
+            $adminEmail = \App\Models\RegistrationRequest::getAdminEmail($validated['barangay']);
+            $barangayAdmin = User::where('email', $adminEmail)
+                ->whereIn('role', ['admin', 'barangay_admin'])
+                ->first();
+
+            if ($barangayAdmin) {
+                DB::table('notifications')->insert([
+                    'user_id' => $barangayAdmin->user_id,
+                    'booking_id' => null,
+                    'message' => "New registration request from {$tempRecord->full_name} ({$tempRecord->email}) for Brgy. {$validated['barangay']}.",
+                    'type'    => 'registration_request',
+                    'title'   => 'New Registration Request',
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+            }
+
+            // If this is the main admin (super-admin), also create a notification for them
+            $mainAdmin = User::where('role', 'admin')->first();
+            if ($mainAdmin && $mainAdmin->user_id !== ($barangayAdmin->user_id ?? null)) {
+                DB::table('notifications')->insert([
+                    'user_id' => $mainAdmin->user_id,
+                    'booking_id' => null,
+                    'message' => "New registration request from {$tempRecord->full_name} ({$tempRecord->email}) for Brgy. {$validated['barangay']}.",
+                    'type'    => 'registration_request',
+                    'title'   => 'New Registration Request',
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+            }
+
             DB::commit();
 
             return response()->json([
-                'token' => $token,
-                'user' => $user,
-                'expires_at' => $expiresAt->toDateTimeString(),
-                'message' => 'Account created successfully!',
+                'message' => 'Your registration request has been submitted for approval. You will be notified once an admin reviews your request.',
+                'registration_request_id' => $registrationRequest->request_id,
+                'status' => 'pending',
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            // Clean up temp token on failure
-            DB::table('google_oauth_temp_tokens')
-                ->where('token', $validated['temporary_token'])
-                ->delete();
-
             \Log::error('Google registration completion error: ' . $e->getMessage(), [
                 'email' => $tempRecord->email,
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'message' => 'Failed to create account. Please try again.',
+                'message' => 'Failed to submit registration request. Please try again.',
                 'error_detail' => $e->getMessage(),
             ], 500);
         }

@@ -40,21 +40,18 @@ export default function BarangaySetup() {
       return;
     }
 
-    // Only fetch barangays and user data if we have a regular auth token
-    // (registration flow doesn't need these)
-    if (hasAuthToken) {
-      api
-        .getBarangays()
-        .then((res) => {
-          if (Array.isArray(res.data) && res.data.length > 0) {
-            setBarangays(res.data.map((b) => b.name));
-          }
-        })
-        .catch(() => {
-          // Fallback: use hardcoded list
-        });
+    // Always fetch barangays from API
+    api
+      .getBarangays()
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setBarangays(res.data.map((b) => b.name));
+        }
+      })
+      .catch(() => {});
 
-      // Try to restore user's previously selected barangay
+    // If existing user, try to restore their previously selected barangay
+    if (hasAuthToken) {
       api
         .fetchCurrentUser()
         .then((userRes) => {
@@ -77,53 +74,30 @@ export default function BarangaySetup() {
 
     try {
       if (registrationToken) {
-        // New user completing registration — call the complete-registration endpoint
-        const res = await api.completeGoogleRegistration(registrationToken, selectedBarangay);
-        const { token, user: signInUser, expires_at } = res.data;
-        
-        // Store auth token and user data
-        localStorage.setItem("auth_token", token);
-        localStorage.setItem("auth_user", JSON.stringify(signInUser));
-        if (expires_at) {
-          localStorage.setItem("auth_expires_at", expires_at);
-        }
+        // New user completing registration — creates a PENDING registration request
+        const res = await api.completeGoogleRegistration(
+          registrationToken,
+          selectedBarangay
+        );
+
+        // Clean up the temporary registration token
         localStorage.removeItem("google_registration_token");
-        localStorage.setItem("google_auth_success", "true");
-        
-        // Verify the token works before redirecting to dashboard
-        try {
-          const userRes = await api.fetchCurrentUser();
-          localStorage.setItem("auth_user", JSON.stringify(userRes.data));
-        } catch (verifyErr) {
-          // Token verification failed — don't navigate yet
-          // This helps catch issues early
-          throw new Error(verifyErr.response?.data?.message || "Token verification failed after registration. Please try logging in manually.");
-        }
+        localStorage.setItem("registration_submitted", "true");
 
-        // Refresh the Auth Context so the Sidebar reflects the new user profile immediately
-        try {
-          await refreshUser();
-        } catch {
-          // If refresh fails, the localStorage user data is still valid
-        }
-
-        // Redirect to dashboard
-        navigate("/");
+        // Redirect to login with a message about pending approval
+        navigate("/login?registration=pending");
       } else {
         // Existing user updating their barangay
         await api.updateUser({ barangay: selectedBarangay });
-        // Refresh Auth Context so the Sidebar reflects the updated barangay
         try {
           await refreshUser();
-        } catch {
-          // If refresh fails, the update still succeeded on the backend
-        }
+        } catch {}
         navigate("/");
       }
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Failed to save barangay selection. Please try again."
+          "Failed to submit registration request. Please try again."
       );
     } finally {
       setLoading(false);
@@ -155,6 +129,12 @@ export default function BarangaySetup() {
           </h2>
           <p className="text-[13px] text-steel">
             Please select your barangay to complete your profile setup.
+            {registrationToken && (
+              <span className="block mt-2 text-xs text-amber-600">
+                Your account will need approval from the barangay admin before
+                you can log in.
+              </span>
+            )}
           </p>
         </div>
 
@@ -186,7 +166,11 @@ export default function BarangaySetup() {
           disabled={loading || !selectedBarangay}
           className="mt-6 w-full rounded-lg bg-brand py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
         >
-          {loading ? "Saving..." : "Continue to Dashboard"}
+          {loading
+            ? "Submitting..."
+            : registrationToken
+              ? "Submit Registration Request"
+              : "Save Barangay"}
         </button>
       </div>
     </div>

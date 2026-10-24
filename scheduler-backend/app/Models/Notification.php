@@ -10,7 +10,7 @@ class Notification extends Model
     protected $primaryKey = 'notif_id';
     public $timestamps = false;
 
-    protected $fillable = ['booking_id', 'user_id', 'message', 'is_read', 'type', 'title', 'read_at'];
+    protected $fillable = ['booking_id', 'user_id', 'message', 'is_read', 'type', 'title', 'read_at', 'created_at'];
 
     protected $casts = [
         'is_read' => 'boolean',
