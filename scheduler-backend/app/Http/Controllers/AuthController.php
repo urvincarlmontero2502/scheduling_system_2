@@ -543,16 +543,18 @@ class AuthController extends Controller
 
             $tempToken = \Illuminate\Support\Str::random(64);
 
-            DB::table('google_oauth_temp_tokens')->insert([
-                'token' => $tempToken,
-                'email' => $googleEmail,
-                'google_id' => $googleUserId,
-                'full_name' => $googleName ?: explode('@', $googleEmail)[0],
-                'avatar' => $googleAvatar,
-                'expires_at' => now()->addMinutes(15), // 15-minute expiry
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('google_oauth_temp_tokens')->updateOrInsert(
+                ['email' => $googleEmail],
+                [
+                    'token' => $tempToken,
+                    'google_id' => $googleUserId,
+                    'full_name' => $googleName ?: explode('@', $googleEmail)[0],
+                    'avatar' => $googleAvatar,
+                    'expires_at' => now()->addMinutes(15),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
 
             return response()->json([
                 'temporary_token' => $tempToken,
@@ -641,6 +643,25 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'An account with this email already exists. Please log in instead.',
             ], 409);
+        }
+
+        // Check if a pending registration request already exists for this email
+        $existingRequest = DB::table('registration_requests')
+            ->where('email', $tempRecord->email)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existingRequest) {
+            // Return the existing registration request instead of creating a duplicate
+            DB::table('google_oauth_temp_tokens')
+                ->where('token', $validated['temporary_token'])
+                ->delete();
+
+            return response()->json([
+                'message' => 'Your registration request is still pending approval. Please wait for an admin to review your request.',
+                'registration_request_id' => $existingRequest->request_id,
+                'status' => 'pending',
+            ], 200);
         }
 
         try {
