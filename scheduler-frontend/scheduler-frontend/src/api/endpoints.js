@@ -11,16 +11,7 @@ export const getGoogleRedirect = () => client.get("/auth/google");
 export const googleCallback = (code) => client.post("/auth/google/callback", { code });
 export const completeGoogleRegistration = (tempToken, barangay) =>
   client.post("/auth/google/complete-registration", { temporary_token: tempToken, barangay });
-
-// --- Registration Requests (admin approval workflow) ------------------------
-export const fetchRegistrationRequests = () => client.get("/registration-requests");
-export const fetchProcessedRegistrationRequests = () => client.get("/registration-requests/processed");
-export const fetchRegistrationRequest = (id) => client.get(`/registration-requests/${id}`);
-export const approveRegistration = (id) => client.post(`/registration-requests/${id}/approve`);
-export const rejectRegistration = (id, notes) =>
-  client.post(`/registration-requests/${id}/reject`, { notes });
-
-// --- Auth -------------------------------------------------------------
+export const forgotPassword = (email) => client.post("/forgot-password", { email });
 export const logout = () => client.post("/logout");
 export const fetchCurrentUser = () => client.get("/user");
 export const updateUser = (payload) => client.put("/user", payload);
@@ -177,3 +168,8 @@ export const setResourceAvailable = (id) => {
 export const checkHealth = () => client.get("/health");
 export const getBarangays = () => client.get("/barangays");
 export const deleteAccount = () => client.put("/user", { delete_account: true });
+
+// --- Registration Requests (barangay admin approval) ---
+export const fetchRegistrationRequests = () => client.get("/registration-requests");
+export const approveRegistration = (requestId) => client.post(`/registration-requests/${requestId}/approve`);
+export const rejectRegistration = (requestId, notes) => client.post(`/registration-requests/${requestId}/reject`, { notes });

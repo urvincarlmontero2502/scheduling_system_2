@@ -9,12 +9,11 @@ import Calendar from "./pages/Calendar";
 import Bookings from "./pages/Bookings";
 import BookingHistory from "./pages/BookingHistory"; // 1. Import it here
 import Resources from "./pages/Resources";
+import RegistrationRequests from "./pages/RegistrationRequests";
 import AccountSettings from "./pages/AccountSettings";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
-import RegistrationStatus from "./pages/RegistrationStatus";
-import RegistrationRequests from "./pages/RegistrationRequests";
 
 export default function App() {
   return (
@@ -36,7 +35,7 @@ export default function App() {
             <Route path="booking-history" element={<BookingHistory />} />{" "}
             {/* 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
-            <Route path="registration-requests" element={<RegistrationRequests />} />
+            <Route path="registrations" element={<RegistrationRequests />} />
             <Route path="account-settings" element={<AccountSettings />} />
           </Route>
           {/* Public routes */}
@@ -44,7 +43,6 @@ export default function App() {
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/barangay-setup" element={<BarangaySetup />} />
           <Route path="/register/barangay" element={<BarangaySetup />} />
-          <Route path="/registration-status" element={<RegistrationStatus />} />
           </Routes>
         </NotificationProvider>
       </AuthProvider>

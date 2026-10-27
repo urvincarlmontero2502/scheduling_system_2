@@ -14,7 +14,7 @@ import {
   User,
   X,
   Loader,
-  FileCheck,
+  ClipboardCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -37,13 +37,8 @@ const NAV_ITEMS = [
   { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin"] },
 
   { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
+  { to: "/registrations", label: "Registration Requests", icon: ClipboardCheck, roles: ["admin", "barangay_admin"] },
 
-  {
-    to: "/registration-requests",
-    label: "Registration Requests",
-    icon: FileCheck,
-    roles: ["admin", "barangay_admin"],
-  },
 ];
 
 
