@@ -203,7 +203,10 @@ export default function DashboardLayout() {
 
         </div>
 
-        <p className="text-[16px] font-bold">Scheduler</p>
+        <div className="flex flex-col">
+          <p className="text-base font-bold leading-tight">Facility &amp; Vehicle Scheduler</p>
+          <p className="text-xs text-slate-500 font-medium">LGU Jabonga Portal</p>
+        </div>
 
         {/* Notification Bell (mobile) */}
 
@@ -259,8 +262,8 @@ export default function DashboardLayout() {
 
             </div>
 
-            <p className="text-[16px] font-bold leading-tight">Scheduler</p>
-
+            <p className="text-base font-bold leading-tight">Facility &amp; Vehicle Scheduler</p>
+            <p className="text-xs text-slate-500 font-medium">LGU Jabonga Portal</p>
           </div>
 
           <button
