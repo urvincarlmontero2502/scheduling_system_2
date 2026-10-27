@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { ToastProvider } from "./components/Toast";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Login from "./pages/Login";
@@ -21,6 +22,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
+          <ToastProvider>
           <Routes>
           <Route path="/login" element={<Login />} />
           <Route
@@ -46,6 +48,7 @@ export default function App() {
           <Route path="/register/barangay" element={<BarangaySetup />} />
           <Route path="/registration-status" element={<RegistrationStatus />} />
           </Routes>
+          </ToastProvider>
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
