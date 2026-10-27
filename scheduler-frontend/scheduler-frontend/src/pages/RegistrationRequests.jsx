@@ -116,7 +116,7 @@ export default function RegistrationRequests() {
           </p>
         </div>
         <button
-          onClick={fetchData}
+          onClick={refetch}
           disabled={loading}
           className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-steel hover:bg-paper hover:text-ink transition-colors disabled:opacity-50"
         >
