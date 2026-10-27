@@ -228,7 +228,7 @@ export default function Overview() {
       {/* Main Content Area */}
       <div className="space-y-4 pb-8 sm:pb-12">
         {/* Filter & Search Row */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
           {/* Left: Filter Tabs */}
           <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full lg:w-auto">
             <button
