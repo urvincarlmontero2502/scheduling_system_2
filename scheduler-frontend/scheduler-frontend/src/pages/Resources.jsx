@@ -15,6 +15,8 @@ import * as api from "../api/endpoints";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
+import { useCachedData } from "../hooks/useCachedData";
+import { useTabUrlSync } from "../hooks/useTabUrlSync";
 import {
   readCache,
   writeCache,
