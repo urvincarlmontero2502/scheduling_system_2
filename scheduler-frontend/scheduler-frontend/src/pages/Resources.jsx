@@ -53,7 +53,8 @@ function formatCapacity(cap) {
 
 /** Resolve the display status of a resource */
 function getResourceStatus(item) {
-  if (item.is_maintenance || item.status === "maintenance") return "maintenance";
+  if (item.is_maintenance || item.status === "maintenance")
+    return "maintenance";
   if (item.available === false || item.status === "booked") return "booked";
   return "available";
 }
@@ -64,7 +65,11 @@ export default function Resources() {
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
   // Cached data hook — data persists across page switches
-  const { data: resources, loading, refetch: refetchResources } = useCachedData("resources", api.fetchResources);
+  const {
+    data: resources,
+    loading,
+    refetch: refetchResources,
+  } = useCachedData("resources", api.fetchResources);
   const isInitialized = true; // always initialized after mount with cached hook
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -231,7 +236,9 @@ export default function Resources() {
   const handleMaintenanceToggle = (item) => {
     const resourceId = item.resource_id || item.id;
     if (!resourceId) {
-      toast.error("Error: Resource ID is missing. Please refresh and try again.");
+      toast.error(
+        "Error: Resource ID is missing. Please refresh and try again.",
+      );
       return;
     }
     const isCurrentlyMaintenance =
@@ -241,13 +248,19 @@ export default function Resources() {
       : "under maintenance";
 
     // Open custom confirmation modal instead of window.confirm
-    setConfirmModalData({ item, resourceId, isCurrentlyMaintenance, actionText });
+    setConfirmModalData({
+      item,
+      resourceId,
+      isCurrentlyMaintenance,
+      actionText,
+    });
     setConfirmModalOpen(true);
   };
 
   const confirmMaintenanceToggle = async () => {
     if (!confirmModalData) return;
-    const { item, resourceId, isCurrentlyMaintenance, actionText } = confirmModalData;
+    const { item, resourceId, isCurrentlyMaintenance, actionText } =
+      confirmModalData;
 
     const request = isCurrentlyMaintenance
       ? api.setResourceAvailable?.(resourceId)
@@ -273,9 +286,7 @@ export default function Resources() {
 
     try {
       await request;
-      toast.success(
-        `Resource marked as ${actionText} successfully`,
-      );
+      toast.success(`Resource marked as ${actionText} successfully`);
       refetchResources();
       window.dispatchEvent(new Event("cacheInvalidated"));
     } catch (err) {
@@ -330,7 +341,10 @@ export default function Resources() {
     toast.success(`Resource ${actionText} successfully!`, { duration: 3000 });
 
     const request = editingResource
-      ? client.post(`/resources/${editingResource.resource_id || editingResource.id}`, data)
+      ? client.post(
+          `/resources/${editingResource.resource_id || editingResource.id}`,
+          data,
+        )
       : api.createResource(data);
 
     request
@@ -358,7 +372,8 @@ export default function Resources() {
         writeCache(CACHE_KEYS.RESOURCES, prevResources);
         refetchResources();
         toast.error(
-          err?.response?.data?.message || "Failed to save resource. Please try again.",
+          err?.response?.data?.message ||
+            "Failed to save resource. Please try again.",
         );
       });
   };
@@ -396,9 +411,7 @@ export default function Resources() {
 
   // Sort displayed items alphabetically by name (A to Z)
   const sortByName = (items) =>
-    [...items].sort((a, b) =>
-      (a?.name || "").localeCompare(b?.name || ""),
-    );
+    [...items].sort((a, b) => (a?.name || "").localeCompare(b?.name || ""));
 
   switch (activeFilter) {
     case "maintenance":
@@ -433,8 +446,7 @@ export default function Resources() {
     return (
       <div
         key={item.resource_id || item.id}
-        className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex flex-col justify-between h-full transition transform hover:shadow-md hover:-translate-y-0.5"
-      >
+        className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex flex-col justify-between h-full transition transform hover:shadow-md hover:-translate-y-0.5">
         {/* Thumbnail with status badge overlay */}
         <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-lg mb-2">
           {item.image ? (
@@ -449,8 +461,7 @@ export default function Resources() {
             <div
               className={`flex flex-col items-center justify-center gap-2 text-slate-500 ${
                 isMaintenance ? "opacity-60" : ""
-              }`}
-            >
+              }`}>
               <div
                 className={`rounded-lg p-2.5 ${
                   isMaintenance
@@ -458,8 +469,7 @@ export default function Resources() {
                     : resourceType === "vehicle"
                       ? "bg-amber-50 border border-amber-100"
                       : "bg-blue-50 border border-blue-100"
-                }`}
-              >
+                }`}>
                 {resourceType === "vehicle" ? (
                   <Car
                     size={20}
@@ -483,8 +493,7 @@ export default function Resources() {
 
           {/* Status badge overlay on thumbnail */}
           <span
-            className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full border ${statusConfig.className}`}
-          >
+            className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full border ${statusConfig.className}`}>
             {statusConfig.label}
           </span>
         </div>
@@ -495,15 +504,13 @@ export default function Resources() {
               <h3 className="text-sm font-bold text-slate-800 line-clamp-1 flex-1 pr-1">
                 {item.name}
               </h3>
-
             </div>
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleOpenModal(item)}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  title="Edit Resource"
-                >
+                  title="Edit Resource">
                   <Edit2 size={12} />
                 </button>
                 <button
@@ -517,15 +524,13 @@ export default function Resources() {
                     isMaintenance
                       ? "Mark as Available"
                       : "Mark as Under Maintenance"
-                  }
-                >
+                  }>
                   <Wrench size={12} />
                 </button>
                 <button
                   onClick={() => handleDelete(item.resource_id || item.id)}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors"
-                  title="Delete Resource"
-                >
+                  title="Delete Resource">
                   <Trash2 size={12} />
                 </button>
               </div>
@@ -539,7 +544,8 @@ export default function Resources() {
                   ? formatCapacity(item.capacity)
                   : item.unit_name || item.unit_details
                 : item.unit_name || item.unit_details || item.capacity;
-            const displayDetails = unitDetails && unitDetails !== "N/A" ? unitDetails : null;
+            const displayDetails =
+              unitDetails && unitDetails !== "N/A" ? unitDetails : null;
             return displayDetails ? (
               <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
                 <UserGroupIcon size={12} className="inline" />
@@ -562,23 +568,20 @@ export default function Resources() {
           {isMaintenance ? (
             <button
               disabled
-              className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-1 mt-auto"
-            >
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-1 mt-auto">
               <Wrench size={12} />
               Under Maintenance
             </button>
           ) : isAdmin ? (
             <button
               onClick={() => handleOpenRequestModal(item, true)}
-              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
-            >
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150">
               <Calendar size={12} /> Book
             </button>
           ) : (
             <button
               onClick={() => handleOpenRequestModal(item)}
-              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
-            >
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150">
               <Calendar size={12} /> Request Booking
             </button>
           )}
@@ -590,85 +593,98 @@ export default function Resources() {
   return (
     <div className="p-4">
       {/* Clean Header Title */}
-      <h1 className="text-[20px] font-semibold text-slate-900 mb-4">Facilities &amp; Vehicles</h1>
+      <h1 className="text-[20px] font-semibold text-slate-900 mb-4">
+        Facilities &amp; Vehicles
+      </h1>
 
-      {/* Action Toolbar Row: Filter Pills + Search Bar | Add Resource */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 w-full">
+      {/* Action Toolbar Row: Filter Pills (Left) + Add Button & Search Stack (Right) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 w-full">
         {/* Filter Pills */}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleTabClick("all")}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                          activeFilter === "all"
-                            ? "bg-brand text-white shadow-sm border-brand"
-                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                        }`}
-          >
-            <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-steel"}`} /> All Resources
+              activeFilter === "all"
+                ? "bg-brand text-white shadow-sm border-brand"
+                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+            }`}>
+            <FileText
+              size={14}
+              className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-steel"}`}
+            />{" "}
+            All Resources
           </button>
           <button
             onClick={() => handleTabClick("vehicle")}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                          activeFilter === "vehicle"
-                            ? "bg-brand text-white shadow-sm border-brand"
-                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                        }`}
-          >
-            <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-steel"}`} /> Vehicles Overview
+              activeFilter === "vehicle"
+                ? "bg-brand text-white shadow-sm border-brand"
+                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+            }`}>
+            <Car
+              size={15}
+              className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-steel"}`}
+            />{" "}
+            Vehicles Overview
           </button>
           <button
             onClick={() => handleTabClick("facility")}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                          activeFilter === "facility"
-                            ? "bg-brand text-white shadow-sm border-brand"
-                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                        }`}
-          >
-            <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-steel"}`} /> Facilities Overview
+              activeFilter === "facility"
+                ? "bg-brand text-white shadow-sm border-brand"
+                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+            }`}>
+            <Building2
+              size={15}
+              className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-steel"}`}
+            />{" "}
+            Facilities Overview
           </button>
           <button
             onClick={() => handleTabClick("maintenance")}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                          activeFilter === "maintenance"
-                            ? "bg-brand text-white shadow-sm border-brand"
-                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                        }`}
-          >
+              activeFilter === "maintenance"
+                ? "bg-brand text-white shadow-sm border-brand"
+                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+            }`}>
             In Maintenance
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search size={16} className="w-4 h-4" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search resources..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-blue-600 transition-colors"
-          />
-          {searchQuery && (
+        {/* Right Side Stack: Add Resource Button on Top of Search Bar */}
+        <div className="flex flex-col items-end gap-2.5 w-full lg:w-auto">
+          {isAdmin && (
             <button
-              onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm"
-            >
-              ×
+              onClick={() => handleOpenModal()}
+              className="py-2 px-4 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center justify-center gap-1 hover:bg-blue-800 w-full lg:w-auto">
+              <Plus size={12} />
+              Add Resource
             </button>
           )}
+
+          {/* Search Bar */}
+          <div className="relative w-full lg:w-80">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search size={16} className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search resources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-blue-600 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm">
+                ×
+              </button>
+            )}
+          </div>
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="py-2 px-4 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800"
-          >
-            <Plus size={12} />
-            Add Resource
-          </button>
-        )}
       </div>
+
       {loading ? (
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -704,7 +720,8 @@ export default function Resources() {
               {facilitiesList.length > 0 && (
                 <div>
                   <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-                    <Building2 size={18} className="text-blue-700" /> Facilities Overview
+                    <Building2 size={18} className="text-blue-700" /> Facilities
+                    Overview
                   </h2>
                   <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
                     {facilitiesList.map(renderResourceCard)}
@@ -714,7 +731,8 @@ export default function Resources() {
               {vehiclesList.length > 0 && (
                 <div>
                   <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-                    <Car size={18} className="text-blue-700" /> Vehicles Overview
+                    <Car size={18} className="text-blue-700" /> Vehicles
+                    Overview
                   </h2>
                   <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
                     {vehiclesList.map(renderResourceCard)}
@@ -798,8 +816,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, type: e.target.value })
                   }
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                >
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                   <option value="facility">Facility</option>
                   <option value="vehicle">Vehicle</option>
                 </select>
@@ -849,22 +866,20 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, image: e.target.files[0] })
                   }
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:opacity-80"
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-md border border-slate-200 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50"
-                >
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md">
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800"
-                >
+                  className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-xs">
                   {editingResource ? "Save Changes" : "Create Resource"}
                 </button>
               </div>
@@ -873,21 +888,23 @@ export default function Resources() {
         </div>
       )}
 
-      {/* Custom Confirmation Modal */ }
-      {confirmModalOpen && confirmModalData && (
-        <ConfirmModal
-          open={confirmModalOpen}
-          onClose={() => {
-            setConfirmModalOpen(false);
-            setConfirmModalData(null);
-          }}
-          onConfirm={confirmMaintenanceToggle}
-          title="Confirm Status Change"
-          message={`Are you sure you want to mark "${confirmModalData.item.name}" as ${confirmModalData.actionText}?`}
-          confirmText="Confirm"
-          cancelText="Cancel"
-        />
-      )}
+      {/* Confirmation Modal for Maintenance Toggle */}
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        onClose={() => {
+          setConfirmModalOpen(false);
+          setConfirmModalData(null);
+        }}
+        onConfirm={confirmMaintenanceToggle}
+        title={
+          confirmModalData?.isCurrentlyMaintenance
+            ? "Mark as Available"
+            : "Mark as Under Maintenance"
+        }
+        message={`Are you sure you want to mark "${confirmModalData?.item?.name}" as ${confirmModalData?.actionText}?`}
+        confirmText="Confirm"
+        confirmButtonClass="bg-blue-600 hover:bg-blue-700 text-white"
+      />
     </div>
   );
 }
