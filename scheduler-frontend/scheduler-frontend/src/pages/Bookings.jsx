@@ -196,7 +196,7 @@ function RejectModal({ booking, onClose, onConfirm }) {
         <div className="flex justify-end gap-2 border-t border-line px-5 py-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-[13px] font-medium text-steel hover:bg-gray-50 rounded-lg border border-line"
+            className="px-4 py-2 text-[13px] font-medium text-steel hover:bg-paper rounded-lg border border-line"
           >
             Cancel
           </button>
@@ -472,19 +472,19 @@ export default function Bookings() {
             <div
               key={stat.label}
               onClick={() => stat.tab && setActiveTab(stat.tab)}
-              className={`cursor-pointer relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs hover:border-slate-300 transition-all ${stat.loading ? "animate-pulse" : ""}`}
+              className={`cursor-pointer relative p-2.5 rounded-xl border border-line bg-white shadow-xs hover:border-[#0B6E4F]/30 transition-all ${stat.loading ? "animate-pulse" : ""}`}
             >
               <div className="flex items-center justify-between">
-                <p className="font-mono text-2xl font-bold text-slate-900">
+                <p className="font-mono text-2xl font-bold text-ink">
                   {stat.loading ? (
-                    <span className="inline-block h-7 w-10 bg-slate-200 rounded-md"></span>
+                    <span className="inline-block h-7 w-10 bg-line rounded-md"></span>
                   ) : (
                     stat.value
                   )}
                 </p>
-                {stat.Icon && <stat.Icon size={18} className="text-slate-300 opacity-50" />}
+                {stat.Icon && <stat.Icon size={18} className="text-steel opacity-50" />}
               </div>
-              <p className="mt-1 text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+              <p className="mt-1 text-[10px] uppercase tracking-wider font-semibold text-steel">
                 {stat.label}
               </p>
             </div>
@@ -500,7 +500,7 @@ export default function Bookings() {
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "pending"
                   ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
               Pending
@@ -510,7 +510,7 @@ export default function Bookings() {
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "approved"
                   ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
               Approved
@@ -520,7 +520,7 @@ export default function Bookings() {
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "rejected"
                   ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
               Rejected
@@ -530,7 +530,7 @@ export default function Bookings() {
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "all"
                   ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
               All
@@ -542,20 +542,20 @@ export default function Bookings() {
             <div className="relative w-64">
               <Search
                 size={14}
-                className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4 flex items-center"
+                className="absolute left-3 top-[52%] -translate-y-1/2 text-steel pointer-events-none w-4 h-4 flex items-center"
               />
               <input
                 type="text"
                 placeholder="Search resources, applicants..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full text-xs py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white shadow-2xs outline-none focus:border-brand"
+                className="w-full text-xs py-2 pl-10 pr-3 rounded-lg border border-line bg-paper outline-none focus:border-brand"
               />
             </div>
             <select
               value={barangayFilter}
               onChange={(e) => setBarangayFilter(e.target.value)}
-              className="text-xs py-1.5 px-2.5 rounded-lg border border-gray-200 bg-white shrink-0 outline-none focus:border-brand"
+              className="text-xs py-1.5 px-2.5 rounded-lg border border-line bg-paper shrink-0 outline-none focus:border-brand"
             >
               <option value="all">Show: All Barangays</option>
               {barangayOptions.map((bg) => (
@@ -564,7 +564,7 @@ export default function Bookings() {
                 </option>
               ))}
             </select>
-            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-line">
+            <div className="flex items-center gap-1 bg-gray-50/50 p-1 rounded-lg border border-line">
               <button
                 onClick={() => setViewMode("card")}
                 className={`p-1.5 rounded transition text-sm font-medium ${
@@ -600,7 +600,7 @@ export default function Bookings() {
               ))}
             </div>
           ) : (
-            <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <div className="w-full max-w-full overflow-x-auto rounded-xl border border-line bg-white">
               <table className="w-full min-w-[900px]">
                 <thead className="border-b border-line bg-gray-50">
                   <tr>
@@ -643,7 +643,7 @@ export default function Bookings() {
             <p className="text-[14px] text-steel italic">{getEmptyMessage()}</p>
           </div>
         ) : viewMode === "table" ? (
-          <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="w-full max-w-full overflow-x-auto rounded-xl border border-line bg-white">
             <table className="w-full min-w-[900px]">
               <thead className="border-b border-line bg-gray-50">
                 <tr>
@@ -724,13 +724,13 @@ export default function Bookings() {
                   const isPendingItem =
                     (b.status || "").toLowerCase() === "pending";
                   const statusText = b.status || "pending";
-                  const statusColor = 
-                    statusText.toLowerCase() === "approved" ? "bg-blue-500" :
-                    statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
-                    "bg-amber-500";
+                  const statusColor =
+                    statusText.toLowerCase() === "approved" ? "bg-status-approved" :
+                    statusText.toLowerCase() === "rejected" ? "bg-status-rejected" :
+                    "bg-status-pending";
 
                   return (
-                    <tr key={bookingId} className="hover:bg-gray-50">
+                    <tr key={bookingId} className="hover:bg-paper">
                       <td className="px-4 py-3 text-[13px] font-medium text-ink min-w-[150px] whitespace-normal">
                         {resourceName}
                       </td>
@@ -743,11 +743,11 @@ export default function Bookings() {
                       </td>
                       <td className="px-4 py-3 text-[13px]">
                         <div className="flex items-center gap-1.5">
-                          <Calendar size={13} className="text-gray-400" />
+                          <Calendar size={13} className="text-steel" />
                           <span>{dateValue}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-steel mt-1 font-mono text-[12px]">
-                          <Clock size={13} className="text-gray-400" />
+                          <Clock size={13} className="text-steel" />
                           <span>{timeValue}</span>
                         </div>
                       </td>
@@ -765,7 +765,7 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-[#0B6E4F] text-white flex items-center justify-center hover:bg-[#08523B]"
                                 title="Approve"
                               >
                                 <Check size={12} /> Approve
@@ -775,7 +775,7 @@ export default function Bookings() {
                                   setRejectBooking(b);
                                   setRejectModalOpen(true);
                                 }}
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50/50 flex items-center justify-center hover:bg-rose-100"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-status-rejected bg-status-rejectedBg/50 flex items-center justify-center hover:bg-rose-100"
                                 title="Reject"
                               >
                                 <X size={12} /> Reject
@@ -785,7 +785,7 @@ export default function Bookings() {
                           {!canModerate && (
                             <button
                               onClick={() => {}}
-                              className="w-full py-1.5 text-xs font-semibold rounded-lg border border-line text-steel hover:bg-gray-50 flex items-center justify-center"
+                              className="w-full py-1.5 text-xs font-semibold rounded-lg border border-line text-steel hover:bg-paper flex items-center justify-center"
                               title="View"
                             >
                               <FileText size={12} /> View
@@ -854,19 +854,19 @@ export default function Bookings() {
                 (b.status || "").toLowerCase() === "pending";
               const statusText = b.status || "pending";
               const statusColor =
-                statusText.toLowerCase() === "approved" ? "bg-blue-500" :
-                statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
-                "bg-amber-500";
+                statusText.toLowerCase() === "approved" ? "bg-status-approved" :
+                statusText.toLowerCase() === "rejected" ? "bg-status-rejected" :
+                "bg-status-pending";
               const resourceImage = getResourceImage(b, resources);
 
               return (
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
+                  className="bg-white rounded-xl border border-line p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
                   {/* Resource Image Banner — matching Overview.jsx style */ }
-                  <div className="relative w-full h-36 rounded-lg overflow-hidden bg-slate-100 mb-3 border border-slate-100">
+                  <div className="relative w-full h-36 rounded-lg overflow-hidden bg-gray-50/50 mb-3 border border-line">
                     {resourceImage ? (
                       <img
                         src={resourceImage}
@@ -880,55 +880,55 @@ export default function Bookings() {
                       </div>
                     )}
                     {/* Floating Status Badge — matching Overview pattern */ }
-                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-amber-500 text-white shadow-xs">
+                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-status-pending text-white shadow-xs">
                       {b.status || 'PENDING'}
                     </span>
                   </div>
 
                   {/* Header with Resource Title */ }
                   <div className="mb-3">
-                    <h3 className="text-[15px] font-semibold text-slate-800">
+                    <h3 className="text-[15px] font-semibold text-ink">
                       {resourceName}
                     </h3>
                   </div>
 
                   {/* Date & Time tags */ }
                   <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
+                    <span className="bg-line text-steel text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
+                    <span className="bg-line text-steel text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
                   {/* Requester Info Box */ }
-                  <div className="bg-slate-50/80 p-3.5 rounded-lg border border-slate-100/80 text-xs text-slate-600 space-y-1.5 my-3">
+                  <div className="bg-gray-50/50 p-3.5 rounded-lg border border-line/80 text-xs text-steel space-y-1.5 my-3">
                     <div className="flex items-center gap-1.5">
-                      <User size={10} className="shrink-0 text-slate-400" />
+                      <User size={10} className="shrink-0 text-steel" />
                       <span className="truncate">
-                        <strong className="text-slate-700">Requester:</strong>{" "}
+                        <strong className="text-ink">Requester:</strong>{" "}
                         {fullName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Building2 size={10} className="shrink-0 text-slate-400" />
+                      <Building2 size={10} className="shrink-0 text-steel" />
                       <span className="truncate">
-                        <strong className="text-slate-700">Barangay:</strong> {barangayName}
+                        <strong className="text-ink">Barangay:</strong> {barangayName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Phone size={10} className="shrink-0 text-slate-400" />
+                      <Phone size={10} className="shrink-0 text-steel" />
                       <span className="font-mono truncate">
-                        <strong className="text-slate-700">Contact:</strong> {cellNumber}
+                        <strong className="text-ink">Contact:</strong> {cellNumber}
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5">
-                      <FileText size={10} className="shrink-0 text-slate-400 mt-0.5" />
+                      <FileText size={10} className="shrink-0 text-steel mt-0.5" />
                       <span className="line-clamp-2">
-                        <strong className="text-slate-700">Purpose:</strong> {purposeValue}
+                        <strong className="text-ink">Purpose:</strong> {purposeValue}
                       </span>
                     </div>
                   </div>
@@ -947,7 +947,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex-1 py-2 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium text-xs transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-md border border-rose-200 text-status-rejected hover:bg-rose-100 font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <X size={12} /> Reject
                       </button>
