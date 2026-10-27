@@ -38,7 +38,7 @@ export default function App() {
             <Route path="booking-history" element={<BookingHistory />} />{" "}
             {/* 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
-            <Route path="registrations" element={<RegistrationRequests />} />
+            <Route path="registration-requests" element={<RegistrationRequests />} />
             <Route path="account-settings" element={<AccountSettings />} />
           </Route>
           {/* Public routes */}
