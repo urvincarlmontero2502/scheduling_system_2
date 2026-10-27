@@ -31,7 +31,7 @@ function formatTime(timeStr) {
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", className: "bg-amber-100 text-amber-800", icon: <Clock size={16} /> },
-  approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800", icon: <CheckCircle size={16} /> },
+  approved: { label: "Approved", className: "bg-blue-100 text-blue-800", icon: <CheckCircle size={16} /> },
   rejected: { label: "Rejected", className: "bg-rose-100 text-rose-800", icon: <XCircle size={16} /> },
 };
 
@@ -268,7 +268,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
               </button>
               <button
                 onClick={handleApprove}
-                className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700"
               >
                 <Check size={14} /> Approve
               </button>

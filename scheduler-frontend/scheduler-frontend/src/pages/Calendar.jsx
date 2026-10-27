@@ -414,7 +414,7 @@ export default function CalendarView() {
                     onClick={() => setYearViewFilter("approved")}
                     className={`px-3 py-1 text-[12px] font-medium rounded transition ${
                       yearViewFilter === "approved"
-                        ? "bg-emerald-600 text-white shadow-xs"
+                        ? "bg-blue-600 text-white shadow-xs"
                         : "text-ink hover:bg-line/50"
                     }`}>
                     Approved Only
@@ -512,7 +512,7 @@ export default function CalendarView() {
                               {item.isCurrentMonth && hasVisibleIndicator && (
                                 <div className="flex items-center gap-0.5 absolute bottom-0.5">
                                   {showApprovedIndicator && (
-                                    <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                                    <span className="h-1 w-1 rounded-full bg-blue-500" />
                                   )}
                                   {showPendingIndicator && (
                                     <span className="h-1 w-1 rounded-full bg-amber-500" />
@@ -622,7 +622,7 @@ export default function CalendarView() {
                             title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
                             className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
                               isApproved
-                                ? "bg-emerald-500 text-white border border-emerald-600"
+                                ? "bg-blue-500 text-white border border-blue-600"
                                 : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
                             }`}
                             style={{
@@ -736,7 +736,7 @@ export default function CalendarView() {
                       <div className="flex items-center gap-0.5 absolute bottom-0.5">
                         {hasApproved && (
                           <span
-                            className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-emerald-500"}`}
+                            className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"}`}
                           />
                         )}
                         {hasPending && (
@@ -761,7 +761,7 @@ export default function CalendarView() {
             </h4>
             <div className="space-y-2 text-[12px]">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0" />
                 <span className="text-ink font-medium">Approved Bookings</span>
               </div>
               <div className="flex items-center gap-2">

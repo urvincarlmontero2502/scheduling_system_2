@@ -725,7 +725,7 @@ export default function Bookings() {
                     (b.status || "").toLowerCase() === "pending";
                   const statusText = b.status || "pending";
                   const statusColor = 
-                    statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                    statusText.toLowerCase() === "approved" ? "bg-blue-500" :
                     statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
                     "bg-amber-500";
 
@@ -765,7 +765,7 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700"
                                 title="Approve"
                               >
                                 <Check size={12} /> Approve
@@ -854,7 +854,7 @@ export default function Bookings() {
                 (b.status || "").toLowerCase() === "pending";
               const statusText = b.status || "pending";
               const statusColor =
-                statusText.toLowerCase() === "approved" ? "bg-emerald-500" :
+                statusText.toLowerCase() === "approved" ? "bg-blue-500" :
                 statusText.toLowerCase() === "rejected" ? "bg-rose-500" :
                 "bg-amber-500";
               const resourceImage = getResourceImage(b, resources);

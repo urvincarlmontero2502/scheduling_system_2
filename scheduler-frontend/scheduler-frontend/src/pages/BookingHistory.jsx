@@ -121,6 +121,8 @@ export default function BookingHistory() {
   const toast = useToast();
   const { user } = useAuth();
   const canModerate = user?.role === "admin";
+  // Barangay admins can view booking history but cannot delete bookings
+  const canDelete = user?.role === "admin";
 
   // New state variables for bulk print selection
   const [printMode, setPrintMode] = useState("month"); // 'month' or 'year'
@@ -580,7 +582,7 @@ export default function BookingHistory() {
             </select>
 
             {/* Delete All */ }
-            {canModerate && filteredBookings.length > 0 && (
+            {canDelete && filteredBookings.length > 0 && (
               <button
                 onClick={handleDeleteAll}
                 className="flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-md text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition"
@@ -687,7 +689,7 @@ export default function BookingHistory() {
 
                     const statusBadgeClass =
                       status === "approved"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                        ? "bg-blue-50 text-blue-700 border border-blue-200/60"
                         : status === "rejected"
                           ? "bg-rose-50 text-rose-700 border border-rose-200/60"
                           : status === "completed"
@@ -759,7 +761,7 @@ export default function BookingHistory() {
                             >
                               <Printer size={14} />
                             </button>
-                            {canModerate && (
+                            {canDelete && (
                               <button
                                 onClick={() => handleDelete(bookingId)}
                                 className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors"
@@ -925,16 +927,19 @@ export default function BookingHistory() {
             </div>
 
             <div className="flex justify-between items-center border-t border-line px-5 py-4">
-              <button
-                onClick={() =>
-                  handleDelete(selectedBooking.id || selectedBooking.booking_id)
-                }
-                className="flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50">
-                <Trash2 size={15} />
-                Delete Booking
-              </button>
-
-              <div className="flex gap-2">
+              {canDelete && (
+                <button
+                  onClick={() =>
+                    handleDelete(selectedBooking.id || selectedBooking.booking_id)
+                  }
+                  className="flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50">
+                  <Trash2 size={15} />
+                  Delete Booking
+                </button>
+              )}
+              <div className={`flex gap-2 ${
+                canDelete ? "" : "w-full justify-end"
+              }`}>
                 <button
                   onClick={() => setSelectedBooking(null)}
                   className="rounded-lg border border-line px-4 py-2 text-[13px] font-medium hover:bg-gray-50">

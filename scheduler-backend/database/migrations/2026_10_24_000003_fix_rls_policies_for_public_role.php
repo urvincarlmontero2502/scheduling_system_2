@@ -21,6 +21,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip on non-PostgreSQL databases (SQLite for local dev)
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         $tables = [
             'users',
             'resources',

@@ -344,7 +344,7 @@ export default function FacilityBookingModal({
           {st && (
             <span className="absolute bottom-[1px] left-1/2 flex -translate-x-1/2 items-center gap-0.5">
               {st.approved && (
-                <span className="h-1 w-1 rounded-full bg-emerald-500 ring-1 ring-white" />
+                <span className="h-1 w-1 rounded-full bg-blue-500 ring-1 ring-white" />
               )}
               {st.pending && (
                 <span className="h-1 w-1 rounded-full bg-amber-500 ring-1 ring-white" />
@@ -388,7 +388,7 @@ export default function FacilityBookingModal({
         </div>
         <div className="mt-1 flex items-center justify-center gap-3 border-t border-line pt-1 text-[9.5px] text-steel">
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{" "}
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />{" "}
             Approved
           </span>
           <span className="flex items-center gap-1.5">

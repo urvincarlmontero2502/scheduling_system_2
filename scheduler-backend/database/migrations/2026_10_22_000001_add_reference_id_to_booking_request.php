@@ -19,12 +19,15 @@ return new class extends Migration
 
         // Backfill existing bookings with reference IDs
         // Format: JBG-{year}-{booking_id padded to 4 digits}
-        $year = date('Y');
-        \DB::statement("
-            UPDATE booking_request
-            SET reference_id = CONCAT('JBG-', '{$year}', '-', LPAD(CAST(booking_id AS TEXT), 4, '0'))
-            WHERE reference_id IS NULL
-        ");
+        // Skip PostgreSQL-specific backfill on SQLite (local dev)
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            $year = date('Y');
+            \DB::statement("
+                UPDATE booking_request
+                SET reference_id = CONCAT('JBG-', '{$year}', '-', LPAD(CAST(booking_id AS TEXT), 4, '0'))
+                WHERE reference_id IS NULL
+            ");
+        }
 
         // Make the column non-nullable after backfill (MySQL/SQLite compatible)
         // Note: SQLite doesn't support modifying column constraints easily,

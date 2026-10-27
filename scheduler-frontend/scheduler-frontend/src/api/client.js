@@ -20,16 +20,20 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// If the API ever returns 401, the token is no longer valid — clear it
-// and let the app redirect back to login.
+// If the API ever returns 401 on notifications, silently ignore it
+// (token may be from a different environment than the deployed API)
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("auth_user");
+    if (error.config?.url?.includes('/notifications') && error.response?.status === 401) {
+      // Suppress 401 for notifications polling — return empty data
+      return Promise.resolve({ data: { data: [], meta: { unread_count: 0 } } })
     }
-    return Promise.reject(error);
+    if (error.response?.status === 401) {
+      localStorage.removeItem("auth_token")
+      localStorage.removeItem("auth_user")
+    }
+    return Promise.reject(error)
   },
 );
 

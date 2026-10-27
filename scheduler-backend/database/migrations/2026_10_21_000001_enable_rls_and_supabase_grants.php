@@ -7,6 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip on non-PostgreSQL databases (SQLite for local dev)
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // Enable Row-Level Security on all tables in the public schema.
         // This prevents unauthenticated access via Supabase Data API / PostgREST.
         $tables = [

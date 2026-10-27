@@ -5,7 +5,7 @@ import jabongaLogo from "../assets/jabonga-logo.png";
 import { useAuth } from "../context/AuthContext";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
-// Slideshow background images
+// Trigger fresh Vercel deployment
 const SLIDESHOW_IMAGES = [
   "/login-bg/login_img.jpg",
   "/login-bg/login_img2.jpg",

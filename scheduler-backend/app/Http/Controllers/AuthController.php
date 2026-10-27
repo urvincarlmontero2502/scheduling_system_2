@@ -100,7 +100,6 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'If an account with that email exists, a password reset link has been sent.',
-            'reset_code' => $code, // For dev/testing; remove in production
         ]);
     }
 

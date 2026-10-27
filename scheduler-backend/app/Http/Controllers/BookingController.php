@@ -64,6 +64,13 @@ class BookingController extends Controller
                 'user'
             ]);
 
+            // Barangay admins can only see bookings from their own barangay
+            if ($user->isBarangayAdmin()) {
+                $query->whereHas('user', function ($q) use ($user) {
+                    $q->where('barangay', $user->barangay);
+                });
+            }
+
             $bookings = $query
                 ->latest('booking_id')
                 ->get();

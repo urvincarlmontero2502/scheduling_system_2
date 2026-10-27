@@ -20,7 +20,23 @@ return new class extends Migration
 
         $dbDriver = Schema::getConnection()->getDriverName();
 
-        // Check current nullability
+        // SQLite doesn't have information_schema.columns — use Schema::hasColumn instead
+        if ($dbDriver === 'sqlite') {
+            if (!Schema::hasColumn('notifications', 'booking_id')) {
+                return; // Column doesn't exist
+            }
+            // SQLite doesn't support MODIFY COLUMN — recreate table is complex.
+            // Just check if it's already nullable via PRAGMA
+            $pragma = Schema::getConnection()->select("PRAGMA table_info(notifications)");
+            $bookingCol = collect($pragma)->firstWhere('name', 'booking_id');
+            if ($bookingCol && ($bookingCol->notnull === 0 || $bookingCol->notnull === '0')) {
+                return; // Already nullable
+            }
+            // SQLite can't easily alter column nullability — skip on SQLite (local dev)
+            return;
+        }
+
+        // Check current nullability (PostgreSQL)
         $columns = Schema::getConnection()
             ->select("SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'booking_id'");
 

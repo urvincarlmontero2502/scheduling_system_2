@@ -13,6 +13,7 @@ return [
         env('FRONTEND_URL'),
         env('APP_URL'),
         'http://localhost:5173',
+        'http://localhost:5174',
     ])),
 
     // Allow any HTTPS origin as a fallback — registration is the entry point

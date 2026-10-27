@@ -285,7 +285,7 @@ export default function Overview() {
               }}
               className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "all"
-                  ? "bg-emerald-700 text-white shadow-sm border-emerald-700"
+                  ? "bg-blue-700 text-white shadow-sm border-blue-700"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
@@ -297,7 +297,7 @@ export default function Overview() {
               }}
               className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "facility"
-                  ? "bg-emerald-700 text-white shadow-sm border-emerald-700"
+                  ? "bg-blue-700 text-white shadow-sm border-blue-700"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
@@ -309,7 +309,7 @@ export default function Overview() {
               }}
               className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "vehicle"
-                  ? "bg-emerald-700 text-white shadow-sm border-emerald-700"
+                  ? "bg-blue-700 text-white shadow-sm border-blue-700"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
               }`}
             >
@@ -329,13 +329,13 @@ export default function Overview() {
                 placeholder="Search resources..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-sm py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                className="w-full text-sm py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs py-1.5 px-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+              className="text-xs py-1.5 px-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
             >
               <option value="all">Show: All Status</option>
               <option value="available">Available</option>
@@ -348,7 +348,7 @@ export default function Overview() {
         {(mainFilter === "all" || mainFilter === "facility") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-              <Building2 size={18} className="text-emerald-700" /> Facilities Overview
+              <Building2 size={18} className="text-blue-700" /> Facilities Overview
             </h2>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
@@ -386,7 +386,7 @@ export default function Overview() {
                       <span
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200/60"
                             : item.is_maintenance || item.status === "maintenance"
                             ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
                             : "bg-slate-100 text-slate-600 border border-slate-300/60"
@@ -429,7 +429,7 @@ export default function Overview() {
                         className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
                           item.is_maintenance || item.status === "maintenance"
                             ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
-                            : "border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white"
+                            : "border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white"
                         }`}
                       >
                         {item.is_maintenance || item.status === "maintenance"
@@ -448,7 +448,7 @@ export default function Overview() {
         {(mainFilter === "all" || mainFilter === "vehicle") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-              <Car size={18} className="text-emerald-700" /> Vehicles Overview
+              <Car size={18} className="text-blue-700" /> Vehicles Overview
             </h2>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
@@ -486,7 +486,7 @@ export default function Overview() {
                       <span
                         className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
                           item.available
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200/60"
                             : item.is_maintenance || item.status === "maintenance"
                             ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
                             : "bg-slate-100 text-slate-600 border border-slate-300/60"
@@ -529,7 +529,7 @@ export default function Overview() {
                         className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
                           item.is_maintenance || item.status === "maintenance"
                             ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
-                            : "border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white"
+                            : "border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white"
                         }`}
                       >
                         {item.is_maintenance || item.status === "maintenance"

@@ -27,7 +27,12 @@ export function NotificationProvider({ children }) {
       setUnreadCount(data.filter(n => !n.is_read).length)
       setError(null)
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to load notifications')
+      // Silently handle 401 — token is likely from a different environment
+      if (e.response?.status === 401) {
+        setError(null)
+      } else {
+        setError(e.response?.data?.message || 'Failed to load notifications')
+      }
     } finally {
       setLoading(false)
     }

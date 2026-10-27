@@ -137,7 +137,7 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
   const getTypeIcon = (type) => {
     switch (type) {
       case "BOOKING_APPROVED":
-        return <CheckCircle size={18} className="text-emerald-500" />
+        return <CheckCircle size={18} className="text-blue-500" />
       case "BOOKING_REJECTED":
         return <XCircle size={18} className="text-rose-500" />
       case "MAINTENANCE_ALERT":

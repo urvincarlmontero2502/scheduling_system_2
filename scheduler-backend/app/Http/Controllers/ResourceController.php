@@ -9,6 +9,32 @@ use Illuminate\Support\Facades\Schema;
 
 class ResourceController extends Controller
 {
+    /**
+     * Format a Resource model into a consistent response shape
+     * that matches the index() output (with both `id` and `resource_id`).
+     */
+    protected function formatResource($resource)
+    {
+        return [
+            'id' => $resource->resource_id,
+            'resource_id' => $resource->resource_id,
+            'name' => $resource->name,
+            'type' => $resource->type,
+            'image' => $resource->image ? Storage::disk('assets')->url($resource->image) : null,
+            'image_url' => $resource->image ? Storage::disk('assets')->url($resource->image) : null,
+            'available' => $resource->status === 'available',
+            'status' => $resource->status,
+            'is_maintenance' => $resource->status === 'maintenance',
+            'description' => $resource->description ?? null,
+            'capacity' => $resource->type === 'facility' && $resource->facilityDetails
+                ? $resource->facilityDetails->capacity . ' pax'
+                : null,
+            'unit_name' => $resource->type === 'vehicle' && $resource->vehicleDetails
+                ? ($resource->vehicleDetails->unit_name ?? null)
+                : null,
+        ];
+    }
+
     public function index(Request $request)
     {
         try {
@@ -113,7 +139,10 @@ class ResourceController extends Controller
             ]);
         }
 
-        return response()->json($resource->load(['facilityDetails', 'vehicleDetails']), 201);
+        $resource->load(['facilityDetails', 'vehicleDetails']);
+        return response()->json([
+            'resource' => $this->formatResource($resource),
+        ], 201);
     }
 
     public function update(Request $request, $id)
@@ -165,7 +194,11 @@ class ResourceController extends Controller
             );
         }
 
-        return response()->json($resource->load(['facilityDetails', 'vehicleDetails']));
+        $resource->load(['facilityDetails', 'vehicleDetails']);
+        return response()->json([
+            'resource' => $this->formatResource($resource),
+            'message' => 'Resource updated successfully.',
+        ]);
     }
 
     public function destroy($id)
@@ -195,7 +228,7 @@ class ResourceController extends Controller
 
         return response()->json([
             'message' => "{$resource->name} is now marked for maintenance.",
-            'resource' => $resource,
+            'resource' => $this->formatResource($resource),
         ]);
     }
 
@@ -207,7 +240,7 @@ class ResourceController extends Controller
 
         return response()->json([
             'message' => "{$resource->name} is now available.",
-            'resource' => $resource,
+            'resource' => $this->formatResource($resource),
         ]);
     }
 }

@@ -30,7 +30,7 @@ import ConfirmModal from "../components/ConfirmModal";
 const STATUS_VARIANTS = {
   available: {
     label: "Available",
-    className: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
+    className: "bg-blue-50 text-blue-700 border border-blue-200/60",
   },
   booked: {
     label: "In Use",
@@ -614,14 +614,14 @@ export default function Resources() {
           ) : isAdmin ? (
             <button
               onClick={() => handleOpenRequestModal(item, true)}
-              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
             >
               <Calendar size={12} /> Book
             </button>
           ) : (
             <button
               onClick={() => handleOpenRequestModal(item)}
-              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
+              className="w-full py-2 px-3 text-xs font-semibold rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1 mt-auto transition-colors duration-150"
             >
               <Calendar size={12} /> Request Booking
             </button>
@@ -644,7 +644,7 @@ export default function Resources() {
             onClick={() => handleTabClick("all")}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "all"
-                ? "bg-emerald-700 text-white shadow-sm"
+                ? "bg-blue-700 text-white shadow-sm"
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
@@ -654,7 +654,7 @@ export default function Resources() {
             onClick={() => handleTabClick("vehicle")}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "vehicle"
-                ? "bg-emerald-700 text-white shadow-sm"
+                ? "bg-blue-700 text-white shadow-sm"
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
@@ -664,7 +664,7 @@ export default function Resources() {
             onClick={() => handleTabClick("facility")}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "facility"
-                ? "bg-emerald-700 text-white shadow-sm"
+                ? "bg-blue-700 text-white shadow-sm"
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
@@ -674,7 +674,7 @@ export default function Resources() {
             onClick={() => handleTabClick("maintenance")}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
               activeFilter === "maintenance"
-                ? "bg-emerald-700 text-white shadow-sm"
+                ? "bg-blue-700 text-white shadow-sm"
                 : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
             }`}
           >
@@ -692,7 +692,7 @@ export default function Resources() {
             placeholder="Search resources..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-emerald-600 transition-colors"
+            className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-blue-600 transition-colors"
           />
           {searchQuery && (
             <button
@@ -706,7 +706,7 @@ export default function Resources() {
         {isAdmin && (
           <button
             onClick={() => handleOpenModal()}
-            className="py-2 px-4 text-xs font-semibold rounded-lg bg-emerald-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-emerald-800"
+            className="py-2 px-4 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800"
           >
             <Plus size={12} />
             Add Resource
@@ -748,7 +748,7 @@ export default function Resources() {
               {facilitiesList.length > 0 && (
                 <div>
                   <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-                    <Building2 size={18} className="text-emerald-700" /> Facilities Overview
+                    <Building2 size={18} className="text-blue-700" /> Facilities Overview
                   </h2>
                   <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
                     {facilitiesList.map(renderResourceCard)}
@@ -758,7 +758,7 @@ export default function Resources() {
               {vehiclesList.length > 0 && (
                 <div>
                   <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-                    <Car size={18} className="text-emerald-700" /> Vehicles Overview
+                    <Car size={18} className="text-blue-700" /> Vehicles Overview
                   </h2>
                   <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
                     {vehiclesList.map(renderResourceCard)}
@@ -828,7 +828,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   placeholder="e.g., Conference Room A or Delivery Van"
                 />
               </div>
@@ -842,7 +842,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, type: e.target.value })
                   }
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 >
                   <option value="facility">Facility</option>
                   <option value="vehicle">Vehicle</option>
@@ -861,7 +861,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, capacity: e.target.value })
                   }
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   placeholder={
                     formData.type === "facility" ? "e.g., 50" : "e.g., ABC-1234"
                   }
@@ -878,7 +878,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   placeholder="Brief details about this resource..."
                 />
               </div>
@@ -893,7 +893,7 @@ export default function Resources() {
                   onChange={(e) =>
                     setFormData({ ...formData, image: e.target.files[0] })
                   }
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:opacity-80"
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:opacity-80"
                 />
               </div>
 
@@ -907,7 +907,7 @@ export default function Resources() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-emerald-700 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-800"
+                  className="rounded-md bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800"
                 >
                   {editingResource ? "Save Changes" : "Create Resource"}
                 </button>

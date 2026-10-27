@@ -42,7 +42,7 @@ function ToastContainer({ toasts, onDismiss }) {
   if (toasts.length === 0) return null;
 
   const typeClasses = {
-    success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    success: "border-blue-200 bg-blue-50 text-blue-800",
     error: "border-rose-200 bg-rose-50 text-rose-800",
     info: "border-blue-200 bg-blue-50 text-blue-800",
     warning: "border-amber-200 bg-amber-50 text-amber-800",
