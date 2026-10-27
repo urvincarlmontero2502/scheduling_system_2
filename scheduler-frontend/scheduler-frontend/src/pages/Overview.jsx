@@ -229,8 +229,8 @@ export default function Overview() {
       <div className="space-y-4 pb-8 sm:pb-12">
         {/* Filter & Search Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          {/* Left: Category Pills */}
-          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full sm:w-auto">
+          {/* Left: Category Pills + Search */}
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar items-center w-full sm:w-auto">
             <button
               onClick={() => {
                 setMainFilter("all");
@@ -268,20 +268,8 @@ export default function Overview() {
             >
               Vehicles Overview
             </button>
-          </div>
-
-          {/* Right: Add Resource Button + Search Input */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {(user?.role === "admin" || user?.role === "superadmin") && (
-              <button
-                onClick={() => navigate("/resources")}
-                className="py-2 px-3 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800 transition-colors"
-              >
-                <Plus size={12} />
-                Add Resource
-              </button>
-            )}
-            <div className="relative w-full sm:w-auto flex items-center">
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-64 flex items-center">
               <Search
                 size={14}
                 className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4"
@@ -295,9 +283,20 @@ export default function Overview() {
               />
             </div>
           </div>
+
+          {/* Add Resource Button */}
+          {(user?.role === "admin" || user?.role === "superadmin") && (
+            <button
+              onClick={() => navigate("/resources")}
+              className="py-2 px-3 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800 transition-colors"
+            >
+              <Plus size={12} />
+              Add Resource
+            </button>
+          )}
         </div>
 
-                {/* Facilities Section (Shown if mainFilter is 'all' or 'facility') */}
+        {/* Facilities Section (Shown if mainFilter is 'all' or 'facility') */}
         {(mainFilter === "all" || mainFilter === "facility") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
