@@ -50,6 +50,8 @@ export function writeCache(key, data) {
 export function invalidateCache(key) {
   try {
     sessionStorage.removeItem(CACHE_PREFIX + key);
+    // Dispatch event for cross-component/tab sync
+    window.dispatchEvent(new Event("cacheInvalidated"));
   } catch {}
 }
 
@@ -106,4 +108,6 @@ export const CACHE_KEYS = {
   BOOKINGS: "bookings",
   USER: "user",
   HEALTH: "health",
+  REGISTRATIONS_PENDING: "registrations_pending",
+  REGISTRATIONS_PROCESSED: "registrations_processed",
 };

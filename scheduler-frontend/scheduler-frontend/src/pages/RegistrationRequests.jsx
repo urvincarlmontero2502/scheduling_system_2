@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Clock,
   CheckCircle,
@@ -16,6 +16,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
 import useToast from "../components/Toast";
+import { useTabUrlSync } from "../hooks/useTabUrlSync";
+import { useCachedRegistrations } from "../hooks/useCachedRegistrations";
 
 const STATUS_TABS = [
   { value: "pending", label: "Pending Requests", icon: Clock },
@@ -26,57 +28,21 @@ const STATUS_TABS = [
 export default function RegistrationRequests() {
   const { user } = useAuth();
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState("pending");
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useTabUrlSync("tab", "pending");
+  const { requests, loading, refetch } = useCachedRegistrations(activeTab);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectModal, setRejectModal] = useState({ open: false, requestId: null });
   const [rejectReason, setRejectReason] = useState("");
   const [viewModal, setViewModal] = useState({ open: false, request: null });
-
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
-
-  async function fetchData() {
-    setLoading(true);
-    try {
-      let res;
-      if (activeTab === "pending") {
-        res = await api.fetchRegistrationRequests();
-      } else {
-        res = await api.fetchProcessedRegistrationRequests();
-      }
-
-      let data = res?.data;
-      if (Array.isArray(data)) {
-        // API may return array or object with data property
-      } else if (data?.data && Array.isArray(data.data)) {
-        data = data.data;
-      } else {
-        data = [];
-      }
-
-      // Filter by status from processed list
-      if (activeTab !== "pending") {
-        data = data.filter((r) => r.status === activeTab);
-      }
-
-      setRequests(data);
-    } catch (error) {
-      console.error("Failed to fetch registration requests:", error);
-      toast.error("Failed to load registration requests.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleApprove(requestId) {
     setActionLoading(true);
     try {
       await api.approveRegistration(requestId);
       toast.success("Registration approved! User account created.");
-      fetchData();
+      // Invalidate cache and dispatch event for cross-tab sync
+      refetch();
+      window.dispatchEvent(new Event("registrationUpdated"));
     } catch (error) {
       console.error("Failed to approve:", error);
       toast.error(error?.response?.data?.message || "Failed to approve registration.");
@@ -96,7 +62,8 @@ export default function RegistrationRequests() {
       toast.success("Registration rejected.");
       setRejectModal({ open: false, requestId: null });
       setRejectReason("");
-      fetchData();
+      refetch();
+      window.dispatchEvent(new Event("registrationUpdated"));
     } catch (error) {
       console.error("Failed to reject:", error);
       toast.error(error?.response?.data?.message || "Failed to reject registration.");

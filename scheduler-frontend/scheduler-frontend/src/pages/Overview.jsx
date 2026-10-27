@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
+import { useCachedData } from "../hooks/useCachedData";
+import { useTabUrlSync } from "../hooks/useTabUrlSync";
 import { Search, Building2, Car, Image as ImageIcon, Users as UserGroupIcon, Clock, CheckCircle, Building, Truck } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
@@ -12,72 +14,29 @@ export default function Overview() {
   const { user } = useAuth();
   const { toggleDropdown, bellRef } = useNotifications();
   const [stats, setStats] = useState({ pending: 0, approved: 0 });
-  const [resources, setResources] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  // Cached data hooks — data persists across page switches
+  const { data: resources, loading, refetch: refetchResources } = useCachedData("resources", api.fetchResources);
+  const { data: bookings, refetch: refetchBookings } = useCachedData("bookings", api.fetchBookings);
 
   const [selectedResource, setSelectedResource] = useState(null);
-  const [mainFilter, setMainFilter] = useState("all"); // "all" | "facility" | "vehicle"
-  const [vehicleSubFilter, setVehicleSubFilter] = useState("all"); // "all" | "heavy" | "ambulance" | "service"
+  // URL-synchronized sub-tab state
+  const [mainFilter, setMainFilter] = useTabUrlSync("tab", "all");
+  const [vehicleSubFilter, setVehicleSubFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "available" | "maintenance"
+  const [statusFilter, setStatusFilter] = useState("all");
 
+  // Recompute stats whenever bookings change
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchOverviewData = () => {
-      Promise.all([
-        api.fetchBookings?.().catch(() => ({ data: [] })),
-        api.fetchResources?.().catch(() => ({ data: [] })),
-      ])
-        .then(([bookingsRes, resourcesRes]) => {
-          if (!isMounted) return;
-
-          const bookings = Array.isArray(bookingsRes?.data)
-            ? bookingsRes.data
-            : Array.isArray(bookingsRes)
-              ? bookingsRes
-              : [];
-
-          // Yearly special events are not requests
-          const requests = bookings.filter((b) => !isSpecialEvent(b));
-
-          const pendingCount = requests.filter(
-            (b) => b?.status?.toLowerCase() === "pending",
-          ).length;
-
-          const approvedCount = requests.filter(
-            (b) => b?.status?.toLowerCase() === "approved",
-          ).length;
-
-          setStats({
-            pending: pendingCount,
-            approved: approvedCount,
-          });
-
-          setResources(
-            Array.isArray(resourcesRes?.data) ? resourcesRes.data : [],
-          );
-        })
-        .finally(() => {
-          if (isMounted) setLoading(false);
-        });
-    };
-
-    fetchOverviewData();
-
-    // Listen for cache invalidation events to refresh data
-    const handler = () => {
-      fetchOverviewData();
-    };
-    window.addEventListener("cacheInvalidated", handler);
-    window.addEventListener("bookingUpdated", handler);
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener("cacheInvalidated", handler);
-      window.removeEventListener("bookingUpdated", handler);
-    };
-  }, []);
+    const requests = bookings.filter((b) => !isSpecialEvent(b));
+    const pendingCount = requests.filter(
+      (b) => b?.status?.toLowerCase() === "pending",
+    ).length;
+    const approvedCount = requests.filter(
+      (b) => b?.status?.toLowerCase() === "approved",
+    ).length;
+    setStats({ pending: pendingCount, approved: approvedCount });
+  }, [bookings]);
 
   const handleOpenBooking = (resource) => {
     setSelectedResource(resource);

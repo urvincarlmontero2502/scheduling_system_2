@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,6 +8,8 @@ import {
   Filter,
 } from "lucide-react";
 import * as api from "../api/endpoints";
+import { useCachedData } from "../hooks/useCachedData";
+import { useTabUrlSync } from "../hooks/useTabUrlSync";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -177,44 +179,14 @@ function getMonthDays(date) {
 }
 
 export default function CalendarView() {
-  const [bookings, setBookings] = useState([]);
+  // Cached data hooks — data persists across page switches
+  const { data: bookings, loading } = useCachedData("bookings", api.fetchBookings);
+  const { data: resources } = useCachedData("resources", api.fetchResources);
+
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [loading, setLoading] = useState(true);
   const [isYearView, setIsYearView] = useState(false);
   const [yearViewFilter, setYearViewFilter] = useState("all");
   const scrollContainerRef = useRef(null);
-
-  useEffect(() => {
-    const loadBookings = () => {
-      api
-        .fetchBookings?.()
-        .then((res) => {
-          const data = Array.isArray(res?.data)
-            ? res.data
-            : Array.isArray(res)
-              ? res
-              : [];
-          setBookings(data);
-        })
-        .catch((err) => {
-          console.error("Failed to fetch bookings for calendar:", err);
-          setBookings([]);
-        })
-        .finally(() => setLoading(false));
-    };
-
-    loadBookings();
-
-    window.addEventListener("bookingUpdated", loadBookings);
-    window.addEventListener("bookingDeleted", loadBookings);
-    window.addEventListener("bookingChanged", loadBookings);
-
-    return () => {
-      window.removeEventListener("bookingUpdated", loadBookings);
-      window.removeEventListener("bookingDeleted", loadBookings);
-      window.removeEventListener("bookingChanged", loadBookings);
-    };
-  }, []);
 
   useEffect(() => {
     if (!isYearView && scrollContainerRef.current) {

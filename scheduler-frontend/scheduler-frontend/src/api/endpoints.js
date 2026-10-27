@@ -17,9 +17,16 @@ export const completeGoogleRegistration = (tempToken, barangay) =>
 export const fetchRegistrationRequests = () => client.get("/registration-requests");
 export const fetchProcessedRegistrationRequests = () => client.get("/registration-requests/processed");
 export const fetchRegistrationRequest = (id) => client.get(`/registration-requests/${id}`);
-export const approveRegistration = (id) => client.post(`/registration-requests/${id}/approve`);
-export const rejectRegistration = (id, notes) =>
-  client.post(`/registration-requests/${id}/reject`, { notes });
+export const approveRegistration = (id) => {
+  invalidateCache(CACHE_KEYS.REGISTRATIONS_PENDING);
+  invalidateCache(CACHE_KEYS.REGISTRATIONS_PROCESSED);
+  return client.post(`/registration-requests/${id}/approve`);
+};
+export const rejectRegistration = (id, notes) => {
+  invalidateCache(CACHE_KEYS.REGISTRATIONS_PENDING);
+  invalidateCache(CACHE_KEYS.REGISTRATIONS_PROCESSED);
+  return client.post(`/registration-requests/${id}/reject`, { notes });
+};
 
 // --- Auth -------------------------------------------------------------
 export const logout = () => client.post("/logout");

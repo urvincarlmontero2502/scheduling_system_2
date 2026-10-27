@@ -3,13 +3,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
+import { useCachedData } from "../hooks/useCachedData";
+import { useTabUrlSync, useViewModeUrlSync } from "../hooks/useTabUrlSync";
+import { writeCache, invalidateCache, CACHE_KEYS } from "../utils/cache";
 import BookingDetailModal from "../components/BookingDetailModal";
-import {
-  readCache,
-  writeCache,
-  invalidateCache,
-  CACHE_KEYS,
-} from "../utils/cache";
 import {
   Check,
   X,
@@ -216,17 +213,12 @@ function RejectModal({ booking, onClose, onConfirm }) {
 export default function Bookings() {
   const { user } = useAuth();
   const toast = useToast();
-  const [bookings, setBookings] = useState(() => {
-    const cached = readCache(CACHE_KEYS.BOOKINGS);
-    return cached && cached.length > 0 ? cached : [];
-  });
-  const [loading, setLoading] = useState(() => {
-    const cached = readCache(CACHE_KEYS.BOOKINGS);
-    return !(cached && cached.length > 0);
-  });
-  const [resources, setResources] = useState([]);
-  const [activeTab, setActiveTab] = useState("pending");
-  const [viewMode, setViewMode] = useState("card");
+  const { data: bookings, loading, refetch: refetchBookings } = useCachedData("bookings", api.fetchBookings);
+  const { data: resources } = useCachedData("resources", api.fetchResources);
+
+  // URL-synchronized tab + view mode
+  const [activeTab, setActiveTab] = useTabUrlSync("tab", "pending");
+  const [viewMode, setViewMode] = useViewModeUrlSync("card");
   const [search, setSearch] = useState("");
   const [barangayFilter, setBarangayFilter] = useState("all");
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -235,64 +227,6 @@ export default function Bookings() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const canModerate = user?.role === "admin";
-
-  useEffect(() => {
-    // If cached data exists, render immediately and background-fetch
-    const cached = readCache(CACHE_KEYS.BOOKINGS);
-    if (cached && cached.length > 0) {
-      setBookings(cached);
-      setLoading(false);
-    } else {
-      setLoading(true);
-    }
-
-    api
-      .fetchBookings()
-      .then((res) => {
-        const d = res?.data;
-        const data = Array.isArray(d)
-          ? d
-          : Array.isArray(d?.data)
-            ? d.data
-            : Array.isArray(res)
-              ? res
-              : [];
-        if (data.length > 0) writeCache(CACHE_KEYS.BOOKINGS, data);
-        setBookings(data);
-      })
-      .catch(() => {
-        // Show user-friendly error toast instead of silently failing
-        if (!toast) return;
-        toast.error("Unable to load bookings");
-      })
-      .finally(() => setLoading(false));
-
-    // Fetch resources for image lookup
-    api
-      .fetchResources()
-      .then((res) => {
-        const d = res?.data;
-        const data = Array.isArray(d)
-          ? d
-          : Array.isArray(d?.data)
-            ? d.data
-            : [];
-        setResources(data);
-      })
-      .catch(() => {});
-
-    // Listen for cache invalidation events from other pages
-    const handler = () => {
-      const cached = readCache(CACHE_KEYS.BOOKINGS);
-      if (cached) setBookings(cached);
-    };
-    window.addEventListener("cacheInvalidated", handler);
-    window.addEventListener("bookingUpdated", handler);
-    return () => {
-      window.removeEventListener("cacheInvalidated", handler);
-      window.removeEventListener("bookingUpdated", handler);
-    };
-  }, []);
 
   // Auto-open booking detail modal when arriving from a notification click
   useEffect(() => {
@@ -321,7 +255,6 @@ export default function Bookings() {
     const targetBooking = bookings.find(
       (b) => (b.id || b.booking_id) === id,
     );
-    const previousStatus = targetBooking?.status;
 
     // If attempting to approve, check for time and date conflicts
     if (status === "approved" && targetBooking) {
@@ -334,19 +267,12 @@ export default function Bookings() {
       }
     }
 
-    // --- Optimistic: update local state + cache immediately ---
+    // Optimistically update cache with new status
     const prevBookings = [...bookings];
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === id || b.booking_id === id ? { ...b, status } : b,
-      ),
+    const updatedBookings = prevBookings.map((b) =>
+      b.id === id || b.booking_id === id ? { ...b, status } : b,
     );
-    writeCache(
-      CACHE_KEYS.BOOKINGS,
-      prevBookings.map((b) =>
-        b.id === id || b.booking_id === id ? { ...b, status } : b,
-      ),
-    );
+    writeCache(CACHE_KEYS.BOOKINGS, updatedBookings);
 
     try {
       if (status === "rejected" && reason) {
@@ -355,11 +281,12 @@ export default function Bookings() {
         await api.updateBookingStatus(id, status);
       }
       toast.success(`Booking ${status === "approved" ? "approved" : status === "rejected" ? "rejected" : "updated"} successfully`);
-      window.dispatchEvent(new Event("cacheInvalidated"));
+      // Re-fetch cached data and invalidate health cache
+      refetchBookings();
       invalidateCache(CACHE_KEYS.HEALTH);
+      window.dispatchEvent(new Event("cacheInvalidated"));
     } catch (err) {
-      // --- Rollback ---
-      setBookings(prevBookings);
+      // Rollback cache
       writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
       toast.error(
         err?.response?.data?.message || "Could not update the booking status.",

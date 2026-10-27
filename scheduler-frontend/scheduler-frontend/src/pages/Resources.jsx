@@ -60,11 +60,14 @@ export default function Resources() {
   const { user } = useAuth();
   const toast = useToast();
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
-  const [resources, setResources] = useState(() => readCache(CACHE_KEYS.RESOURCES) || []);
-  const [loading, setLoading] = useState(() => (readCache(CACHE_KEYS.RESOURCES) ? false : true));
-  const [isInitialized, setIsInitialized] = useState(() => Boolean(readCache(CACHE_KEYS.RESOURCES)));
+
+  // Cached data hook — data persists across page switches
+  const { data: resources, loading, refetch: refetchResources } = useCachedData("resources", api.fetchResources);
+  const isInitialized = true; // always initialized after mount with cached hook
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  // URL-synchronized filter tab
+  const [activeFilter, setActiveFilter] = useTabUrlSync("filter", "all");
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,57 +87,8 @@ export default function Resources() {
     image: null,
   });
 
-  const loadResources = (silent = false) => {
-    // If we have cached data, don't show loading spinner (stale-while-revalidate)
-    const cached = readCache(CACHE_KEYS.RESOURCES);
-    if (cached && cached.length > 0) {
-      setResources(cached);
-      if (!silent) setLoading(false);
-    } else if (!silent) {
-      setLoading(true);
-    }
-
-    api
-      .fetchResources?.()
-      .then((res) => {
-        // Handle both direct array and Laravel resource collection wrapping
-        const d = res?.data;
-        const data = Array.isArray(d)
-          ? d
-          : Array.isArray(d?.data)
-            ? d.data
-            : [];
-        // Update cache + state
-        if (data.length > 0) {
-          writeCache(CACHE_KEYS.RESOURCES, data);
-        }
-        setResources(data);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch resources", err);
-        // Show user-friendly error toast instead of silently failing
-        if (!silent) toast.error("Unable to load resources");
-      })
-      .finally(() => {
-        setLoading(false);
-        setIsInitialized(true);
-      });
-  };
-
-  useEffect(() => {
-    loadResources();
-
-    // Listen for cache invalidation events — re-fetch from API silently (don't flash loading)
-    const handler = () => {
-      loadResources(true);
-    };
-    window.addEventListener("cacheInvalidated", handler);
-    window.addEventListener("bookingUpdated", handler);
-    return () => {
-      window.removeEventListener("cacheInvalidated", handler);
-      window.removeEventListener("bookingUpdated", handler);
-    };
-  }, []);
+  // Handle resource mutations (create/edit/delete/maintenance toggle)
+  // These call refetchResources() via the useCachedData hook after API calls
 
   const handleOpenModal = (resource = null) => {
     if (resource) {
@@ -169,24 +123,23 @@ export default function Resources() {
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this resource?")) {
-      // --- Optimistic: remove from local state + cache immediately ---
+      // Optimistically remove from cache immediately
       const cached = readCache(CACHE_KEYS.RESOURCES) || [];
       const updated = cached.filter(
         (r) => String(r.resource_id || r.id) !== String(id),
       );
       writeCache(CACHE_KEYS.RESOURCES, updated);
-      setResources(updated);
 
       api
         .deleteResource?.(id)
         .then(() => {
           toast.success("Resource deleted successfully");
+          refetchResources();
           window.dispatchEvent(new Event("cacheInvalidated"));
         })
         .catch((err) => {
-          // --- Rollback ---
+          // Rollback cache
           writeCache(CACHE_KEYS.RESOURCES, cached);
-          setResources(cached);
           const msg =
             err?.response?.data?.message ||
             err?.message ||
@@ -223,7 +176,6 @@ export default function Resources() {
           : r,
       );
       writeCache(CACHE_KEYS.RESOURCES, updated);
-      setResources(updated);
     }
 
     // Close modal + show toast immediately
@@ -243,6 +195,7 @@ export default function Resources() {
       .then(() => {
         // Success — cache already updated optimistically
         invalidateCache(CACHE_KEYS.HEALTH);
+        refetchResources();
       })
       .catch((err) => {
         // --- Rollback ---
@@ -253,7 +206,7 @@ export default function Resources() {
               : r,
           );
           writeCache(CACHE_KEYS.RESOURCES, restored);
-          setResources(restored);
+          refetchResources();
         }
 
         window.dispatchEvent(new Event("bookingUpdated"));
@@ -298,7 +251,7 @@ export default function Resources() {
       ? api.setResourceAvailable?.(resourceId)
       : api.setResourceMaintenance?.(resourceId);
 
-    // --- Optimistic: update local state + cache immediately (from current state, not cache) ---
+    // Optimistically update cache immediately
     const prevResources = [...resources];
     const updated = resources.map((r) =>
       String(r.resource_id || r.id) === String(resourceId)
@@ -311,7 +264,6 @@ export default function Resources() {
         : r,
     );
     writeCache(CACHE_KEYS.RESOURCES, updated);
-    setResources(updated);
 
     // Close modal immediately and disable interactions
     setConfirmModalOpen(false);
@@ -322,11 +274,12 @@ export default function Resources() {
       toast.success(
         `Resource marked as ${actionText} successfully`,
       );
+      refetchResources();
       window.dispatchEvent(new Event("cacheInvalidated"));
     } catch (err) {
-      // --- Rollback ---
+      // Rollback cache
       writeCache(CACHE_KEYS.RESOURCES, prevResources);
-      setResources(prevResources);
+      refetchResources();
 
       let msg;
       if (err?.response?.status === 403) {
@@ -393,14 +346,15 @@ export default function Resources() {
                 )
               : [...prevResources, serverResource];
             writeCache(CACHE_KEYS.RESOURCES, updated);
-            setResources(updated);
           }
         }
+        refetchResources();
         window.dispatchEvent(new Event("cacheInvalidated"));
       })
       .catch((err) => {
-        // --- Rollback: restore previous state ---
-        setResources(prevResources);
+        // Rollback cache
+        writeCache(CACHE_KEYS.RESOURCES, prevResources);
+        refetchResources();
         toast.error(
           err?.response?.data?.message || "Failed to save resource. Please try again.",
         );
