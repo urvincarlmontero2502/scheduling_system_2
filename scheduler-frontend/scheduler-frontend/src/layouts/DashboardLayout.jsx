@@ -204,8 +204,8 @@ export default function DashboardLayout() {
         </div>
 
         <div className="flex flex-col">
-          <p className="text-base font-bold leading-tight">Facility &amp; Vehicle Scheduler</p>
-          <p className="text-xs text-slate-500 font-medium">LGU Jabonga Portal</p>
+          <p className="text-base font-bold leading-tight text-slate-800">Facility &amp; Vehicle Scheduler</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
         </div>
 
         {/* Notification Bell (mobile) */}
@@ -252,7 +252,7 @@ export default function DashboardLayout() {
 
         }`}>
 
-        <div className="flex items-center justify-between gap-3 px-6 py-6">
+        <div className="flex items-center justify-between gap-3 p-4">
 
           <div className="flex items-center gap-3">
 
@@ -262,8 +262,11 @@ export default function DashboardLayout() {
 
             </div>
 
-            <p className="text-base font-bold leading-tight">Facility &amp; Vehicle Scheduler</p>
-            <p className="text-xs text-slate-500 font-medium">LGU Jabonga Portal</p>
+            <div className="flex flex-col">
+              <p className="text-base font-bold leading-tight text-slate-800">Facility &amp; Vehicle Scheduler</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
+            </div>
+
           </div>
 
           <button
