@@ -634,7 +634,7 @@ export default function Resources() {
                             : "bg-white border border-line text-steel hover:bg-paper transition-colors"
                         }`}
           >
-            In Maintenance ({maintenanceItems.length})
+            In Maintenance
           </button>
         </div>
 
