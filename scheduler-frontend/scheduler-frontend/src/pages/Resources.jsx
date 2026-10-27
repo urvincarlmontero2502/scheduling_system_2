@@ -598,9 +598,9 @@ export default function Resources() {
       </h1>
 
       {/* Action Toolbar Row: Filter Pills (Left) + Add Button & Search Stack (Right) */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 w-full">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6 w-full">
         {/* Filter Pills */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={() => handleTabClick("all")}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
@@ -651,28 +651,28 @@ export default function Resources() {
           </button>
         </div>
 
-        {/* Right Side Stack: Add Resource Button on Top of Search Bar */}
-        <div className="flex flex-col items-end gap-2.5 w-full lg:w-auto">
+        {/* Right Stack: Add Resource button above Search bar */}
+        <div className="flex flex-col items-end gap-2 w-full lg:w-auto shrink-0">
           {isAdmin && (
             <button
               onClick={() => handleOpenModal()}
-              className="py-2 px-4 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center justify-center gap-1 hover:bg-blue-800 w-full lg:w-auto">
-              <Plus size={12} />
+              className="py-1.5 px-3.5 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-xs flex items-center justify-center gap-1 hover:bg-blue-800 w-full lg:w-auto">
+              <Plus size={14} />
               Add Resource
             </button>
           )}
 
-          {/* Search Bar */}
-          <div className="relative w-full lg:w-80">
+          {/* Search Bar aligned baseline with filter tabs */}
+          <div className="relative w-full lg:w-72">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={16} className="w-4 h-4" />
+              <Search size={15} className="w-4 h-4" />
             </div>
             <input
               type="text"
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-md border border-slate-200 pl-9 pr-8 py-2 text-[12.5px] bg-white outline-none focus:border-blue-600 transition-colors"
+              className="w-full rounded-lg border border-slate-200 pl-9 pr-8 py-2 text-[13px] bg-white outline-none focus:border-blue-600 transition-colors shadow-xs"
             />
             {searchQuery && (
               <button
