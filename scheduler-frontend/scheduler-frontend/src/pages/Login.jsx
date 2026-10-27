@@ -93,7 +93,7 @@ export default function Login() {
       </div>
       {/* Left-hand hero section for municipal personnel (desktop only) */}
       <nav className="hidden lg:flex flex-col justify-center max-w-xl p-12 text-white z-10">
-        <p className="text-xs font-bold uppercase tracking-wider text-emerald-300 drop-shadow-md">
+        <p className="text-xs font-bold uppercase tracking-wider text-sky-300 drop-shadow-md">
           MUNICIPALITY OF JABONGA • LGU PORTAL
         </p>
         <h1 className="mt-4 text-4xl font-extrabold leading-tight drop-shadow-md">
