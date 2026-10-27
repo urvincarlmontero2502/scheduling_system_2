@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
 import { useCachedData } from "../hooks/useCachedData";
 import { useTabUrlSync } from "../hooks/useTabUrlSync";
-import { Search, Building2, Car, Image as ImageIcon, Users as UserGroupIcon, Clock, CheckCircle, Building, Truck } from "lucide-react";
+import { Search, Building2, Car, Image as ImageIcon, Users as UserGroupIcon, Clock, CheckCircle, Building, Truck, Plus } from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
@@ -13,6 +14,7 @@ import { useNotifications } from "../context/NotificationContext";
 export default function Overview() {
   const { user } = useAuth();
   const { toggleDropdown, bellRef } = useNotifications();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ pending: 0, approved: 0 });
 
   // Cached data hooks — data persists across page switches
@@ -24,7 +26,6 @@ export default function Overview() {
   const [mainFilter, setMainFilter] = useTabUrlSync("tab", "all");
   const [vehicleSubFilter, setVehicleSubFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
 
   // Recompute stats whenever bookings change
   useEffect(() => {
@@ -100,13 +101,6 @@ export default function Overview() {
         const name = (item?.name || "").toLowerCase();
         const description = (item?.description || "").toLowerCase();
         if (!name.includes(query) && !description.includes(query)) return false;
-      }
-      // Status filter
-      if (statusFilter === "available") {
-        return item?.available === true || item?.status === "available";
-      }
-      if (statusFilter === "maintenance") {
-        return item?.is_maintenance || item?.status === "maintenance";
       }
       return true;
     });
@@ -276,8 +270,17 @@ export default function Overview() {
             </button>
           </div>
 
-          {/* Right: Search Input + Status Filter */}
+          {/* Right: Add Resource Button + Search Input */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            {(user?.role === "admin" || user?.role === "superadmin") && (
+              <button
+                onClick={() => navigate("/resources")}
+                className="py-2 px-3 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800 transition-colors"
+              >
+                <Plus size={12} />
+                Add Resource
+              </button>
+            )}
             <div className="relative w-full sm:w-auto flex items-center">
               <Search
                 size={14}
@@ -291,15 +294,6 @@ export default function Overview() {
                 className="w-full text-sm py-2 pl-10 pr-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs py-1.5 px-3 rounded-lg border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-            >
-              <option value="all">Show: All Status</option>
-              <option value="available">Available</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
           </div>
         </div>
 
