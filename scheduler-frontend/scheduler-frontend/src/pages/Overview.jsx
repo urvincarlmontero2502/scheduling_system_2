@@ -283,11 +283,11 @@ export default function Overview() {
                 setMainFilter("all");
                 setVehicleSubFilter("all");
               }}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
-                mainFilter === "all"
-                  ? "bg-blue-700 text-white shadow-sm border-blue-700"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-              }`}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                              mainFilter === "all"
+                                ? "bg-brand text-white shadow-sm border-brand"
+                                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                            }`}
             >
               All Resources
             </button>
@@ -295,11 +295,11 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("facility");
               }}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
-                mainFilter === "facility"
-                  ? "bg-blue-700 text-white shadow-sm border-blue-700"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-              }`}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                              mainFilter === "facility"
+                                ? "bg-brand text-white shadow-sm border-brand"
+                                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                            }`}
             >
               Facilities Overview
             </button>
@@ -307,11 +307,11 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("vehicle");
               }}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
-                mainFilter === "vehicle"
-                  ? "bg-blue-700 text-white shadow-sm border-blue-700"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
-              }`}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                              mainFilter === "vehicle"
+                                ? "bg-brand text-white shadow-sm border-brand"
+                                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                            }`}
             >
               Vehicles Overview
             </button>

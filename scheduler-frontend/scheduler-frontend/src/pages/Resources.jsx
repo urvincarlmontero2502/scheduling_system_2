@@ -642,41 +642,41 @@ export default function Resources() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleTabClick("all")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
-              activeFilter === "all"
-                ? "bg-blue-700 text-white shadow-sm"
-                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
-            }`}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                          activeFilter === "all"
+                            ? "bg-brand text-white shadow-sm border-brand"
+                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                        }`}
           >
-            <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-slate-500"}`} /> All Resources
+            <FileText size={14} className={`inline mr-1 ${activeFilter === "all" ? "text-white" : "text-steel"}`} /> All Resources
           </button>
           <button
             onClick={() => handleTabClick("vehicle")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
-              activeFilter === "vehicle"
-                ? "bg-blue-700 text-white shadow-sm"
-                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
-            }`}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                          activeFilter === "vehicle"
+                            ? "bg-brand text-white shadow-sm border-brand"
+                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                        }`}
           >
-            <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-slate-500"}`} /> Vehicles Overview
+            <Car size={15} className={`inline mr-1 ${activeFilter === "vehicle" ? "text-white" : "text-steel"}`} /> Vehicles Overview
           </button>
           <button
             onClick={() => handleTabClick("facility")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
-              activeFilter === "facility"
-                ? "bg-blue-700 text-white shadow-sm"
-                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
-            }`}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                          activeFilter === "facility"
+                            ? "bg-brand text-white shadow-sm border-brand"
+                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                        }`}
           >
-            <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-slate-500"}`} /> Facilities Overview
+            <Building2 size={15} className={`inline mr-1 ${activeFilter === "facility" ? "text-white" : "text-steel"}`} /> Facilities Overview
           </button>
           <button
             onClick={() => handleTabClick("maintenance")}
-            className={`px-3 py-1 text-xs font-semibold rounded-full transition-all shrink-0 ${
-              activeFilter === "maintenance"
-                ? "bg-blue-700 text-white shadow-sm"
-                : "bg-white text-slate-600 hover:bg-slate-50 shadow-sm"
-            }`}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                          activeFilter === "maintenance"
+                            ? "bg-brand text-white shadow-sm border-brand"
+                            : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                        }`}
           >
             In Maintenance ({maintenanceItems.length})
           </button>
