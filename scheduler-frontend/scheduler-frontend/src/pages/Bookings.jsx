@@ -472,7 +472,7 @@ export default function Bookings() {
             <div
               key={stat.label}
               onClick={() => stat.tab && setActiveTab(stat.tab)}
-              className={`cursor-pointer relative p-2.5 rounded-xl border border-line bg-white shadow-xs hover:border-[#0B6E4F]/30 transition-all ${stat.loading ? "animate-pulse" : ""}`}
+              className={`cursor-pointer relative p-2.5 rounded-xl border border-line bg-white shadow-xs hover:border-brand/30 transition-all ${stat.loading ? "animate-pulse" : ""}`}
             >
               <div className="flex items-center justify-between">
                 <p className="font-mono text-2xl font-bold text-ink">
@@ -499,7 +499,7 @@ export default function Bookings() {
               onClick={() => setActiveTab("pending")}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "pending"
-                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                                  ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
@@ -509,7 +509,7 @@ export default function Bookings() {
               onClick={() => setActiveTab("approved")}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "approved"
-                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                                  ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
@@ -519,7 +519,7 @@ export default function Bookings() {
               onClick={() => setActiveTab("rejected")}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "rejected"
-                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                                  ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
@@ -529,7 +529,7 @@ export default function Bookings() {
               onClick={() => setActiveTab("all")}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 activeTab === "all"
-                  ? "bg-[#0B6E4F] text-white shadow-sm border-[#0B6E4F]"
+                                  ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
               }`}
             >
@@ -765,7 +765,7 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-[#0B6E4F] text-white flex items-center justify-center hover:bg-[#08523B]"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand-dark"
                                 title="Approve"
                               >
                                 <Check size={12} /> Approve
@@ -775,7 +775,7 @@ export default function Bookings() {
                                   setRejectBooking(b);
                                   setRejectModalOpen(true);
                                 }}
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-status-rejected bg-status-rejectedBg/50 flex items-center justify-center hover:bg-rose-100"
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-status-rejected bg-status-rejectedBg flex items-center justify-center hover:bg-rose-100"
                                 title="Reject"
                               >
                                 <X size={12} /> Reject
@@ -874,14 +874,14 @@ export default function Bookings() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
-                        <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
-                        <span className="text-xs">No image provided</span>
-                      </div>
+                      <div className="w-full h-full flex flex-col items-center justify-center text-steel opacity-60">
+                                              <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
+                                              <span className="text-xs">No image provided</span>
+                                            </div>
                     )}
                     {/* Floating Status Badge — matching Overview pattern */ }
-                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-status-pending text-white shadow-xs">
-                      {b.status || 'PENDING'}
+                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-white/90 text-steel shadow-xs">
+                                          {b.status || 'PENDING'}
                     </span>
                   </div>
 
@@ -938,7 +938,7 @@ export default function Bookings() {
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => handleStatusChange(bookingId, "approved")}
-                        className="flex-1 py-2 rounded-md bg-[#0B6E4F] hover:bg-[#08523B] text-white font-medium text-xs transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-md bg-brand hover:bg-brand-dark text-white font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -947,7 +947,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex-1 py-2 rounded-md border border-rose-200 text-status-rejected hover:bg-rose-100 font-medium text-xs transition flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-md border border-status-rejected bg-status-rejectedBg text-status-rejected hover:bg-rose-100 font-medium text-xs transition flex items-center justify-center gap-1"
                       >
                         <X size={12} /> Reject
                       </button>
