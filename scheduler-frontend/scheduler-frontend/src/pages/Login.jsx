@@ -5,7 +5,7 @@ import jabongaLogo from "../assets/jabonga-logo.png";
 import { useAuth } from "../context/AuthContext";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
-// Trigger fresh Vercel deployment
+// Slideshow background images
 const SLIDESHOW_IMAGES = [
   "/login-bg/login_img.jpg",
   "/login-bg/login_img2.jpg",
@@ -93,7 +93,7 @@ export default function Login() {
       </div>
       {/* Left-hand hero section for municipal personnel (desktop only) */}
       <nav className="hidden lg:flex flex-col justify-center max-w-xl p-12 text-white z-10">
-        <p className="text-xs font-bold uppercase tracking-wider text-sky-300 drop-shadow-md">
+        <p className="text-xs font-bold uppercase tracking-wider text-emerald-300 drop-shadow-md">
           MUNICIPALITY OF JABONGA • LGU PORTAL
         </p>
         <h1 className="mt-4 text-4xl font-extrabold leading-tight drop-shadow-md">
@@ -102,14 +102,14 @@ export default function Login() {
         <p className="mt-6 max-w-md text-[15px text-blue-100 drop-shadow-md">
           Secure portal for Mayor's Office staff and Barangay personnel to coordinate venue reservations, manage utility fleet schedules, and track official LGU dispatches.
         </p>
-        <div className="mt-8 inline-flex flex-row items-center gap-3 p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 w-fit">
-          <div className="flex shrink-0 items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-white bg-brand/25 backdrop-blur-sm">
+        <div className="mt-8 flex flex-wrap gap-3 bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl w-fit">
+          <div className="flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-white bg-brand/25 backdrop-blur-sm">
             <Building2 size={14} /> Municipal Venue Approvals
           </div>
-          <div className="flex shrink-0 items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-white bg-brand/25 backdrop-blur-sm">
+          <div className="flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-white bg-brand/25 backdrop-blur-sm">
             <Truck size={14} /> Fleet & Heavy Equipment Dispatch
           </div>
-          <div className="flex shrink-0 items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-white bg-brand/25 backdrop-blur-sm">
+          <div className="flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium text-white bg-brand/25 backdrop-blur-sm">
             <FileText size={14} /> Inter-Barangay Coordination
           </div>
         </div>
