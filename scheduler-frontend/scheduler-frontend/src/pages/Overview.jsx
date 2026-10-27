@@ -228,9 +228,9 @@ export default function Overview() {
       {/* Main Content Area */}
       <div className="space-y-4 pb-8 sm:pb-12">
         {/* Filter & Search Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          {/* Left: Category Pills + Search */}
-          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar items-center w-full sm:w-auto">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          {/* Left: Filter Tabs */}
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full lg:w-auto">
             <button
               onClick={() => {
                 setMainFilter("all");
@@ -268,8 +268,33 @@ export default function Overview() {
             >
               Vehicles Overview
             </button>
-            {/* Search Bar */}
-            <div className="relative w-full sm:w-64 flex items-center">
+            <button
+              onClick={() => {
+                setMainFilter("maintenance");
+                setVehicleSubFilter("all");
+              }}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+                                mainFilter === "maintenance"
+                                  ? "bg-brand text-white shadow-sm border-brand"
+                                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+                            }`}
+            >
+              In Maintenance
+            </button>
+          </div>
+
+          {/* Right: Add Resource Button + Search Bar (vertical stack) */}
+          <div className="flex flex-col items-end gap-3 w-full lg:w-auto">
+            {(user?.role === "admin" || user?.role === "superadmin") && (
+              <button
+                onClick={() => navigate("/resources")}
+                className="py-2 px-3 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800 transition-colors"
+              >
+                <Plus size={12} />
+                Add Resource
+              </button>
+            )}
+            <div className="relative w-full lg:w-64 flex items-center">
               <Search
                 size={14}
                 className="absolute left-3 top-[52%] -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4"
@@ -283,21 +308,10 @@ export default function Overview() {
               />
             </div>
           </div>
-
-          {/* Add Resource Button */}
-          {(user?.role === "admin" || user?.role === "superadmin") && (
-            <button
-              onClick={() => navigate("/resources")}
-              className="py-2 px-3 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800 transition-colors"
-            >
-              <Plus size={12} />
-              Add Resource
-            </button>
-          )}
         </div>
 
         {/* Facilities Section (Shown if mainFilter is 'all' or 'facility') */}
-        {(mainFilter === "all" || mainFilter === "facility") && (
+        {(mainFilter === "all" || mainFilter === "facility" || mainFilter === "maintenance") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
               <Building2 size={18} className="text-blue-700" /> Facilities Overview
@@ -319,7 +333,9 @@ export default function Overview() {
                   </div>
                 ))}
               </div>
-            ) : facilities.length === 0 ? (
+            ) : facilities.filter(
+              (f) => mainFilter !== "maintenance" || f.is_maintenance || f.status === "maintenance"
+            ).length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-200/80 bg-white p-4 text-center text-[12px] text-slate-500">
                 {searchQuery
                   ? "No facilities match your current search. Try adjusting your search."
@@ -327,7 +343,11 @@ export default function Overview() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
-                {facilities.map((item) => {
+                {facilities
+                  .filter(
+                    (f) => mainFilter !== "maintenance" || f.is_maintenance || f.status === "maintenance"
+                  )
+                  .map((item) => {
                   const isMaintenance = item.is_maintenance || item.status === "maintenance";
                   return (
                   <div
@@ -396,8 +416,8 @@ export default function Overview() {
           </div>
         )}
 
-        {/* Vehicles Section (Shown if mainFilter is 'all' or 'vehicle') */}
-        {(mainFilter === "all" || mainFilter === "vehicle") && (
+        {/* Vehicles Section (Shown if mainFilter is 'all', 'vehicle', or 'maintenance') */}
+        {(mainFilter === "all" || mainFilter === "vehicle" || mainFilter === "maintenance") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
               <Car size={18} className="text-blue-700" /> Vehicles Overview
@@ -419,7 +439,9 @@ export default function Overview() {
                   </div>
                 ))}
               </div>
-            ) : filteredVehicles.length === 0 ? (
+            ) : filteredVehicles.filter(
+              (v) => mainFilter !== "maintenance" || v.is_maintenance || v.status === "maintenance"
+            ).length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-200/80 bg-white p-4 text-center text-[12px] text-slate-500">
                 {searchQuery
                   ? "No vehicles match your current search. Try adjusting your search."
@@ -427,7 +449,11 @@ export default function Overview() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
-                {filteredVehicles.map((item) => {
+                {filteredVehicles
+                  .filter(
+                    (v) => mainFilter !== "maintenance" || v.is_maintenance || v.status === "maintenance"
+                  )
+                  .map((item) => {
                   const isMaintenance = item.is_maintenance || item.status === "maintenance";
                   return (
                   <div
