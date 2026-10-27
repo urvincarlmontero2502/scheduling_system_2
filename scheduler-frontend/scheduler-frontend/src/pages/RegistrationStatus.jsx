@@ -40,9 +40,10 @@ export default function RegistrationStatus() {
         }
     }, []);
 
-    // Use URL param first, then stored status, then default to pending
     const currentStatus = status || storedStatus || "pending";
     const info = STATUS_INFO[currentStatus] || STATUS_INFO.pending;
+    const { icon: Icon } = info;
+
 
     const handleLoginClick = () => {
         navigate("/login?registration=approved", { replace: true });
@@ -57,7 +58,7 @@ export default function RegistrationStatus() {
             <div className="w-full max-w-md rounded-xl border border-line bg-white p-8 shadow-sm text-center">
                 {/* Status Icon */}
                 <div className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ${info.bg}`}>
-                    <info.icon className={`h-10 w-10 ${info.color}`} />
+                    <Icon className={`h-10 w-10 ${info.color}`} />
                 </div>
 
                 {/* Title */}

@@ -14,6 +14,7 @@ import AccountSettings from "./pages/AccountSettings";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
+import RegistrationStatus from "./pages/RegistrationStatus";
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/barangay-setup" element={<BarangaySetup />} />
           <Route path="/register/barangay" element={<BarangaySetup />} />
+          <Route path="/registration-status" element={<RegistrationStatus />} />
           </Routes>
         </NotificationProvider>
       </AuthProvider>
