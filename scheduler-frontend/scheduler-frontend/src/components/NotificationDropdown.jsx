@@ -78,11 +78,13 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
   }, [open, isDesktop, reposition])
 
   // Handle clicking a notification item: mark as read, close, navigate to bookings
-  const handleNotificationClick = async (id, bookingId) => {
+  const handleNotificationClick = async (id, bookingId, regRequestId) => {
     await handleMarkAsRead(id)
     onClose()
     if (bookingId) {
       navigate(`/bookings?bookingId=${bookingId}`)
+    } else if (regRequestId) {
+      navigate("/registration-requests")
     } else {
       navigate("/bookings")
     }
