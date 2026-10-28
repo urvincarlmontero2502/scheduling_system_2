@@ -208,9 +208,9 @@ export default function DashboardLayout() {
           <p className="text-[11px] text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
         </div>
 
-        {/* Notification Bell (mobile) */}
+        {/* Notification Bell (mobile) â now in top header bar */}
 
-        <div className="ml-auto md:hidden">
+        <div className="ml-auto hidden">
 
           <NotificationBell ref={bellRef} onClick={toggleDropdown} />
 
@@ -556,6 +556,40 @@ export default function DashboardLayout() {
       {/* Main content */}
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top Header Bar */}
+        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-xs">
+          <div></div>
+          <div className="flex items-center gap-4">
+            {/* Notification Bell */}
+            <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+            {/* User Profile */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand overflow-hidden">
+                {user?.profile_image_url ? (
+                  <img
+                    src={user.profile_image_url}
+                    alt={user?.full_name || "User"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User size={20} />
+                )}
+              </div>
+              <div className="flex flex-col text-right min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">
+                  {user?.full_name || user?.name || user?.username || "Signed in user"}
+                </p>
+                <p className="text-xs text-slate-500 truncate">
+                  {user?.role === "admin"
+                    ? "Administrator"
+                    : user?.barangay
+                      ? `Brgy. ${user.barangay}`
+                      : user?.role || "Staff"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </header>
 
         <main className="flex-1 p-4 md:p-6">
 
