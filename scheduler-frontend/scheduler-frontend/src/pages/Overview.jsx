@@ -8,12 +8,9 @@ import { Search, Building2, Car, Image as ImageIcon, Users as UserGroupIcon, Clo
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
-import NotificationBell from "../components/NotificationBell";
-import { useNotifications } from "../context/NotificationContext";
 
 export default function Overview() {
   const { user } = useAuth();
-  const { toggleDropdown, bellRef } = useNotifications();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ pending: 0, approved: 0 });
 
@@ -192,13 +189,6 @@ export default function Overview() {
 
   return (
     <div className="p-4 md:p-6 w-full max-w-full">
-      {/* Top Bar: Notification Bell right, hidden on mobile */}
-      <div className="flex items-center justify-end sm:justify-between">
-        <div className="hidden sm:ml-auto sm:flex">
-          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
-        </div>
-      </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 mb-4 lg:grid-cols-4">
         {STATS_ITEMS.map((stat) => (
