@@ -203,9 +203,9 @@ export default function DashboardLayout() {
 
         </div>
 
-        <div className="flex flex-col">
-          <p className="text-base font-bold leading-tight text-slate-800">Facility &amp; Vehicle Scheduler</p>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
+        <div className="flex flex-col min-w-0">
+          <p className="text-sm font-bold leading-tight text-slate-900 tracking-tight">Facility &amp; Vehicle Scheduler</p>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
         </div>
 
         {/* Notification Bell (mobile) */}
@@ -262,9 +262,9 @@ export default function DashboardLayout() {
 
             </div>
 
-            <div className="flex flex-col">
-              <p className="text-base font-bold leading-tight text-slate-800">Facility &amp; Vehicle Scheduler</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
+            <div className="flex flex-col min-w-0">
+              <p className="text-sm font-bold leading-tight text-slate-900 tracking-tight">Facility &amp; Vehicle Scheduler</p>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
             </div>
 
           </div>
