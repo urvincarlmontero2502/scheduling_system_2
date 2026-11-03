@@ -521,7 +521,7 @@ export default function CalendarView() {
                                                       {item.isCurrentMonth && hasVisibleIndicator && (
                                                         <div className="flex items-center gap-0.5 absolute bottom-0.5">
                                                           {specialEventBookings.length > 0 && (
-                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Special Event" />
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-purple-600" title="Special Event" />
                                                           )}
                                                           {showApprovedIndicator && regularBookings.some(b => (b.status || "").toLowerCase().includes("approv")) && (
                                                             <span className="h-1 w-1 rounded-full bg-blue-500" />
@@ -636,7 +636,7 @@ export default function CalendarView() {
                                                   className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
                                                     isApproved
                                                       ? isSpecial
-                                                        ? "bg-amber-500 text-white border border-amber-600"
+                                                        ? "bg-purple-600 text-white border border-purple-700"
                                                         : "bg-blue-500 text-white border border-blue-600"
                                                       : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
                                                   }`}
@@ -755,7 +755,7 @@ export default function CalendarView() {
                                   {item.isCurrentMonth && (hasApproved || hasPending) && (
                                     <div className="flex items-center gap-0.5 absolute bottom-0.5">
                                       {specialEventBookings.length > 0 && (
-                                        <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-amber-300" : "bg-amber-500"}`} title="Special Event" />
+                                        <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-purple-300" : "bg-purple-600"}`} title="Special Event" />
                                       )}
                                       {hasApproved && regularBookings.some(b => (b.status || "").toLowerCase().includes("approv")) && (
                                         <span
@@ -792,7 +792,7 @@ export default function CalendarView() {
                           <span className="text-ink font-medium">Pending Requests</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full bg-amber-500 shrink-0 flex items-center justify-center">
+                          <span className="h-2.5 w-2.5 rounded-full bg-purple-600 shrink-0 flex items-center justify-center">
                             <Star className="h-3 w-3 text-white" />
                           </span>
                           <span className="text-ink font-medium">Special Events (Approved)</span>
@@ -803,31 +803,31 @@ export default function CalendarView() {
           <hr className="border-line mb-3" />
 
                     {/* Special Events List with Resources Used (Dynamic from Bookings) */}
-                    <div className="w-full bg-amber-50/60 rounded-lg p-3 border border-amber-200/80">
-                      <h4 className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    <div className="w-full bg-purple-50/60 rounded-lg p-3 border border-purple-200/80">
+                      <h4 className="text-[11px] font-semibold text-purple-900 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                         <Sparkles size={13} /> Special Events & Resources
                       </h4>
                       {specialEventsGrouped.length === 0 ? (
-                        <p className="text-[11px] text-amber-700 text-center py-2">
+                        <p className="text-[11px] text-purple-700 text-center py-2">
                           No special events scheduled
                         </p>
                       ) : (
-                        <div className="space-y-3 text-[11px] text-amber-950">
+                        <div className="space-y-3 text-[11px] text-purple-950">
                           {specialEventsGrouped.map((event, idx) => (
-                            <div key={idx} className="border-b border-amber-200/60 pb-2 last:border-0 last:pb-0">
+                            <div key={idx} className="border-b border-purple-200/60 pb-2 last:border-0 last:pb-0">
                               <div className="flex items-start gap-2">
-                                <Star className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                <Star className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-amber-900 truncate">{event.name}</p>
+                                  <p className="font-semibold text-purple-900 truncate">{event.name}</p>
                                   {event.dates.length > 0 && (
-                                    <p className="text-amber-700 text-[10px] mb-1">
+                                    <p className="text-purple-700 text-[10px] mb-1">
                                       {event.dates.length === 1
                                         ? event.dates[0]
                                         : `${event.dates[0]} – ${event.dates[event.dates.length - 1]}`}
                                     </p>
                                   )}
                                   {event.resources.length > 0 && (
-                                    <p className="text-[10px] text-amber-900/80">
+                                    <p className="text-[10px] text-purple-900/80">
                                       <span className="font-medium">Resources:</span>{" "}
                                       {event.resources.join(", ")}
                                     </p>

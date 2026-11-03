@@ -27,22 +27,22 @@ class SpecialEventsSeeder extends Seeder
             return; // users not created yet - it will run again on the next start
         }
 
-        // Official LGU special events with exact date ranges and resource assignments
+        // Consolidated LGU special events with exact date ranges and resource assignments
         $events = [
-            // 1. Araw ng Habongan - 2026-07-01
-            [
-                'title' => 'Araw ng Habongan',
-                'start_date' => '2026-07-01',
-                'end_date' => '2026-07-01',
-                'resources' => ['Mini-Bus', 'Municipal Gymnasium'],
-            ],
-
-            // 2. Sumayajaw Festival 2026 - 2026-08-11 to 2026-08-15
+            // 1. Sumayajaw Festival 2026 - 2026-08-11 to 2026-08-15 (5 Days)
             [
                 'title' => 'Sumayajaw Festival',
                 'start_date' => '2026-08-11',
                 'end_date' => '2026-08-15',
                 'resources' => ['Dumptruck (6-Wheel)', 'Man Lift', 'Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
+            ],
+
+            // 2. Araw ng Habongan - 2026-07-01
+            [
+                'title' => 'Araw ng Habongan',
+                'start_date' => '2026-07-01',
+                'end_date' => '2026-07-01',
+                'resources' => ['Mini-Bus', 'Municipal Gymnasium'],
             ],
 
             // 3. Elementary Alumni - 2026-08-16
