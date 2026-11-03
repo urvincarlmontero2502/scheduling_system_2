@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -6,10 +6,13 @@ import {
   Calendar as CalendarIcon,
   Grid,
   Filter,
+  Star,
+  Sparkles,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import { useCachedData } from "../hooks/useCachedData";
 import { useTabUrlSync } from "../hooks/useTabUrlSync";
+import { isSpecialEvent } from "../utils/specialEvents";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -181,7 +184,38 @@ function getMonthDays(date) {
 export default function CalendarView() {
   // Cached data hooks — data persists across page switches
   const { data: bookings, loading } = useCachedData("bookings", api.fetchBookings);
-  const { data: resources } = useCachedData("resources", api.fetchResources);
+    const { data: resources } = useCachedData("resources", api.fetchResources);
+
+    // Extract and group special events from bookings
+    const specialEventsGrouped = useMemo(() => {
+      const special = bookings.filter((b) => isSpecialEvent(b));
+      const groups = {};
+
+      special.forEach((b) => {
+        const eventName = b.full_name || b.purpose || "Special Event";
+        const dateStr = b.date || b.start_date || "";
+        const key = `${eventName}|${dateStr}`;
+
+        if (!groups[key]) {
+          groups[key] = {
+            name: eventName,
+            dates: [],
+            resources: new Set(),
+            purpose: b.purpose,
+          };
+        }
+        groups[key].dates.push(dateStr);
+        if (b.resource) groups[key].resources.add(b.resource);
+        if (b.resource_name) groups[key].resources.add(b.resource_name);
+        if (b.item_name) groups[key].resources.add(b.item_name);
+      });
+
+      return Object.values(groups).map((g) => ({
+        ...g,
+        dates: [...new Set(g.dates)].sort(),
+        resources: Array.from(g.resources),
+      }));
+    }, [bookings]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isYearView, setIsYearView] = useState(false);
@@ -429,71 +463,77 @@ export default function CalendarView() {
                       </div>
                       <div className="grid grid-cols-7 text-center text-[11px] gap-y-1">
                         {mDays.map((item, dIdx) => {
-                          const dayBookings = bookings.filter((b) => {
-                            const status = (b.status || "").toLowerCase();
-                            const isApproved = status.includes("approv");
-                            const isPending =
-                              status.includes("pend") ||
-                              status.includes("request") ||
-                              status.includes("tentative");
+                                                  const dayBookings = bookings.filter((b) => {
+                                                    const status = (b.status || "").toLowerCase();
+                                                    const isApproved = status.includes("approv");
+                                                    const isPending =
+                                                      status.includes("pend") ||
+                                                      status.includes("request") ||
+                                                      status.includes("tentative");
 
-                            if (!isApproved && !isPending) return false;
+                                                    if (!isApproved && !isPending) return false;
 
-                            const bDate = b.date || b.start_date || "";
-                            return bDate.includes(item.fullDateStr);
-                          });
+                                                    const bDate = b.date || b.start_date || "";
+                                                    return bDate.includes(item.fullDateStr);
+                                                  });
 
-                          const hasApproved = dayBookings.some((b) =>
-                            (b.status || "").toLowerCase().includes("approv"),
-                          );
-                          const hasPending = dayBookings.some((b) => {
-                            const s = (b.status || "").toLowerCase();
-                            return (
-                              s.includes("pend") ||
-                              s.includes("request") ||
-                              s.includes("tentative")
-                            );
-                          });
+                                                  const specialEventBookings = dayBookings.filter((b) => isSpecialEvent(b));
+                                                  const regularBookings = dayBookings.filter((b) => !isSpecialEvent(b));
 
-                          const showApprovedIndicator =
-                            (yearViewFilter === "all" ||
-                              yearViewFilter === "approved") &&
-                            hasApproved;
-                          const showPendingIndicator =
-                            (yearViewFilter === "all" ||
-                              yearViewFilter === "pending") &&
-                            hasPending;
-                          const hasVisibleIndicator =
-                            showApprovedIndicator || showPendingIndicator;
+                                                  const hasApproved = dayBookings.some((b) =>
+                                                    (b.status || "").toLowerCase().includes("approv"),
+                                                  );
+                                                  const hasPending = dayBookings.some((b) => {
+                                                    const s = (b.status || "").toLowerCase();
+                                                    return (
+                                                      s.includes("pend") ||
+                                                      s.includes("request") ||
+                                                      s.includes("tentative")
+                                                    );
+                                                  });
 
-                          return (
-                            <div
-                              key={dIdx}
-                              onClick={() => {
-                                if (item.isCurrentMonth && item.fullDate) {
-                                  setCurrentDate(new Date(item.fullDate));
-                                  setIsYearView(false);
-                                }
-                              }}
-                              className={`h-7 w-7 mx-auto flex flex-col items-center justify-center rounded-full transition relative ${
-                                item.isCurrentMonth
-                                  ? "cursor-pointer hover:bg-paper text-ink font-medium"
-                                  : "text-steel/30 cursor-default"
-                              }`}>
-                              <span>{item.dayNum}</span>
-                              {item.isCurrentMonth && hasVisibleIndicator && (
-                                <div className="flex items-center gap-0.5 absolute bottom-0.5">
-                                  {showApprovedIndicator && (
-                                    <span className="h-1 w-1 rounded-full bg-blue-500" />
-                                  )}
-                                  {showPendingIndicator && (
-                                    <span className="h-1 w-1 rounded-full bg-amber-500" />
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                                                  const showApprovedIndicator =
+                                                    (yearViewFilter === "all" ||
+                                                      yearViewFilter === "approved") &&
+                                                    hasApproved;
+                                                  const showPendingIndicator =
+                                                    (yearViewFilter === "all" ||
+                                                      yearViewFilter === "pending") &&
+                                                    hasPending;
+                                                  const hasVisibleIndicator =
+                                                    showApprovedIndicator || showPendingIndicator;
+
+                                                  return (
+                                                    <div
+                                                      key={dIdx}
+                                                      onClick={() => {
+                                                        if (item.isCurrentMonth && item.fullDate) {
+                                                          setCurrentDate(new Date(item.fullDate));
+                                                          setIsYearView(false);
+                                                        }
+                                                      }}
+                                                      className={`h-7 w-7 mx-auto flex flex-col items-center justify-center rounded-full transition relative ${
+                                                        item.isCurrentMonth
+                                                          ? "cursor-pointer hover:bg-paper text-ink font-medium"
+                                                          : "text-steel/30 cursor-default"
+                                                      }`}>
+                                                      <span>{item.dayNum}</span>
+                                                      {item.isCurrentMonth && hasVisibleIndicator && (
+                                                        <div className="flex items-center gap-0.5 absolute bottom-0.5">
+                                                          {specialEventBookings.length > 0 && (
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Special Event" />
+                                                          )}
+                                                          {showApprovedIndicator && regularBookings.some(b => (b.status || "").toLowerCase().includes("approv")) && (
+                                                            <span className="h-1 w-1 rounded-full bg-blue-500" />
+                                                          )}
+                                                          {showPendingIndicator && (
+                                                            <span className="h-1 w-1 rounded-full bg-amber-500" />
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
                       </div>
                     </div>
                   );
@@ -567,58 +607,63 @@ export default function CalendarView() {
                       ))}
 
                       {laidOut.map(({ b, top, height, col, cols }) => {
-                        const status = (b.status || "").toLowerCase();
-                        const isApproved = status.includes("approv");
+                                              const status = (b.status || "").toLowerCase();
+                                              const isApproved = status.includes("approv");
+                                              const isSpecial = isSpecialEvent(b);
 
-                        const resourceName =
-                          b.resource ||
-                          b.resource_name ||
-                          b.item_name ||
-                          "Resource";
-                        const requesterName =
-                          b.requester ||
-                          b.full_name ||
-                          b.name ||
-                          b.user_name ||
-                          "Representative";
+                                              const resourceName =
+                                                b.resource ||
+                                                b.resource_name ||
+                                                b.item_name ||
+                                                "Resource";
+                                              const requesterName =
+                                                b.requester ||
+                                                b.full_name ||
+                                                b.name ||
+                                                b.user_name ||
+                                                "Representative";
 
-                        const rawStart = b.start_time || b.time || "07:00";
-                        const rawEnd = b.end_time || "17:00";
+                                              const rawStart = b.start_time || b.time || "07:00";
+                                              const rawEnd = b.end_time || "17:00";
 
-                        const startTime = formatTimeTo12Hour(rawStart);
-                        const endTime = formatTimeTo12Hour(rawEnd);
+                                              const startTime = formatTimeTo12Hour(rawStart);
+                                              const endTime = formatTimeTo12Hour(rawEnd);
 
-                        return (
-                          <div
-                            key={b.id || b.booking_id}
-                            title={`${resourceName} - ${b.status || ""} - ${requesterName}`}
-                            className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
-                              isApproved
-                                ? "bg-blue-500 text-white border border-blue-600"
-                                : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
-                            }`}
-                            style={{
-                              top: `${top}px`,
-                              height: `${height}px`,
-                              left: `calc(${(col / cols) * 100}% + 1px)`,
-                              width: `calc(${100 / cols}% - 2px)`,
-                            }}>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center justify-between gap-0.5">
-                                <span className="font-bold text-[9px] leading-tight truncate">
-                                  {resourceName}
-                                </span>
-                              </div>
-                              <div className="text-[8px] opacity-90 truncate">
-                                {startTime}
-                              </div>
-                            </div>
-                            <div className="text-[7.5px] opacity-90 truncate">
-                              {requesterName}
-                            </div>
-                          </div>
-                        );
-                      })}
+                                              return (
+                                                <div
+                                                  key={b.id || b.booking_id}
+                                                  title={`${resourceName} - ${b.status || ""} - ${requesterName}${isSpecial ? " ⭐ Special Event" : ""}`}
+                                                  className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
+                                                    isApproved
+                                                      ? isSpecial
+                                                        ? "bg-amber-500 text-white border border-amber-600"
+                                                        : "bg-blue-500 text-white border border-blue-600"
+                                                      : "bg-amber-50 border border-dashed border-amber-400 text-amber-900"
+                                                  }`}
+                                                  style={{
+                                                    top: `${top}px`,
+                                                    height: `${height}px`,
+                                                    left: `calc(${(col / cols) * 100}% + 1px)`,
+                                                    width: `calc(${100 / cols}% - 2px)`,
+                                                  }}>
+                                                  <div className="space-y-0.5">
+                                                    <div className="flex items-center justify-between gap-0.5">
+                                                      <span className="font-bold text-[9px] leading-tight truncate flex items-center gap-1">
+                                                        {isSpecial && <Star className="h-3 w-3" />}
+                                                        {resourceName}
+                                                      </span>
+                                                    </div>
+                                                    <div className="text-[8px] opacity-90 truncate">
+                                                      {startTime}
+                                                    </div>
+                                                  </div>
+                                                  <div className="text-[7.5px] opacity-90 truncate flex items-center gap-1">
+                                                    {isSpecial && <Star className="h-2.5 w-2.5" />}
+                                                    {requesterName}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
                     </div>
                   );
                 })}
@@ -661,139 +706,139 @@ export default function CalendarView() {
             </div>
             <div className="grid grid-cols-7 text-center text-[11px] gap-y-1 mb-4 text-ink">
               {monthDays.map((item, i) => {
-                const isSelected =
-                  item.isCurrentMonth && item.dayNum === currentDate.getDate();
+                              const isSelected =
+                                item.isCurrentMonth && item.dayNum === currentDate.getDate();
 
-                const dayBookings = bookings.filter((b) => {
-                  const status = (b.status || "").toLowerCase();
-                  const isApproved = status.includes("approv");
-                  const isPending =
-                    status.includes("pend") ||
-                    status.includes("request") ||
-                    status.includes("tentative");
-                  if (!isApproved && !isPending) return false;
+                              const dayBookings = bookings.filter((b) => {
+                                const status = (b.status || "").toLowerCase();
+                                const isApproved = status.includes("approv");
+                                const isPending =
+                                  status.includes("pend") ||
+                                  status.includes("request") ||
+                                  status.includes("tentative");
+                                if (!isApproved && !isPending) return false;
 
-                  const bDate = b.date || b.start_date || "";
-                  return bDate.includes(item.fullDateStr);
-                });
+                                const bDate = b.date || b.start_date || "";
+                                return bDate.includes(item.fullDateStr);
+                              });
 
-                const hasApproved = dayBookings.some((b) =>
-                  (b.status || "").toLowerCase().includes("approv"),
-                );
-                const hasPending = dayBookings.some((b) => {
-                  const s = (b.status || "").toLowerCase();
-                  return (
-                    s.includes("pend") ||
-                    s.includes("request") ||
-                    s.includes("tentative")
-                  );
-                });
+                              const specialEventBookings = dayBookings.filter((b) => isSpecialEvent(b));
+                              const regularBookings = dayBookings.filter((b) => !isSpecialEvent(b));
 
-                return (
-                  <div
-                    key={i}
-                    onClick={() => {
-                      if (item.isCurrentMonth && item.fullDate) {
-                        setCurrentDate(new Date(item.fullDate));
-                        setIsYearView(false);
-                      }
-                    }}
-                    className={`h-7 w-7 mx-auto flex flex-col items-center justify-center rounded-full transition relative ${
-                      item.isCurrentMonth
-                        ? "cursor-pointer hover:bg-paper"
-                        : "text-steel/30 cursor-default"
-                    } ${isSelected ? "bg-brand text-white font-bold" : ""}`}>
-                    <span>{item.dayNum}</span>
-                    {item.isCurrentMonth && (hasApproved || hasPending) && (
-                      <div className="flex items-center gap-0.5 absolute bottom-0.5">
-                        {hasApproved && (
-                          <span
-                            className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"}`}
-                          />
-                        )}
-                        {hasPending && (
-                          <span
-                            className={`h-1 w-1 rounded-full ${isSelected ? "bg-amber-200" : "bg-amber-500"}`}
-                          />
-                        )}
+                              const hasApproved = dayBookings.some((b) =>
+                                (b.status || "").toLowerCase().includes("approv"),
+                              );
+                              const hasPending = dayBookings.some((b) => {
+                                const s = (b.status || "").toLowerCase();
+                                return (
+                                  s.includes("pend") ||
+                                  s.includes("request") ||
+                                  s.includes("tentative")
+                                );
+                              });
+
+                              return (
+                                <div
+                                  key={i}
+                                  onClick={() => {
+                                    if (item.isCurrentMonth && item.fullDate) {
+                                      setCurrentDate(new Date(item.fullDate));
+                                      setIsYearView(false);
+                                    }
+                                  }}
+                                  className={`h-7 w-7 mx-auto flex flex-col items-center justify-center rounded-full transition relative ${
+                                    item.isCurrentMonth
+                                      ? "cursor-pointer hover:bg-paper"
+                                      : "text-steel/30 cursor-default"
+                                  } ${isSelected ? "bg-brand text-white font-bold" : ""}`}>
+                                  <span>{item.dayNum}</span>
+                                  {item.isCurrentMonth && (hasApproved || hasPending) && (
+                                    <div className="flex items-center gap-0.5 absolute bottom-0.5">
+                                      {specialEventBookings.length > 0 && (
+                                        <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-amber-300" : "bg-amber-500"}`} title="Special Event" />
+                                      )}
+                                      {hasApproved && regularBookings.some(b => (b.status || "").toLowerCase().includes("approv")) && (
+                                        <span
+                                          className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"}`}
+                                        />
+                                      )}
+                                      {hasPending && (
+                                        <span
+                                          className={`h-1 w-1 rounded-full ${isSelected ? "bg-amber-200" : "bg-amber-500"}`}
+                                        />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+            </div>
+          </div>
+
+          <hr className="border-line mb-3" />
+
+                    {/* Legend & Status */}
+                    <div className="w-full mb-4">
+                      <h4 className="text-[11px] font-semibold text-steel uppercase tracking-wider mb-2">
+                        Legend & Status
+                      </h4>
+                      <div className="space-y-2 text-[12px]">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0" />
+                          <span className="text-ink font-medium">Approved Bookings</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full bg-amber-400 border border-dashed border-amber-600 shrink-0" />
+                          <span className="text-ink font-medium">Pending Requests</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full bg-amber-500 shrink-0 flex items-center justify-center">
+                            <Star className="h-3 w-3 text-white" />
+                          </span>
+                          <span className="text-ink font-medium">Special Events (Approved)</span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                    </div>
 
           <hr className="border-line mb-3" />
 
-          {/* Legend & Status */}
-          <div className="w-full mb-4">
-            <h4 className="text-[11px] font-semibold text-steel uppercase tracking-wider mb-2">
-              Legend & Status
-            </h4>
-            <div className="space-y-2 text-[12px]">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0" />
-                <span className="text-ink font-medium">Approved Bookings</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400 border border-dashed border-amber-600 shrink-0" />
-                <span className="text-ink font-medium">Pending Requests</span>
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-line mb-3" />
-
-          {/* Special Events List with Resources Used */}
-          <div className="w-full bg-amber-50/60 rounded-lg p-3 border border-amber-200/80">
-            <h4 className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider mb-2.5">
-              Special Events & Resources
-            </h4>
-            <div className="space-y-3 text-[11px] text-amber-950">
-              <div className="border-b border-amber-200/60 pb-2">
-                <p className="font-semibold text-amber-900">Araw ng Habongan</p>
-                <p className="text-amber-700 text-[10px] mb-1">July 1</p>
-                <p className="text-[10px] text-amber-900/80">
-                  <span className="font-medium">Resources:</span> Municipal
-                  Gymnasium, Mini-Bus
-                </p>
-              </div>
-              <div className="border-b border-amber-200/60 pb-2">
-                <p className="font-semibold text-amber-900">
-                  Sumayajaw Festival
-                </p>
-                <p className="text-amber-700 text-[10px] mb-1">
-                  August 11 – 15
-                </p>
-                <p className="text-[10px] text-amber-900/80">
-                  <span className="font-medium">Resources:</span> Municipal
-                  Gymnasium, Cargo Truck, Mini-Bus, Man Lift, 2 Dumptruck
-                  (6-Wheel)
-                </p>
-              </div>
-              <div className="border-b border-amber-200/60 pb-2">
-                <p className="font-semibold text-amber-900">
-                  Elementary Alumni
-                </p>
-                <p className="text-amber-700 text-[10px] mb-1">August 16</p>
-                <p className="text-[10px] text-amber-900/80">
-                  <span className="font-medium">Resources:</span> Municipal
-                  Gymnasium, Mini-Bus
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold text-amber-900">
-                  High School Alumni
-                </p>
-                <p className="text-amber-700 text-[10px] mb-1">October 31</p>
-                <p className="text-[10px] text-amber-900/80">
-                  <span className="font-medium">Resources:</span> Municipal
-                  Gymnasium, Cargo Truck, Mini-Bus
-                </p>
-              </div>
-            </div>
-          </div>
+                    {/* Special Events List with Resources Used (Dynamic from Bookings) */}
+                    <div className="w-full bg-amber-50/60 rounded-lg p-3 border border-amber-200/80">
+                      <h4 className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <Sparkles size={13} /> Special Events & Resources
+                      </h4>
+                      {specialEventsGrouped.length === 0 ? (
+                        <p className="text-[11px] text-amber-700 text-center py-2">
+                          No special events scheduled
+                        </p>
+                      ) : (
+                        <div className="space-y-3 text-[11px] text-amber-950">
+                          {specialEventsGrouped.map((event, idx) => (
+                            <div key={idx} className="border-b border-amber-200/60 pb-2 last:border-0 last:pb-0">
+                              <div className="flex items-start gap-2">
+                                <Star className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-amber-900 truncate">{event.name}</p>
+                                  {event.dates.length > 0 && (
+                                    <p className="text-amber-700 text-[10px] mb-1">
+                                      {event.dates.length === 1
+                                        ? event.dates[0]
+                                        : `${event.dates[0]} – ${event.dates[event.dates.length - 1]}`}
+                                    </p>
+                                  )}
+                                  {event.resources.length > 0 && (
+                                    <p className="text-[10px] text-amber-900/80">
+                                      <span className="font-medium">Resources:</span>{" "}
+                                      {event.resources.join(", ")}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
         </div>
       </div>
     </div>
