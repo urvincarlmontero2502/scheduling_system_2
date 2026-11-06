@@ -138,6 +138,17 @@ function layoutOverlaps(items) {
   return result;
 }
 
+// API `date` is "YYYY-MM-DD to YYYY-MM-DD", which does not cover the
+// days in between. Match the real start/end columns instead.
+function bookingOnDate(booking, fullDateStr) {
+  const start = String(booking.start_date || "").slice(0, 10);
+  const end = String(booking.end_date || start).slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end)) {
+    return fullDateStr >= start && fullDateStr <= end;
+  }
+  return String(booking.date || "").includes(fullDateStr);
+}
+
 function getMonthDays(date) {
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -193,8 +204,9 @@ export default function CalendarView() {
 
           special.forEach((b) => {
             const eventName = b.full_name || b.purpose || "Special Event";
-            const dateStr = b.date || b.start_date || "";
-        
+            const dateStr = String(b.start_date || "").slice(0, 10);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+
             // Group by event name only (not by date)
             if (!groups[eventName]) {
               groups[eventName] = {
@@ -500,8 +512,7 @@ export default function CalendarView() {
 
                                                     if (!isApproved && !isPending) return false;
 
-                                                    const bDate = b.date || b.start_date || "";
-                                                    return bDate.includes(item.fullDateStr);
+                                                    return bookingOnDate(b, item.fullDateStr);
                                                   });
 
                                                   const specialEventBookings = dayBookings.filter((b) => isSpecialEvent(b));
@@ -613,8 +624,7 @@ export default function CalendarView() {
 
                     if (!isApproved && !isPending) return false;
 
-                    const bDate = b.date || b.start_date || "";
-                    return bDate.includes(day.fullDateStr);
+                    return bookingOnDate(b, day.fullDateStr);
                   });
 
                   const laidOut = layoutOverlaps(
@@ -745,8 +755,7 @@ export default function CalendarView() {
                                   status.includes("tentative");
                                 if (!isApproved && !isPending) return false;
 
-                                const bDate = b.date || b.start_date || "";
-                                return bDate.includes(item.fullDateStr);
+                                return bookingOnDate(b, item.fullDateStr);
                               });
 
                               const specialEventBookings = dayBookings.filter((b) => isSpecialEvent(b));

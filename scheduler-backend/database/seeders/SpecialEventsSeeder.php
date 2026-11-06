@@ -21,10 +21,13 @@ class SpecialEventsSeeder extends Seeder
     public function run(): void
     {
         $systemUserId = DB::table('users')->where('email', 'mayors.office@system.local')->value('user_id')
-            ?? DB::table('users')->where('role', 'admin')->orderBy('user_id')->value('user_id');
+            ?? DB::table('users')->where('role', 'admin')->orderBy('user_id')->value('user_id')
+            ?? DB::table('users')->orderBy('user_id')->value('user_id');
 
         if (!$systemUserId) {
-            return; // users not created yet - it will run again on the next start
+            $this->command?->warn('Special events skipped: no users exist yet. They will be seeded on the next boot.');
+
+            return;
         }
 
         // Consolidated LGU special events with exact date ranges and resource assignments
@@ -78,6 +81,8 @@ class SpecialEventsSeeder extends Seeder
             ],
         ];
 
+        $inserted = 0;
+
         foreach ($events as $event) {
             $period = CarbonPeriod::create($event['start_date'], $event['end_date']);
 
@@ -111,10 +116,13 @@ class SpecialEventsSeeder extends Seeder
                             'is_special_event' => true,
                             'created_at' => now(),
                         ]);
+                        $inserted++;
                     }
                 }
             }
         }
+
+        $this->command?->info("Special events seed finished. Inserted {$inserted} booking rows (existing rows were skipped).");
     }
 
     /** Turns resource name into a list of resource IDs (exact match first, then fuzzy). */

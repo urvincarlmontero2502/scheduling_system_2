@@ -64,10 +64,15 @@ class BookingController extends Controller
                 'user'
             ]);
 
-            // Barangay admins can only see bookings from their own barangay
+            // Barangay admins only see requests from their barangay.
+            // Municipal special events belong to the Mayor's Office account
+            // (barangay is null), so they must stay visible on every calendar.
             if ($user->isBarangayAdmin()) {
-                $query->whereHas('user', function ($q) use ($user) {
-                    $q->where('barangay', $user->barangay);
+                $query->where(function ($q) use ($user) {
+                    $q->where('is_special_event', true)
+                        ->orWhereHas('user', function ($inner) use ($user) {
+                            $inner->where('barangay', $user->barangay);
+                        });
                 });
             }
 
@@ -76,13 +81,19 @@ class BookingController extends Controller
                 ->get();
 
             $formatted = $bookings->map(function ($b) {
+                $eventTitle = $b->full_name;
+                $ownerName = $b->user?->full_name;
+                $displayName = ($b->is_special_event && $eventTitle)
+                    ? $eventTitle
+                    : (($eventTitle && $eventTitle !== $ownerName) ? $eventTitle : '—');
+
                 return [
                     'id' => $b->booking_id,
                     'resource_id' => $b->resource_id,
                     'resource' => $b->resource->name ?? 'Unknown Resource',
                     'resource_image' => $b->resource->image ? \Illuminate\Support\Facades\Storage::disk('assets')->url($b->resource->image) : null,
-                    'full_name' => $b->full_name && $b->full_name !== ($b->user?->name ?? null) ? $b->full_name : '—',
-                    'requester' => $b->full_name && $b->full_name !== ($b->user?->name ?? null) ? $b->full_name : '—',
+                    'full_name' => $displayName,
+                    'requester' => $displayName,
                     'barangay' => $b->user?->barangay ?? $b->user?->name ?? 'Poblacion',
                     'cell_number' => $b->cell_number ?? 'N/A',
                     'where_do_you_live' => $b->address ?? 'N/A',
