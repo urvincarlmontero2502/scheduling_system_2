@@ -187,35 +187,62 @@ export default function CalendarView() {
     const { data: resources } = useCachedData("resources", api.fetchResources);
 
     // Extract and group special events from bookings
-    const specialEventsGrouped = useMemo(() => {
-      const special = bookings.filter((b) => isSpecialEvent(b));
-      const groups = {};
+        const specialEventsGrouped = useMemo(() => {
+          const special = bookings.filter((b) => isSpecialEvent(b));
+          const groups = {};
 
-      special.forEach((b) => {
-        const eventName = b.full_name || b.purpose || "Special Event";
-        const dateStr = b.date || b.start_date || "";
-        const key = `${eventName}|${dateStr}`;
+          special.forEach((b) => {
+            const eventName = b.full_name || b.purpose || "Special Event";
+            const dateStr = b.date || b.start_date || "";
+        
+            // Group by event name only (not by date)
+            if (!groups[eventName]) {
+              groups[eventName] = {
+                name: eventName,
+                dates: new Set(),
+                resources: new Set(),
+                purpose: b.purpose,
+              };
+            }
+            groups[eventName].dates.add(dateStr);
+            if (b.resource) groups[eventName].resources.add(b.resource);
+            if (b.resource_name) groups[eventName].resources.add(b.resource_name);
+            if (b.item_name) groups[eventName].resources.add(b.item_name);
+          });
 
-        if (!groups[key]) {
-          groups[key] = {
-            name: eventName,
-            dates: [],
-            resources: new Set(),
-            purpose: b.purpose,
-          };
-        }
-        groups[key].dates.push(dateStr);
-        if (b.resource) groups[key].resources.add(b.resource);
-        if (b.resource_name) groups[key].resources.add(b.resource_name);
-        if (b.item_name) groups[key].resources.add(b.item_name);
-      });
+          return Object.values(groups).map((g) => {
+            // Sort dates and find consecutive ranges
+            const sortedDates = [...g.dates].sort();
+            const dateRanges = [];
+            let rangeStart = sortedDates[0];
+            let rangeEnd = sortedDates[0];
 
-      return Object.values(groups).map((g) => ({
-        ...g,
-        dates: [...new Set(g.dates)].sort(),
-        resources: Array.from(g.resources),
-      }));
-    }, [bookings]);
+            for (let i = 1; i < sortedDates.length; i++) {
+              const prevDate = new Date(sortedDates[i - 1]);
+              const currDate = new Date(sortedDates[i]);
+              const diffDays = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+
+              if (diffDays === 1) {
+                // Consecutive date - extend the range
+                rangeEnd = sortedDates[i];
+              } else {
+                // Non-consecutive - close current range and start new one
+                dateRanges.push(rangeStart === rangeEnd ? rangeStart : `${rangeStart} – ${rangeEnd}`);
+                rangeStart = sortedDates[i];
+                rangeEnd = sortedDates[i];
+              }
+            }
+            // Add the last range
+            dateRanges.push(rangeStart === rangeEnd ? rangeStart : `${rangeStart} – ${rangeEnd}`);
+
+            return {
+              name: g.name,
+              dateRanges: dateRanges,
+              resources: Array.from(g.resources).sort(),
+              purpose: g.purpose,
+            };
+          });
+        }, [bookings]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isYearView, setIsYearView] = useState(false);
@@ -808,36 +835,34 @@ export default function CalendarView() {
                         <Sparkles size={13} /> Special Events & Resources
                       </h4>
                       {specialEventsGrouped.length === 0 ? (
-                        <p className="text-[11px] text-purple-700 text-center py-2">
-                          No special events scheduled
-                        </p>
-                      ) : (
-                        <div className="space-y-3 text-[11px] text-purple-950">
-                          {specialEventsGrouped.map((event, idx) => (
-                            <div key={idx} className="border-b border-purple-200/60 pb-2 last:border-0 last:pb-0">
-                              <div className="flex items-start gap-2">
-                                <Star className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-purple-900 truncate">{event.name}</p>
-                                  {event.dates.length > 0 && (
-                                    <p className="text-purple-700 text-[10px] mb-1">
-                                      {event.dates.length === 1
-                                        ? event.dates[0]
-                                        : `${event.dates[0]} – ${event.dates[event.dates.length - 1]}`}
-                                    </p>
-                                  )}
-                                  {event.resources.length > 0 && (
-                                    <p className="text-[10px] text-purple-900/80">
-                                      <span className="font-medium">Resources:</span>{" "}
-                                      {event.resources.join(", ")}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                                              <p className="text-[11px] text-purple-700 text-center py-2">
+                                                No special events scheduled
+                                              </p>
+                                            ) : (
+                                              <div className="max-h-[300px] overflow-y-auto space-y-3 text-[11px] text-purple-950 pr-1">
+                                                {specialEventsGrouped.map((event, idx) => (
+                                                  <div key={idx} className="border-b border-purple-200/60 pb-2 last:border-0 last:pb-0">
+                                                    <div className="flex items-start gap-2">
+                                                      <Star className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                                                      <div className="flex-1 min-w-0">
+                                                        <p className="font-semibold text-purple-900 truncate">{event.name}</p>
+                                                        {event.dateRanges.length > 0 && (
+                                                          <p className="text-purple-700 text-[10px] mb-1">
+                                                            {event.dateRanges.join(", ")}
+                                                          </p>
+                                                        )}
+                                                        {event.resources.length > 0 && (
+                                                          <p className="text-[10px] text-purple-900/80">
+                                                            <span className="font-medium">Resources:</span>{" "}
+                                                            {event.resources.join(", ")}
+                                                          </p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
                     </div>
         </div>
       </div>
