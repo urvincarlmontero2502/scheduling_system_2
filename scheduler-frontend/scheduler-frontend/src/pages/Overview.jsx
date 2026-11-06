@@ -4,7 +4,18 @@ import { isSpecialEvent } from "../utils/specialEvents";
 import { useAuth } from "../context/AuthContext";
 import { useCachedData } from "../hooks/useCachedData";
 import { useTabUrlSync } from "../hooks/useTabUrlSync";
-import { Search, Building2, Car, Image as ImageIcon, Users as UserGroupIcon, Clock, CheckCircle, Building, Truck, Plus } from "lucide-react";
+import {
+  Search,
+  Building2,
+  Car,
+  Image as ImageIcon,
+  Users as UserGroupIcon,
+  Clock,
+  CheckCircle,
+  Building,
+  Truck,
+  Plus,
+} from "lucide-react";
 import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
@@ -15,8 +26,15 @@ export default function Overview() {
   const [stats, setStats] = useState({ pending: 0, approved: 0 });
 
   // Cached data hooks — data persists across page switches
-  const { data: resources, loading, refetch: refetchResources } = useCachedData("resources", api.fetchResources);
-  const { data: bookings, refetch: refetchBookings } = useCachedData("bookings", api.fetchBookings);
+  const {
+    data: resources,
+    loading,
+    refetch: refetchResources,
+  } = useCachedData("resources", api.fetchResources);
+  const { data: bookings, refetch: refetchBookings } = useCachedData(
+    "bookings",
+    api.fetchBookings,
+  );
 
   const [selectedResource, setSelectedResource] = useState(null);
   // URL-synchronized sub-tab state
@@ -76,8 +94,7 @@ export default function Overview() {
         return Promise.reject({
           type: "error",
           message:
-            err?.response?.data?.message ||
-            "Failed to submit booking request.",
+            err?.response?.data?.message || "Failed to submit booking request.",
         });
       });
   };
@@ -227,11 +244,10 @@ export default function Overview() {
                 setVehicleSubFilter("all");
               }}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                              mainFilter === "all"
-                                ? "bg-brand text-white shadow-sm border-brand"
-                                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                            }`}
-            >
+                mainFilter === "all"
+                  ? "bg-brand text-white shadow-sm border-brand"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+              }`}>
               All Resources
             </button>
             <button
@@ -239,11 +255,10 @@ export default function Overview() {
                 setMainFilter("facility");
               }}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                              mainFilter === "facility"
-                                ? "bg-brand text-white shadow-sm border-brand"
-                                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                            }`}
-            >
+                mainFilter === "facility"
+                  ? "bg-brand text-white shadow-sm border-brand"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+              }`}>
               Facilities Overview
             </button>
             <button
@@ -251,11 +266,10 @@ export default function Overview() {
                 setMainFilter("vehicle");
               }}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                              mainFilter === "vehicle"
-                                ? "bg-brand text-white shadow-sm border-brand"
-                                : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                            }`}
-            >
+                mainFilter === "vehicle"
+                  ? "bg-brand text-white shadow-sm border-brand"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+              }`}>
               Vehicles Overview
             </button>
             <button
@@ -264,26 +278,16 @@ export default function Overview() {
                 setVehicleSubFilter("all");
               }}
               className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
-                                mainFilter === "maintenance"
-                                  ? "bg-brand text-white shadow-sm border-brand"
-                                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
-                            }`}
-            >
+                mainFilter === "maintenance"
+                  ? "bg-brand text-white shadow-sm border-brand"
+                  : "bg-white border border-line text-steel hover:bg-paper transition-colors"
+              }`}>
               In Maintenance
             </button>
           </div>
 
           {/* Right: Add Resource Button + Search Bar (vertical stack) */}
           <div className="flex flex-col items-end gap-3 w-full lg:w-auto">
-            {(user?.role === "admin" || user?.role === "superadmin") && (
-              <button
-                onClick={() => navigate("/resources")}
-                className="py-2 px-3 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-sm flex items-center gap-1 hover:bg-blue-800 transition-colors"
-              >
-                <Plus size={12} />
-                Add Resource
-              </button>
-            )}
             <div className="relative w-full lg:w-64 flex items-center">
               <Search
                 size={14}
@@ -301,15 +305,20 @@ export default function Overview() {
         </div>
 
         {/* Facilities Section (Shown if mainFilter is 'all' or 'facility') */}
-        {(mainFilter === "all" || mainFilter === "facility" || mainFilter === "maintenance") && (
+        {(mainFilter === "all" ||
+          mainFilter === "facility" ||
+          mainFilter === "maintenance") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-              <Building2 size={18} className="text-blue-700" /> Facilities Overview
+              <Building2 size={18} className="text-blue-700" /> Facilities
+              Overview
             </h2>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
+                  <div
+                    key={i}
+                    className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
                     <div className="w-full h-28 sm:h-32 bg-slate-200/70 relative">
                       <div className="w-14 h-4 rounded-full bg-slate-300/60 absolute top-2 right-2"></div>
                     </div>
@@ -324,8 +333,11 @@ export default function Overview() {
                 ))}
               </div>
             ) : facilities.filter(
-              (f) => mainFilter !== "maintenance" || f.is_maintenance || f.status === "maintenance"
-            ).length === 0 ? (
+                (f) =>
+                  mainFilter !== "maintenance" ||
+                  f.is_maintenance ||
+                  f.status === "maintenance",
+              ).length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-200/80 bg-white p-4 text-center text-[12px] text-slate-500">
                 {searchQuery
                   ? "No facilities match your current search. Try adjusting your search."
@@ -335,79 +347,104 @@ export default function Overview() {
               <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
                 {facilities
                   .filter(
-                    (f) => mainFilter !== "maintenance" || f.is_maintenance || f.status === "maintenance"
+                    (f) =>
+                      mainFilter !== "maintenance" ||
+                      f.is_maintenance ||
+                      f.status === "maintenance",
                   )
                   .map((item) => {
-                  const isMaintenance = item.is_maintenance || item.status === "maintenance";
-                  return (
-                  <div
-                    key={item.resource_id || item.id}
-                    onClick={() => !isMaintenance && handleOpenBooking(item)}
-                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden transition transform hover:shadow-md hover:-translate-y-0.5 ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
-                    <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
-                      <span
-                        className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
-                          item.available
-                            ? "bg-blue-50 text-blue-700 border border-blue-200/60"
-                            : item.is_maintenance || item.status === "maintenance"
-                            ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
-                            : "bg-slate-100 text-slate-600 border border-slate-300/60"
-                        }`}
-                      >
-                        {item.available ? "Available" : item.is_maintenance || item.status === "maintenance" ? "Maintenance" : "Unavailable"}
-                      </span>
-                      {item.image && item.image.trim() !== "" ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
-                          <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
-                          <span className="text-xs">No image provided</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col flex-1 p-2.5 justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
-                          {item.name}
-                        </h3>
-                        <p className="text-xs text-slate-500 font-medium mb-1">
-                          <UserGroupIcon size={12} className="inline mr-1" />
-                          Capacity:{" "}
-                          <span className="text-slate-700">
-                            {item.capacity || "-"}
+                    const isMaintenance =
+                      item.is_maintenance || item.status === "maintenance";
+                    return (
+                      <div
+                        key={item.resource_id || item.id}
+                        onClick={() =>
+                          !isMaintenance && handleOpenBooking(item)
+                        }
+                        className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden transition transform hover:shadow-md hover:-translate-y-0.5 ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
+                        <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
+                          <span
+                            className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
+                              item.available
+                                ? "bg-blue-50 text-blue-700 border border-blue-200/60"
+                                : item.is_maintenance ||
+                                    item.status === "maintenance"
+                                  ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
+                                  : "bg-slate-100 text-slate-600 border border-slate-300/60"
+                            }`}>
+                            {item.available
+                              ? "Available"
+                              : item.is_maintenance ||
+                                  item.status === "maintenance"
+                                ? "Maintenance"
+                                : "Unavailable"}
                           </span>
-                        </p>
-                        <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
-                          {item.description || "No description available"}
-                        </p>
+                          {item.image && item.image.trim() !== "" ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
+                              <ImageIcon
+                                size={32}
+                                strokeWidth={1.5}
+                                className="mb-1"
+                              />
+                              <span className="text-xs">No image provided</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col flex-1 p-2.5 justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
+                              {item.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-medium mb-1">
+                              <UserGroupIcon
+                                size={12}
+                                className="inline mr-1"
+                              />
+                              Capacity:{" "}
+                              <span className="text-slate-700">
+                                {item.capacity || "-"}
+                              </span>
+                            </p>
+                            <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
+                              {item.description || "No description available"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleOpenBooking(item)}
+                            disabled={
+                              item.is_maintenance ||
+                              item.status === "maintenance"
+                            }
+                            className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
+                              item.is_maintenance ||
+                              item.status === "maintenance"
+                                ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
+                                : "border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white"
+                            }`}>
+                            {item.is_maintenance ||
+                            item.status === "maintenance"
+                              ? "Under Maintenance"
+                              : "Request Booking"}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => handleOpenBooking(item)}
-                        disabled={item.is_maintenance || item.status === "maintenance"}
-                        className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
-                          item.is_maintenance || item.status === "maintenance"
-                            ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
-                            : "border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white"
-                        }`}
-                      >
-                        {item.is_maintenance || item.status === "maintenance"
-                          ? "Under Maintenance"
-                          : "Request Booking"}
-                      </button>
-                    </div>
-                  </div>
-                  )})}
+                    );
+                  })}
               </div>
             )}
           </div>
         )}
 
         {/* Vehicles Section (Shown if mainFilter is 'all', 'vehicle', or 'maintenance') */}
-        {(mainFilter === "all" || mainFilter === "vehicle" || mainFilter === "maintenance") && (
+        {(mainFilter === "all" ||
+          mainFilter === "vehicle" ||
+          mainFilter === "maintenance") && (
           <div>
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
               <Car size={18} className="text-blue-700" /> Vehicles Overview
@@ -415,7 +452,9 @@ export default function Overview() {
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
+                  <div
+                    key={i}
+                    className="bg-white rounded-xl border border-slate-200/80 p-0 overflow-hidden shadow-2xs">
                     <div className="w-full h-28 sm:h-32 bg-slate-200/70 relative">
                       <div className="w-14 h-4 rounded-full bg-slate-300/60 absolute top-2 right-2"></div>
                     </div>
@@ -430,8 +469,11 @@ export default function Overview() {
                 ))}
               </div>
             ) : filteredVehicles.filter(
-              (v) => mainFilter !== "maintenance" || v.is_maintenance || v.status === "maintenance"
-            ).length === 0 ? (
+                (v) =>
+                  mainFilter !== "maintenance" ||
+                  v.is_maintenance ||
+                  v.status === "maintenance",
+              ).length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-200/80 bg-white p-4 text-center text-[12px] text-slate-500">
                 {searchQuery
                   ? "No vehicles match your current search. Try adjusting your search."
@@ -441,72 +483,95 @@ export default function Overview() {
               <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
                 {filteredVehicles
                   .filter(
-                    (v) => mainFilter !== "maintenance" || v.is_maintenance || v.status === "maintenance"
+                    (v) =>
+                      mainFilter !== "maintenance" ||
+                      v.is_maintenance ||
+                      v.status === "maintenance",
                   )
                   .map((item) => {
-                  const isMaintenance = item.is_maintenance || item.status === "maintenance";
-                  return (
-                  <div
-                    key={item.resource_id || item.id}
-                    onClick={() => !isMaintenance && handleOpenBooking(item)}
-                    className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden transition transform hover:shadow-md hover:-translate-y-0.5 ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
-                    <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
-                      <span
-                        className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
-                          item.available
-                            ? "bg-blue-50 text-blue-700 border border-blue-200/60"
-                            : item.is_maintenance || item.status === "maintenance"
-                            ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
-                            : "bg-slate-100 text-slate-600 border border-slate-300/60"
-                        }`}
-                      >
-                        {item.available ? "Available" : item.is_maintenance || item.status === "maintenance" ? "Maintenance" : "Unavailable"}
-                      </span>
-                      {item.image && item.image.trim() !== "" ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
-                          <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
-                          <span className="text-xs">No image provided</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col flex-1 p-2.5 justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
-                          {item.name}
-                        </h3>
-                        <p className="text-xs text-slate-500 font-medium mb-1">
-                          <UserGroupIcon size={12} className="inline mr-1" />
-                          Unit Details:{" "}
-                          <span className="text-slate-700">
-                            {item.unit_name || item.capacity || "-"}
+                    const isMaintenance =
+                      item.is_maintenance || item.status === "maintenance";
+                    return (
+                      <div
+                        key={item.resource_id || item.id}
+                        onClick={() =>
+                          !isMaintenance && handleOpenBooking(item)
+                        }
+                        className={`flex flex-col h-full rounded-xl bg-white border border-slate-200/80 overflow-hidden transition transform hover:shadow-md hover:-translate-y-0.5 ${isMaintenance ? "opacity-60 cursor-not-allowed" : ""}`}>
+                        <div className="relative w-full h-24 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-t-lg relative">
+                          <span
+                            className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${
+                              item.available
+                                ? "bg-blue-50 text-blue-700 border border-blue-200/60"
+                                : item.is_maintenance ||
+                                    item.status === "maintenance"
+                                  ? "bg-yellow-50 text-yellow-800 border border-yellow-200/60"
+                                  : "bg-slate-100 text-slate-600 border border-slate-300/60"
+                            }`}>
+                            {item.available
+                              ? "Available"
+                              : item.is_maintenance ||
+                                  item.status === "maintenance"
+                                ? "Maintenance"
+                                : "Unavailable"}
                           </span>
-                        </p>
-                        <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
-                          {item.description || "No description available"}
-                        </p>
+                          {item.image && item.image.trim() !== "" ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
+                              <ImageIcon
+                                size={32}
+                                strokeWidth={1.5}
+                                className="mb-1"
+                              />
+                              <span className="text-xs">No image provided</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col flex-1 p-2.5 justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
+                              {item.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-medium mb-1">
+                              <UserGroupIcon
+                                size={12}
+                                className="inline mr-1"
+                              />
+                              Unit Details:{" "}
+                              <span className="text-slate-700">
+                                {item.unit_name || item.capacity || "-"}
+                              </span>
+                            </p>
+                            <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
+                              {item.description || "No description available"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleOpenBooking(item)}
+                            disabled={
+                              item.is_maintenance ||
+                              item.status === "maintenance"
+                            }
+                            className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
+                              item.is_maintenance ||
+                              item.status === "maintenance"
+                                ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
+                                : "border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white"
+                            }`}>
+                            {item.is_maintenance ||
+                            item.status === "maintenance"
+                              ? "Under Maintenance"
+                              : "Request Booking"}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => handleOpenBooking(item)}
-                        disabled={item.is_maintenance || item.status === "maintenance"}
-                        className={`w-full mt-auto py-2 px-3 text-xs font-semibold rounded-lg border transition-colors duration-150 ${
-                          item.is_maintenance || item.status === "maintenance"
-                            ? "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
-                            : "border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white"
-                        }`}
-                      >
-                        {item.is_maintenance || item.status === "maintenance"
-                          ? "Under Maintenance"
-                          : "Request Booking"}
-                      </button>
-                    </div>
-                  </div>
-                  )})}
+                    );
+                  })}
               </div>
             )}
           </div>
