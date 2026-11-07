@@ -380,14 +380,10 @@ export default function Bookings() {
 
   return (
     <div className="pb-12">
-      <header className="border-b border-line bg-white px-4 sm:px-6 py-4 flex items-center justify-between">
-        <div className="flex flex-col">
-          <h1 className="text-[17px] font-semibold">Bookings</h1>
-          <p className="text-[13px] text-steel">
-            Manage and review facility and vehicle reservation requests
-          </p>
+      <header className="px-4 sm:px-6 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {/* Notification icon remains here */}
         </div>
-        {/* Notification bell container if needed */}
       </header>
 
       <div className="px-4 sm:px-6 py-6 space-y-6">

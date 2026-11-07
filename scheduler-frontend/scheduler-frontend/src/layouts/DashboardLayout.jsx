@@ -557,8 +557,16 @@ export default function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header Bar */}
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-end shrink-0 shadow-xs">
-          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-xs">
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-[17px] font-semibold text-ink leading-tight">Bookings</h1>
+            <p className="text-[11px] text-steel leading-tight truncate">
+              Manage and review facility and vehicle reservation requests
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-6">
