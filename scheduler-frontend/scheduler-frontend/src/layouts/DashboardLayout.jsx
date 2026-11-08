@@ -82,8 +82,6 @@ const PAGE_TITLES = {
 };
 
 export default function DashboardLayout() {
-  const location = useLocation();
-  const activePage = PAGE_TITLES[location.pathname] || { title: "Dashboard", subtitle: "" };
   const { user, signOut } = useAuth();
   // ... rest of component
 
