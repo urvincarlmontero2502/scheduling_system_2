@@ -497,15 +497,6 @@ export default function BookingHistory() {
 
   return (
     <div className="pb-12">
-      {/* Header */}
-      <header className="border-b border-line bg-white px-4 sm:px-6 py-4">
-        <h1 className="text-[17px] font-semibold">Booking History</h1>
-
-        <p className="text-[13px] text-steel">
-          View previous facility and utility vehicle reservation records
-        </p>
-      </header>
-
       <div className="px-4 sm:px-6 py-6 space-y-6">
         {/* Unified Control & Toolbar Strip */ }
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">

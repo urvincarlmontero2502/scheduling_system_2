@@ -379,16 +379,9 @@ export default function Bookings() {
   };
 
   return (
-    <div className="pb-12">
-      <header className="px-4 sm:px-6 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Notification icon remains here */}
-        </div>
-      </header>
-
-      <div className="px-4 sm:px-6 py-6 space-y-6">
-        {/* KPI Summary Cards Row — clickable to toggle filters */ }
-        <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
+    <div className="pb-12 space-y-6">
+      {/* KPI Summary Cards Row — clickable to toggle filters */}
+      <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
           {[
             { label: "Pending Requests", value: pendingCount, Icon: Clock, loading, tab: "pending" },
             { label: "Approved Requests", value: approvedCount, Icon: Check, loading, tab: "approved" },

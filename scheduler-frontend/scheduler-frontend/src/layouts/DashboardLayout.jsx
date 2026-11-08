@@ -71,9 +71,21 @@ const itemStyle = {
 
 
 
-export default function DashboardLayout() {
+const PAGE_TITLES = {
+  "/": { title: "Overview", subtitle: "Real-time facility and fleet status" },
+  "/calendar": { title: "Calendar", subtitle: "Official facility and vehicle schedules" },
+  "/bookings": { title: "Bookings", subtitle: "Manage and review facility and vehicle reservation requests" },
+  "/booking-history": { title: "Booking History", subtitle: "Archive of past reservations and activity logs" },
+  "/resources": { title: "Resources", subtitle: "Manage LGU facilities, fleet, and equipment inventory" },
+  "/registration-requests": { title: "Registration Requests", subtitle: "Review and approve new user account registrations" },
+  "/account-settings": { title: "Account Settings", subtitle: "Manage your profile and security preferences" },
+};
 
+export default function DashboardLayout() {
+  const location = useLocation();
+  const activePage = PAGE_TITLES[location.pathname] || { title: "Dashboard", subtitle: "" };
   const { user, signOut } = useAuth();
+  // ... rest of component
 
   const navigate = useNavigate();
 
@@ -559,9 +571,23 @@ export default function DashboardLayout() {
         {/* Top Header Bar */}
         <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-xs">
           <div className="flex flex-col min-w-0">
-            <h1 className="text-[17px] font-semibold text-ink leading-tight">Bookings</h1>
+            <h1 className="text-[17px] font-semibold text-ink leading-tight">
+              {location.pathname.startsWith("/bookings") && "Bookings"}
+              {location.pathname.startsWith("/calendar") && "Schedule Calendar"}
+              {location.pathname.startsWith("/booking-history") && "Booking History"}
+              {location.pathname.startsWith("/resources") && "Facilities & Vehicles"}
+              {location.pathname.startsWith("/registration-requests") && "Registration Requests"}
+              {location.pathname.startsWith("/account-settings") && "Account Settings"}
+              {location.pathname === "/" && "Dashboard Overview"}
+            </h1>
             <p className="text-[11px] text-steel leading-tight truncate">
-              Manage and review facility and vehicle reservation requests
+              {location.pathname.startsWith("/bookings") && "Manage and review facility and vehicle reservation requests"}
+              {location.pathname.startsWith("/calendar") && "Interactive schedule of LGU facilities and vehicles"}
+              {location.pathname.startsWith("/booking-history") && "Archived reservation records and logs"}
+              {location.pathname.startsWith("/resources") && "Browse and manage municipal assets and equipment"}
+              {location.pathname.startsWith("/registration-requests") && "Manage user accounts and access permissions"}
+              {location.pathname.startsWith("/account-settings") && "Manage your profile and security credentials"}
+              {location.pathname === "/" && "Overview of municipal operations and quick stats"}
             </p>
           </div>
           <div className="flex items-center gap-4">
