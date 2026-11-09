@@ -218,6 +218,10 @@ export default function DashboardLayout() {
           <p className="text-[11px] text-slate-500 font-medium mt-0.5">LGU Jabonga Portal</p>
         </div>
 
+        <div className="ml-auto flex items-center">
+          <NotificationBell ref={bellRef} onClick={toggleDropdown} />
+        </div>
+
       </header>
 
 
@@ -559,7 +563,7 @@ export default function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header Bar */}
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-xs">
+        <header className="h-16 bg-white border-b border-slate-200 px-6 hidden md:flex items-center justify-between shrink-0 shadow-xs">
           <div className="flex flex-col min-w-0">
             <h1 className="text-[17px] font-semibold text-ink leading-tight">
               {location.pathname.startsWith("/bookings") && "Bookings"}
