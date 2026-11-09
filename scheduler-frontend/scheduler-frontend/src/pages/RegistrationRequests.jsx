@@ -106,7 +106,7 @@ export default function RegistrationRequests() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-ink truncate">Registration Requests</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-steel">
@@ -126,7 +126,7 @@ export default function RegistrationRequests() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="mb-6 flex items-center gap-2 overflow-x-auto no-scrollbar w-full whitespace-nowrap rounded-lg bg-slate-100 p-1">
+      <div className="mb-6 flex items-center gap-2 overflow-x-auto no-scrollbar w-full py-1 rounded-lg bg-slate-100 p-1">
         {STATUS_TABS.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
