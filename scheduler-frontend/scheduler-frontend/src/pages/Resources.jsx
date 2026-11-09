@@ -600,10 +600,10 @@ export default function Resources() {
       {/* Action Toolbar Row: Filter Pills (Left) + Add Button & Search Stack (Right) */}
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6 w-full">
         {/* Filter Pills */}
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full lg:w-auto">
           <button
             onClick={() => handleTabClick("all")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
               activeFilter === "all"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -616,7 +616,7 @@ export default function Resources() {
           </button>
           <button
             onClick={() => handleTabClick("vehicle")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
               activeFilter === "vehicle"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -629,7 +629,7 @@ export default function Resources() {
           </button>
           <button
             onClick={() => handleTabClick("facility")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
               activeFilter === "facility"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -642,7 +642,7 @@ export default function Resources() {
           </button>
           <button
             onClick={() => handleTabClick("maintenance")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
               activeFilter === "maintenance"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
