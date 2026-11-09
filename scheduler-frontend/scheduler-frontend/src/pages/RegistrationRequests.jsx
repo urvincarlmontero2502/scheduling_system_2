@@ -107,9 +107,9 @@ export default function RegistrationRequests() {
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Registration Requests</h1>
-          <p className="mt-1 text-sm text-steel">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink truncate">Registration Requests</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-steel">
             {isBarangayAdmin
               ? `Review sign-up requests for Brgy. ${user?.barangay || "—"}`
               : "Review and manage all new staff registration requests"}
