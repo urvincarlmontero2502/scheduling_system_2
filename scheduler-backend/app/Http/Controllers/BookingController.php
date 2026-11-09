@@ -19,7 +19,8 @@ class BookingController extends Controller
 {
     /**
      * Mandatory buffer/turnaround time in minutes after each booking
-     * before the next reservation can begin on the same resource.
+     * on each side of an active reservation before another reservation can
+     * use the same resource.
      * Applies to both vehicle (inspection, refueling, driver rest)
      * and facility (sanitation, setup) resources.
      */
@@ -191,12 +192,14 @@ class BookingController extends Controller
 
                 'start_time' => [
                     'nullable',
-                    'string'
+                    'date_format:H:i,H:i:s,g:i A,g:iA,h:i A,h:iA',
+                    'required_with:end_time',
                 ],
 
                 'end_time' => [
                     'nullable',
-                    'string'
+                    'date_format:H:i,H:i:s,g:i A,g:iA,h:i A,h:iA',
+                    'required_with:start_time',
                 ],
 
                 'purpose' => [
@@ -301,6 +304,7 @@ class BookingController extends Controller
 
             if ($conflict) {
                 $alternatives = [];
+                $suggestions = [];
                 if ($resourceId && $resource) {
                     $alternatives = $this->findAvailableAlternatives(
                         $resource->type,
@@ -310,10 +314,18 @@ class BookingController extends Controller
                         $validated['end_time'] ?? null,
                         $resourceId
                     );
+                    $suggestions = $this->findTimeSuggestions(
+                        $resourceId,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $validated['start_time'] ?? null,
+                        $validated['end_time'] ?? null,
+                        $conflict
+                    );
                 }
 
                 return response()->json([
-                    'message' => 'The selected resource is unavailable during this time.',
+                    'message' => 'The requested time slot conflicts with an existing reservation.',
                     'conflict' => true,
                     'conflicting_booking' => [
                         'start_date' => $conflict->start_date,
@@ -325,6 +337,7 @@ class BookingController extends Controller
                         'status' => $conflict->status,
                     ],
                     'alternatives' => $alternatives,
+                    'suggestions' => $suggestions,
                 ], 409);
             }
 
@@ -424,6 +437,15 @@ class BookingController extends Controller
                 if ($conflict) {
                     return response()->json([
                         'message' => 'This resource is already booked for that date and time.',
+                        'conflict' => true,
+                        'suggestions' => $this->findTimeSuggestions(
+                            $booking->resource_id,
+                            Carbon::parse($booking->start_date)->toDateString(),
+                            Carbon::parse($booking->end_date)->toDateString(),
+                            $booking->start_time,
+                            $booking->end_time,
+                            $conflict
+                        ),
                     ], 422);
                 }
             }
@@ -505,11 +527,9 @@ class BookingController extends Controller
     }
 
     /**
-     * Check for booking conflicts using mathematical interval overlap:
-     * (ExistingStart <= RequestedEnd) AND (ExistingEnd >= RequestedStart)
-     * AND (ExistingStartTime < RequestedEndTime) AND (ExistingEndTime > RequestedStartTime)
-     *
-     * Checks against all non-cancelled and non-rejected bookings (pending, approved).
+     * Check pending and approved bookings using datetime interval overlap.
+     * Existing reservations block the resource for BUFFER_MINUTES before
+     * and after their scheduled interval.
      *
      * @param int $resourceId
      * @param string $startDate  (Y-m-d)
@@ -531,40 +551,173 @@ class BookingController extends Controller
             return null;
         }
 
-        $query = BookingRequest::where('resource_id', $resourceId)
-            ->whereNotIn('status', ['rejected', 'cancelled'])
-            ->whereDate('start_date', '<=', $endDate)
-            ->whereDate('end_date', '>=', $startDate)
-            ->when($excludeBookingId, fn ($q) => $q->where('booking_id', '!=', $excludeBookingId))
-            ->orderBy('start_date');
+        [$requestedStart, $requestedEnd] = $this->bookingDateTimeRange(
+            $startDate,
+            $endDate,
+            $startTime,
+            $endTime
+        );
 
-        $candidates = $query->get();
-
-        $newStartMins = $this->timeToMinutes($startTime);
-        $newEndMins = $this->timeToMinutes($endTime);
+        $candidates = BookingRequest::where('resource_id', $resourceId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereDate('start_date', '<=', Carbon::parse($endDate)->addDay()->toDateString())
+            ->whereDate('end_date', '>=', Carbon::parse($startDate)->subDay()->toDateString())
+            ->when(
+                $excludeBookingId !== null,
+                fn ($query) => $query->where('booking_id', '!=', $excludeBookingId)
+            )
+            ->orderBy('start_date')
+            ->orderBy('start_time')
+            ->get();
 
         foreach ($candidates as $c) {
-            $existingStartMins = $this->timeToMinutes($c->start_time);
-            $existingEndMins = $this->timeToMinutes($c->end_time);
+            [$existingStart, $existingEnd] = $this->bookingDateTimeRange(
+                Carbon::parse($c->start_date)->toDateString(),
+                Carbon::parse($c->end_date)->toDateString(),
+                $c->start_time,
+                $c->end_time
+            );
+            $blockingStart = $existingStart->copy()->subMinutes(self::BUFFER_MINUTES);
+            $blockingEnd = $existingEnd->copy()->addMinutes(self::BUFFER_MINUTES);
 
-            // If any time is missing, treat as all-day booking — date range overlap is sufficient
-            if (
-                $newStartMins === null || $newEndMins === null ||
-                $existingStartMins === null || $existingEndMins === null
-            ) {
-                return $c;
-            }
-
-            // Mathematical interval overlap condition for time:
-            // (ExistingStart <= RequestedEnd) AND (ExistingEnd >= RequestedStart)
-            // Applied to time-of-day:
-            // (existingStart < newEnd) AND (existingEnd > newStart)
-            if ($existingStartMins < $newEndMins && $existingEndMins > $newStartMins) {
+            if ($blockingStart->lt($requestedEnd) && $blockingEnd->gt($requestedStart)) {
                 return $c;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Treat reservations without a complete time pair as all-day bookings.
+     */
+    private function bookingDateTimeRange($startDate, $endDate, $startTime, $endTime)
+    {
+        $startDay = Carbon::parse($startDate)->startOfDay();
+        $endDay = Carbon::parse($endDate)->startOfDay();
+
+        if (!$startTime || !$endTime) {
+            return [$startDay, $endDay->endOfDay()];
+        }
+
+        return [
+            Carbon::parse($startDate . ' ' . $startTime),
+            Carbon::parse($endDate . ' ' . $endTime),
+        ];
+    }
+
+    /**
+     * Suggest a later slot on the requested start date and a later date with
+     * the same requested time and duration.
+     */
+    private function findTimeSuggestions(
+        $resourceId,
+        $startDate,
+        $endDate,
+        $startTime,
+        $endTime,
+        BookingRequest $conflict
+    ) {
+        [$requestedStart, $requestedEnd] = $this->bookingDateTimeRange(
+            $startDate,
+            $endDate,
+            $startTime,
+            $endTime
+        );
+        $durationSeconds = $requestedStart->diffInSeconds($requestedEnd);
+        if ($durationSeconds <= 0) {
+            return [];
+        }
+
+        $suggestions = [];
+        [, $conflictEnd] = $this->bookingDateTimeRange(
+            Carbon::parse($conflict->start_date)->toDateString(),
+            Carbon::parse($conflict->end_date)->toDateString(),
+            $conflict->start_time,
+            $conflict->end_time
+        );
+
+        $sameDayStart = $requestedStart->copy()->startOfDay();
+        $sameDayEnd = $sameDayStart->copy()->endOfDay();
+        $candidateStart = $conflictEnd->copy()->addMinutes(self::BUFFER_MINUTES);
+        if ($candidateStart->lt($requestedStart)) {
+            $candidateStart = $requestedStart->copy();
+        }
+
+        while (
+            $candidateStart->isSameDay($sameDayStart) &&
+            $candidateStart->copy()->addSeconds($durationSeconds)->lte($sameDayEnd)
+        ) {
+            $candidateEnd = $candidateStart->copy()->addSeconds($durationSeconds);
+            $candidateStartTime = $startTime ? $candidateStart->format('H:i:s') : null;
+            $candidateEndTime = $endTime ? $candidateEnd->format('H:i:s') : null;
+            $nextConflict = $this->hasBookingConflict(
+                $resourceId,
+                $candidateStart->toDateString(),
+                $candidateEnd->toDateString(),
+                $candidateStartTime,
+                $candidateEndTime
+            );
+
+            if (!$nextConflict) {
+                $suggestions[] = [
+                    'start_time' => $candidateStart->format('Y-m-d H:i:s'),
+                    'end_time' => $candidateEnd->format('Y-m-d H:i:s'),
+                    'label' => 'Same day, later slot',
+                ];
+                break;
+            }
+
+            [, $nextConflictEnd] = $this->bookingDateTimeRange(
+                Carbon::parse($nextConflict->start_date)->toDateString(),
+                Carbon::parse($nextConflict->end_date)->toDateString(),
+                $nextConflict->start_time,
+                $nextConflict->end_time
+            );
+            $candidateStart = $nextConflictEnd->copy()->addMinutes(self::BUFFER_MINUTES);
+        }
+
+        $nextDate = $requestedStart->copy()->addDay()->startOfDay();
+        $nextDate->setTime(
+            $requestedStart->hour,
+            $requestedStart->minute,
+            $requestedStart->second
+        );
+
+        $lastBookedDate = BookingRequest::where('resource_id', $resourceId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->max('end_date');
+        $lastSearchDate = Carbon::parse($lastBookedDate ?: $startDate)
+            ->startOfDay()
+            ->addDay();
+        if ($lastSearchDate->lt($nextDate)) {
+            $lastSearchDate = $nextDate->copy();
+        }
+
+        while ($nextDate->lte($lastSearchDate)) {
+            $candidateEnd = $nextDate->copy()->addSeconds($durationSeconds);
+            $candidateStartTime = $startTime ? $nextDate->format('H:i:s') : null;
+            $candidateEndTime = $endTime ? $candidateEnd->format('H:i:s') : null;
+
+            if (!$this->hasBookingConflict(
+                $resourceId,
+                $nextDate->toDateString(),
+                $candidateEnd->toDateString(),
+                $candidateStartTime,
+                $candidateEndTime
+            )) {
+                $suggestions[] = [
+                    'start_time' => $nextDate->format('Y-m-d H:i:s'),
+                    'end_time' => $candidateEnd->format('Y-m-d H:i:s'),
+                    'label' => 'Next available day, same time slot',
+                ];
+                break;
+            }
+
+            $nextDate->addDay();
+        }
+
+        return $suggestions;
     }
 
     /**
@@ -636,8 +789,8 @@ class BookingController extends Controller
 
     /**
      * Find available time slots on a given date that are long enough
-     * for the requested duration. Each approved booking's end time is
-     * extended by BUFFER_MINUTES to enforce turnaround/padding windows.
+     * for the requested duration. Pending and approved reservations are
+     * extended by BUFFER_MINUTES on both sides.
      */
     private function findAvailableSlots($resourceId, $date, $reqStartMins = null, $reqEndMins = null)
     {
@@ -656,34 +809,45 @@ class BookingController extends Controller
             $duration = 60; // fallback to 1-hour slot
         }
 
-        // Get all approved bookings that touch the requested date
+        $dayStartDate = Carbon::parse($date)->startOfDay();
+        $dayEndDate = $dayStartDate->copy()->endOfDay();
+
+        // Include adjacent dates because their 30-minute buffer can cross midnight.
         $bookings = BookingRequest::where('resource_id', $resourceId)
-            ->where('status', 'approved')
-            ->whereDate('start_date', '<=', $date)
-            ->whereDate('end_date', '>=', $date)
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereDate('start_date', '<=', $dayStartDate->copy()->addDay()->toDateString())
+            ->whereDate('end_date', '>=', $dayStartDate->copy()->subDay()->toDateString())
             ->orderBy('start_date')
             ->get();
 
-        // Build busy intervals for the day
-        $dayStart = 0;      // midnight
-        $dayEnd = 24 * 60;  // midnight next day
+        // Build busy intervals for the day, including turnaround buffers.
+        $dayStart = 0;
+        $dayEnd = 24 * 60;
         $intervals = [];
 
         foreach ($bookings as $b) {
-            $bStartMins = $this->timeToMinutes($b->start_time);
-            $bEndMins = $this->timeToMinutes($b->end_time);
+            [$bookingStart, $bookingEnd] = $this->bookingDateTimeRange(
+                Carbon::parse($b->start_date)->toDateString(),
+                Carbon::parse($b->end_date)->toDateString(),
+                $b->start_time,
+                $b->end_time
+            );
+            $blockingStart = $bookingStart->copy()->subMinutes(self::BUFFER_MINUTES);
+            $blockingEnd = $bookingEnd->copy()->addMinutes(self::BUFFER_MINUTES);
 
-            if ($bStartMins === null || $bEndMins === null) {
-                // All-day booking — occupies the entire day
-                $intervals[] = [$dayStart, $dayEnd];
-                break;
+            if ($blockingStart->gt($dayEndDate) || $blockingEnd->lt($dayStartDate)) {
+                continue;
             }
 
-            // Clamp to the requested date's boundaries
-            // Extend end by BUFFER_MINUTES for mandatory turnaround window
+            $startOffset = (int) floor(
+                ($blockingStart->getTimestamp() - $dayStartDate->getTimestamp()) / 60
+            );
+            $endOffset = (int) ceil(
+                ($blockingEnd->getTimestamp() - $dayStartDate->getTimestamp()) / 60
+            );
             $intervals[] = [
-                max($dayStart, $bStartMins),
-                min($dayEnd, $bEndMins + self::BUFFER_MINUTES),
+                max($dayStart, $startOffset),
+                min($dayEnd, $endOffset),
             ];
         }
 

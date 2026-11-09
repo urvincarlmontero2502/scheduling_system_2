@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin, CheckCircle, XCircle } from "lucide-react";
 
 // Helper to format date
@@ -30,12 +31,18 @@ function formatTime(timeStr) {
 }
 
 const STATUS_CONFIG = {
-  pending: { label: "Pending", className: "bg-amber-100 text-amber-800", icon: <Clock size={16} /> },
-  approved: { label: "Approved", className: "bg-blue-100 text-blue-800", icon: <CheckCircle size={16} /> },
-  rejected: { label: "Rejected", className: "bg-rose-100 text-rose-800", icon: <XCircle size={16} /> },
+  pending: { label: "Pending", className: "border-amber-200 bg-amber-50 text-amber-700", icon: <Clock size={14} /> },
+  approved: { label: "Approved", className: "border-blue-200 bg-blue-50 text-blue-700", icon: <CheckCircle size={14} /> },
+  rejected: { label: "Rejected", className: "border-rose-200 bg-rose-50 text-rose-700", icon: <XCircle size={14} /> },
 };
 
-export default function BookingDetailModal({ booking, onClose, onApprove, onReject }) {
+export default function BookingDetailModal({
+  booking,
+  onClose,
+  onApprove,
+  onReject,
+  canModerate = false,
+}) {
   if (!booking) return null;
 
   const [rejectionReason, setRejectionReason] = useState("");
@@ -105,183 +112,175 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
     setRejectionReason("");
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl bg-white shadow-xl"
+        className="flex max-h-[90vh] w-[95vw] max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-4 sm:px-6 py-4">
-          <div>
-            <h2 className="text-[17px] font-semibold text-ink">Booking Details</h2>
-            <p className="text-[12px] text-steel mt-0.5">
-              Booking #{bookingId} — {resourceName}
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Booking Details
             </p>
+            <h2 className="mt-1 truncate text-base font-semibold text-slate-800">
+              Booking #{bookingId} — {resourceName}
+            </h2>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-steel hover:bg-gray-100"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
             title="Close"
+            aria-label="Close booking details"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-4 sm:p-6 space-y-4">
-          {/* Resource & Status */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-steel">
+        <div className="space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+          <section className="border-b border-slate-100 pb-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Resource
-              </span>
-              <p className="text-[15px] font-bold text-ink mt-1">{resourceName}</p>
-              <span className="inline-block mt-1 text-[11px] text-steel bg-gray-100 px-2 py-0.5 rounded-full">
-                {resourceType}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-steel">
-                Status
-              </span>
+              </h3>
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium ${statusConfig.className}`}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${statusConfig.className}`}
               >
-                <span>{statusConfig.icon}</span>
+                {statusConfig.icon}
                 {statusConfig.label}
               </span>
             </div>
-          </div>
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+              <div>
+                <p className="text-base font-bold text-slate-800">{resourceName}</p>
+                <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+                  {resourceType}
+                </span>
+              </div>
+            </div>
+          </section>
 
-          {/* Reservation Schedule */}
-          <div className="border-t border-line pt-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-steel block mb-3">
+          <section className="border-b border-slate-100 pb-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Reservation Schedule
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            </h3>
+            <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2">
               <div className="flex items-start gap-3">
-                <Calendar size={18} className="text-gray-400 mt-0.5" />
+                <Calendar size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Date Range</p>
-                  <p className="text-[13px] font-medium text-ink">{dateValue}</p>
+                  <p className="text-xs text-slate-500">Date Range</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-800">{dateValue}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Clock size={18} className="text-gray-400 mt-0.5" />
+                <Clock size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Time Slot</p>
-                  <p className="text-[13px] font-medium text-ink">{timeValue}</p>
+                  <p className="text-xs text-slate-500">Time Slot</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-800">{timeValue}</p>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Applicant Details */}
-          <div className="border-t border-line pt-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-steel block mb-3">
+          <section className="border-b border-slate-100 pb-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Applicant Details
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            </h3>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2">
               <div className="flex items-start gap-3">
-                <User size={18} className="text-gray-400 mt-0.5" />
+                <User size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Full Name</p>
-                  <p className="text-[13px] font-medium text-ink">{fullName}</p>
+                  <p className="text-xs text-slate-500">Full Name</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-800">{fullName}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Building2 size={18} className="text-gray-400 mt-0.5" />
+                <Building2 size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Barangay</p>
-                  <p className="text-[13px] font-medium text-ink">{barangayName}</p>
+                  <p className="text-xs text-slate-500">Barangay</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-800">{barangayName}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Phone size={18} className="text-gray-400 mt-0.5" />
+                <Phone size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Contact Number</p>
-                  <p className="text-[13px] font-medium text-ink font-mono">{cellNumber}</p>
+                  <p className="text-xs text-slate-500">Contact Number</p>
+                  <p className="mt-0.5 font-mono text-sm font-medium text-slate-800">{cellNumber}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Mail size={18} className="text-gray-400 mt-0.5" />
+                <Mail size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Email</p>
-                  <p className="text-[13px] font-medium text-ink break-all">{email}</p>
+                  <p className="text-xs text-slate-500">Email</p>
+                  <p className="mt-0.5 break-all text-sm font-medium text-slate-800">{email}</p>
                 </div>
               </div>
-              <div className="sm:col-span-2 flex items-start gap-3">
-                <MapPin size={18} className="text-gray-400 mt-0.5" />
+              <div className="flex items-start gap-3 sm:col-span-2">
+                <MapPin size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
-                  <p className="text-[11px] text-steel">Address</p>
-                  <p className="text-[13px] font-medium text-ink">{address}</p>
+                  <p className="text-xs text-slate-500">Address</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-800">{address}</p>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Purpose & Notes */}
-          <div className="border-t border-line pt-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-steel block mb-2">
+          <section>
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Purpose / Additional Notes
-            </span>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-[13px] text-ink">{purposeValue}</p>
+            </h3>
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+              <p className="whitespace-pre-wrap text-sm text-slate-700">{purposeValue}</p>
             </div>
-          </div>
+          </section>
 
-          {/* Admin Remarks (if rejected) */}
           {status === "rejected" && remarks && (
-            <div className="border-t border-line pt-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-steel block mb-2">
+            <section className="border-t border-slate-100 pt-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Admin Remarks
-              </span>
-              <div className="bg-rose-50 rounded-lg p-3 border border-rose-200">
-                <p className="text-[13px] text-rose-800">{remarks}</p>
+              </h3>
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                <p className="whitespace-pre-wrap text-sm text-rose-800">{remarks}</p>
               </div>
-            </div>
+            </section>
           )}
         </div>
 
-        {/* Footer - Actions */}
         <div
-          className="border-t border-line px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-end gap-2 w-full"
+          className="flex w-full flex-col gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
         >
           <button
             onClick={onClose}
-            className="w-full sm:w-auto h-11 px-4 py-2.5 text-[13px] font-medium text-steel hover:bg-gray-50 rounded-lg border border-line"
+            className="h-10 w-full rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 sm:w-auto"
           >
             Close
           </button>
-          {isPending ? (
-            <>
-              <button
-                onClick={handleRejectClick}
-                className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg border border-rose-300 text-rose-600 bg-rose-50 hover:bg-rose-100"
-              >
-                <X size={14} /> Reject
-              </button>
-              <button
-                onClick={handleApprove}
-                className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <Check size={14} /> Approve
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => {}}
-              className="w-full sm:w-auto h-11 mt-auto sm:mt-0 py-1.5 px-4 text-xs font-semibold rounded-lg bg-gray-100"
-              disabled
-            >
-              <FileText size={14} /> No actions available
-            </button>
-          )}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+            {isPending && canModerate ? (
+              <>
+                <button
+                  onClick={handleRejectClick}
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
+                >
+                  <X size={14} /> Reject
+                </button>
+                <button
+                  onClick={handleApprove}
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto"
+                >
+                  <Check size={14} /> Approve
+                </button>
+              </>
+            ) : canModerate ? (
+              <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-500 sm:w-auto">
+                <FileText size={14} /> No actions available
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {/* Rejection Reason Modal */}
@@ -331,6 +330,7 @@ export default function BookingDetailModal({ booking, onClose, onApprove, onReje
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

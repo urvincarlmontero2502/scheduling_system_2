@@ -772,20 +772,24 @@ export default function Bookings() {
               const isPendingItem =
                 (b.status || "").toLowerCase() === "pending";
               const statusText = b.status || "pending";
-              const statusColor =
-                statusText.toLowerCase() === "approved" ? "bg-status-approved" :
-                statusText.toLowerCase() === "rejected" ? "bg-status-rejected" :
-                "bg-status-pending";
+              const normalizedStatus = statusText.toLowerCase();
+              const statusBadgeClasses =
+                normalizedStatus === "pending"
+                  ? "border-amber-200 bg-amber-50/80 text-amber-700"
+                  : normalizedStatus === "rejected"
+                    ? "border-rose-200 bg-rose-50/90 text-rose-700"
+                    : normalizedStatus === "approved"
+                      ? "border-blue-200 bg-blue-50/90 text-blue-700"
+                      : "border-slate-200 bg-white/90 text-slate-600";
               const resourceImage = getResourceImage(b, resources);
 
               return (
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="bg-white rounded-xl border border-line p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
+                  className="flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
-                  {/* Resource Image Banner — matching Overview.jsx style */ }
-                  <div className="relative w-full h-36 rounded-lg overflow-hidden bg-gray-50/50 mb-3 border border-line">
+                  <div className="relative mb-3 h-36 w-full overflow-hidden bg-blue-50/70">
                     {resourceImage ? (
                       <img
                         src={resourceImage}
@@ -793,71 +797,76 @@ export default function Bookings() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-steel opacity-60">
-                                              <ImageIcon size={32} strokeWidth={1.5} className="mb-1" />
-                                              <span className="text-xs">No image provided</span>
-                                            </div>
+                      <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
+                        <ImageIcon
+                          size={32}
+                          strokeWidth={1.5}
+                          className="mb-1 opacity-60"
+                        />
+                        <span className="text-xs">No image provided</span>
+                      </div>
                     )}
-                    {/* Floating Status Badge — matching Overview pattern */ }
-                    <span className="absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-white/90 text-steel shadow-xs">
-                                          {b.status || 'PENDING'}
+                    <span className={`absolute right-2 top-2 z-10 rounded-full border px-3 py-1 text-xs font-medium shadow-sm backdrop-blur-xs ${statusBadgeClasses}`}>
+                      {b.status || "PENDING"}
                     </span>
                   </div>
 
-                  {/* Header with Resource Title */ }
-                  <div className="mb-3">
-                    <h3 className="text-[15px] font-semibold text-ink">
+                  <div className="mb-3 px-4">
+                    <h3 className="text-lg font-bold text-slate-800">
                       {resourceName}
                     </h3>
                   </div>
 
-                  {/* Date & Time tags */ }
-                  <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                    <span className="bg-line text-steel text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
+                  <div className="mb-3 flex flex-wrap items-center gap-2 px-4">
+                    <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                       <Calendar size={10} />
                       {dateValue}
                     </span>
-                    <span className="bg-line text-steel text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                       <Clock size={10} />
                       {timeValue}
                     </span>
                   </div>
 
-                  {/* Requester Info Box */ }
-                  <div className="bg-gray-50/50 p-3.5 rounded-lg border border-line/80 text-xs text-steel space-y-1.5 my-3">
+                  <div className="mx-4 my-3 space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 text-xs text-slate-600">
                     <div className="flex items-center gap-1.5">
-                      <User size={10} className="shrink-0 text-steel" />
+                      <User size={12} className="shrink-0 text-slate-400" />
                       <span className="truncate">
-                        <strong className="text-ink">Requester:</strong>{" "}
+                        <strong className="text-slate-700">Requester:</strong>{" "}
                         {fullName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Building2 size={10} className="shrink-0 text-steel" />
+                      <Building2 size={12} className="shrink-0 text-slate-400" />
                       <span className="truncate">
-                        <strong className="text-ink">Barangay:</strong> {barangayName}
+                        <strong className="text-slate-700">Barangay:</strong>{" "}
+                        {barangayName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Phone size={10} className="shrink-0 text-steel" />
+                      <Phone size={12} className="shrink-0 text-slate-400" />
                       <span className="font-mono truncate">
-                        <strong className="text-ink">Contact:</strong> {cellNumber}
+                        <strong className="text-slate-700">Contact:</strong>{" "}
+                        {cellNumber}
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5">
-                      <FileText size={10} className="shrink-0 text-steel mt-0.5" />
+                      <FileText
+                        size={12}
+                        className="mt-0.5 shrink-0 text-slate-400"
+                      />
                       <span className="line-clamp-2">
-                        <strong className="text-ink">Purpose:</strong> {purposeValue}
+                        <strong className="text-slate-700">Purpose:</strong>{" "}
+                        {purposeValue}
                       </span>
                     </div>
                   </div>
 
-                  {/* Action Buttons */ }
                   {canModerate && isPendingItem && (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="mt-2 grid grid-cols-2 gap-3 px-4 pb-4">
                       <button
                         onClick={() => handleStatusChange(bookingId, "approved")}
-                        className="flex-1 py-2 rounded-md bg-brand hover:bg-brand-dark text-white font-medium text-xs transition flex items-center justify-center gap-1"
+                        className="flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
                       >
                         <Check size={12} /> Approve
                       </button>
@@ -866,7 +875,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex-1 py-2 rounded-md border border-status-rejected bg-status-rejectedBg text-status-rejected hover:bg-rose-100 font-medium text-xs transition flex items-center justify-center gap-1"
+                        className="flex items-center justify-center gap-1 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100"
                       >
                         <X size={12} /> Reject
                       </button>
@@ -898,6 +907,7 @@ export default function Bookings() {
       {selectedBooking && (
         <BookingDetailModal
           booking={selectedBooking}
+          canModerate={canModerate}
           onClose={() => {
             setSelectedBooking(null);
             navigate("/bookings", { replace: true });
