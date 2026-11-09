@@ -106,7 +106,7 @@ export default function RegistrationRequests() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink">Registration Requests</h1>
           <p className="mt-1 text-sm text-steel">
@@ -118,7 +118,7 @@ export default function RegistrationRequests() {
         <button
           onClick={refetch}
           disabled={loading}
-          className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-steel hover:bg-paper hover:text-ink transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-steel hover:bg-paper hover:text-ink transition-colors disabled:opacity-50 shrink-0 self-start sm:self-auto"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           Refresh
@@ -126,12 +126,12 @@ export default function RegistrationRequests() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-slate-100 p-1">
+      <div className="mb-6 flex items-center gap-2 overflow-x-auto no-scrollbar w-full whitespace-nowrap rounded-lg bg-slate-100 p-1">
         {STATUS_TABS.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
             onClick={() => setActiveTab(value)}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all shrink-0 whitespace-nowrap ${
               activeTab === value
                 ? "bg-white text-ink shadow-sm"
                 : "text-steel hover:text-ink"
