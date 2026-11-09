@@ -19,7 +19,7 @@ export function useCachedRegistrations(activeTab) {
     return !(cached && cached.length > 0);
   });
 
-  const fetchPending = useCallback(async (bypassCache = false) => {
+  const fetchPending = useCallback(async (bypassCache = false, silent = false) => {
     if (activeTab !== "pending") return;
     if (!bypassCache) {
       const cached = readCache("registrations_pending", CACHE_TTL);
@@ -29,7 +29,8 @@ export function useCachedRegistrations(activeTab) {
         return;
       }
     }
-    setLoading(true);
+    // Background refreshes stay silent so the list does not flash a loading state
+    if (!silent) setLoading(true);
     try {
       const res = await api.fetchRegistrationRequests();
       let data = res?.data;
@@ -43,9 +44,10 @@ export function useCachedRegistrations(activeTab) {
       if (data.length > 0) {
         writeCache("registrations_pending", data);
       } else {
-        invalidateCache("registrations_pending");
+        // notify=false: this hook listens for "cacheInvalidated", so notifying would reload it forever
+        invalidateCache("registrations_pending", false);
       }
-      setRequests(data);
+      setRequests((prev) => (JSON.stringify(prev) === JSON.stringify(data) ? prev : data));
     } catch (err) {
       console.error("Failed to fetch registration requests:", err);
     } finally {
@@ -53,7 +55,7 @@ export function useCachedRegistrations(activeTab) {
     }
   }, [activeTab]);
 
-  const fetchProcessed = useCallback(async (bypassCache = false) => {
+  const fetchProcessed = useCallback(async (bypassCache = false, silent = false) => {
     if (activeTab === "pending") return;
     const cacheKey = `registrations_processed_${activeTab}`;
     if (!bypassCache) {
@@ -64,7 +66,8 @@ export function useCachedRegistrations(activeTab) {
         return;
       }
     }
-    setLoading(true);
+    // Background refreshes stay silent so the list does not flash a loading state
+    if (!silent) setLoading(true);
     try {
       const res = await api.fetchProcessedRegistrationRequests();
       let data = res?.data;
@@ -79,7 +82,7 @@ export function useCachedRegistrations(activeTab) {
       if (data.length > 0) {
         writeCache(cacheKey, data);
       }
-      setRequests(data);
+      setRequests((prev) => (JSON.stringify(prev) === JSON.stringify(data) ? prev : data));
     } catch (err) {
       console.error("Failed to fetch processed registrations:", err);
     } finally {
@@ -117,8 +120,8 @@ export function useCachedRegistrations(activeTab) {
     }
 
     const handler = () => {
-      if (activeTab === "pending") fetchPending(true);
-      else fetchProcessed(true);
+      if (activeTab === "pending") fetchPending(true, true);
+      else fetchProcessed(true, true);
     };
     window.addEventListener("cacheInvalidated", handler);
     window.addEventListener("registrationUpdated", handler);
@@ -137,9 +140,9 @@ export function useCachedRegistrations(activeTab) {
       intervalRef.current = setInterval(() => {
         if (document.hidden) return;
         if (activeTabRef.current === "pending") {
-          fetchPendingRef.current(true);
+          fetchPendingRef.current(true, true);
         } else {
-          fetchProcessedRef.current(true);
+          fetchProcessedRef.current(true, true);
         }
       }, 12000);
     };

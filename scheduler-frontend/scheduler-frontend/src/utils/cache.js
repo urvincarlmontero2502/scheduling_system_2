@@ -47,11 +47,13 @@ export function writeCache(key, data) {
  * Remove a specific cache entry (cache invalidation).
  * @param {string} key - Cache key
  */
-export function invalidateCache(key) {
+export function invalidateCache(key, notify = true) {
   try {
     sessionStorage.removeItem(CACHE_PREFIX + key);
-    // Dispatch event for cross-component/tab sync
-    window.dispatchEvent(new Event("cacheInvalidated"));
+    // Dispatch event for cross-component/tab sync.
+    // Pass notify=false when a data hook clears its own cache while loading,
+    // otherwise the event makes the hook reload, which clears the cache again (endless loop).
+    if (notify) window.dispatchEvent(new Event("cacheInvalidated"));
   } catch {}
 }
 
@@ -60,7 +62,7 @@ export function invalidateCache(key) {
  * @param {string[]} keys - Cache keys
  */
 export function invalidateCacheMany(keys) {
-  keys.forEach(invalidateCache);
+  keys.forEach((key) => invalidateCache(key));
 }
 
 /**

@@ -56,7 +56,8 @@ export function useCachedData(cacheKey, fetcher, { ttl = DEFAULT_TTL, fetchImmed
       if (extracted.length > 0) {
         writeCache(cacheKey, extracted);
       } else {
-        invalidateCache(cacheKey);
+        // notify=false: this hook reloads on "cacheInvalidated", so notifying would loop forever
+        invalidateCache(cacheKey, false);
       }
       setData(extracted);
     } catch (err) {
