@@ -501,7 +501,7 @@ export default function Resources() {
         <div className="flex flex-col">
           <div className="flex items-start justify-between gap-1 mb-1">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-slate-800 line-clamp-1 flex-1 pr-1">
+              <h3 className="text-sm font-bold text-slate-800 truncate" title={item.name}>
                 {item.name}
               </h3>
             </div>
@@ -592,15 +592,25 @@ export default function Resources() {
 
   return (
     <div className="p-4">
-      {/* Clean Header Title */}
-      <h1 className="text-[20px] font-semibold text-slate-900 mb-4">
-        Facilities &amp; Vehicles
-      </h1>
+      {/* Header */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+          Facilities &amp; Vehicles
+        </h1>
+        {isAdmin && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-800 transition-colors shrink-0 shadow-xs self-start sm:self-auto">
+            <Plus size={14} />
+            Add Resource
+          </button>
+        )}
+      </div>
 
-      {/* Action Toolbar Row: Filter Pills (Left) + Add Button & Search Stack (Right) */}
+      {/* Action Toolbar Row: Filter Pills (Left) + Search Bar (Right) */}
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6 w-full">
         {/* Filter Pills */}
-        <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full lg:w-auto">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap w-full lg:w-auto">
           <button
             onClick={() => handleTabClick("all")}
             className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
@@ -651,17 +661,8 @@ export default function Resources() {
           </button>
         </div>
 
-        {/* Right Stack: Add Resource button above Search bar */}
+        {/* Right Stack: Search Bar */}
         <div className="flex flex-col items-end gap-2 w-full lg:w-auto shrink-0">
-          {isAdmin && (
-            <button
-              onClick={() => handleOpenModal()}
-              className="py-1.5 px-3.5 text-xs font-semibold rounded-lg bg-blue-700 text-white shrink-0 shadow-xs flex items-center justify-center gap-1 hover:bg-blue-800 w-full lg:w-auto">
-              <Plus size={14} />
-              Add Resource
-            </button>
-          )}
-
           {/* Search Bar aligned baseline with filter tabs */}
           <div className="relative w-full lg:w-72">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">

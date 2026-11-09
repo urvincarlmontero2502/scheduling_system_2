@@ -3,7 +3,7 @@
  * Caches pending and processed registration lists separately so that
  * switching between tabs doesn't trigger redundant API calls.
  */
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { readCache, writeCache, invalidateCache } from "../utils/cache";
 import * as api from "../api/endpoints";
 
@@ -19,13 +19,15 @@ export function useCachedRegistrations(activeTab) {
     return !(cached && cached.length > 0);
   });
 
-  const fetchPending = useCallback(async () => {
+  const fetchPending = useCallback(async (bypassCache = false) => {
     if (activeTab !== "pending") return;
-    const cached = readCache("registrations_pending", CACHE_TTL);
-    if (cached && cached.length > 0) {
-      setRequests(cached);
-      setLoading(false);
-      return;
+    if (!bypassCache) {
+      const cached = readCache("registrations_pending", CACHE_TTL);
+      if (cached && cached.length > 0) {
+        setRequests(cached);
+        setLoading(false);
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -51,14 +53,16 @@ export function useCachedRegistrations(activeTab) {
     }
   }, [activeTab]);
 
-  const fetchProcessed = useCallback(async () => {
+  const fetchProcessed = useCallback(async (bypassCache = false) => {
     if (activeTab === "pending") return;
     const cacheKey = `registrations_processed_${activeTab}`;
-    const cached = readCache(cacheKey, CACHE_TTL);
-    if (cached && cached.length > 0) {
-      setRequests(cached);
-      setLoading(false);
-      return;
+    if (!bypassCache) {
+      const cached = readCache(cacheKey, CACHE_TTL);
+      if (cached && cached.length > 0) {
+        setRequests(cached);
+        setLoading(false);
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -71,7 +75,6 @@ export function useCachedRegistrations(activeTab) {
       } else {
         data = [];
       }
-      // Filter by status
       data = data.filter((r) => r.status === activeTab);
       if (data.length > 0) {
         writeCache(cacheKey, data);
@@ -84,6 +87,28 @@ export function useCachedRegistrations(activeTab) {
     }
   }, [activeTab]);
 
+  // Keep latest fetchers in refs for interval without triggering re-effects
+  const fetchPendingRef = useRef(fetchPending);
+  const fetchProcessedRef = useRef(fetchProcessed);
+  useEffect(() => {
+    fetchPendingRef.current = fetchPending;
+    fetchProcessedRef.current = fetchProcessed;
+  }, [fetchPending, fetchProcessed]);
+
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  const refetch = useCallback(() => {
+    if (activeTabRef.current === "pending") {
+      fetchPendingRef.current(true);
+    } else {
+      fetchProcessedRef.current(true);
+    }
+  }, []);
+
+  // Initial load and event listeners
   useEffect(() => {
     if (activeTab === "pending") {
       fetchPending();
@@ -92,8 +117,8 @@ export function useCachedRegistrations(activeTab) {
     }
 
     const handler = () => {
-      if (activeTab === "pending") fetchPending();
-      else fetchProcessed();
+      if (activeTab === "pending") fetchPending(true);
+      else fetchProcessed(true);
     };
     window.addEventListener("cacheInvalidated", handler);
     window.addEventListener("registrationUpdated", handler);
@@ -101,7 +126,40 @@ export function useCachedRegistrations(activeTab) {
       window.removeEventListener("cacheInvalidated", handler);
       window.removeEventListener("registrationUpdated", handler);
     };
-  }, [fetchPending, fetchProcessed]);
+  }, [activeTab, fetchPending, fetchProcessed]);
 
-  return { requests, loading, refetch: activeTab === "pending" ? fetchPending : fetchProcessed };
+  // Smart Polling with visibility listener and useRef
+  useEffect(() => {
+    const intervalRef = { current: null };
+
+    const startPolling = () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        if (document.hidden) return;
+        if (activeTabRef.current === "pending") {
+          fetchPendingRef.current(true);
+        } else {
+          fetchProcessedRef.current(true);
+        }
+      }, 12000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      } else {
+        startPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  return { requests, loading, refetch };
 }

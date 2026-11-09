@@ -237,7 +237,7 @@ export default function Overview() {
         {/* Filter & Search Row */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
           {/* Left: Filter Tabs */}
-          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full lg:w-auto">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap w-full lg:w-auto">
             <button
               onClick={() => {
                 setMainFilter("all");
@@ -408,7 +408,9 @@ export default function Overview() {
                               />
                               Capacity:{" "}
                               <span className="text-slate-700">
-                                {item.capacity || "-"}
+                                {item.capacity
+                                  ? `${item.capacity}${String(item.capacity).toLowerCase().includes('pax') ? '' : ' pax'}`
+                                  : "N/A"}
                               </span>
                             </p>
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
@@ -544,7 +546,7 @@ export default function Overview() {
                               />
                               Unit Details:{" "}
                               <span className="text-slate-700">
-                                {item.unit_name || item.capacity || "-"}
+                                {item.unit_name || item.capacity || "N/A"}
                               </span>
                             </p>
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">

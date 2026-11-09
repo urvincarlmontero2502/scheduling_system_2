@@ -60,7 +60,7 @@ class AuthController extends Controller
             // Don't reveal whether the email exists
             return response()->json([
                 'message' => 'If an account with that email exists, a password reset link has been sent.',
-            ]);
+            ], 200);
         }
 
         // Generate a 6-digit verification code (valid for 15 minutes)
