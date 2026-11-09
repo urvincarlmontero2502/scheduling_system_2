@@ -877,7 +877,6 @@ export default function Bookings() {
             })}
           </div>
         )}
-      </div>
 
       {/* Reject Modal */}
       {rejectModalOpen && rejectBooking && (

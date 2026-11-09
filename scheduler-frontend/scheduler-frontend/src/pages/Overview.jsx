@@ -243,7 +243,7 @@ export default function Overview() {
                 setMainFilter("all");
                 setVehicleSubFilter("all");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
                 mainFilter === "all"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -254,7 +254,7 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("facility");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
                 mainFilter === "facility"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -265,7 +265,7 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("vehicle");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
                 mainFilter === "vehicle"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -277,7 +277,7 @@ export default function Overview() {
                 setMainFilter("maintenance");
                 setVehicleSubFilter("all");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
                 mainFilter === "maintenance"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
