@@ -954,12 +954,14 @@ export default function Resources() {
 
       {/* Confirmation Modal for Maintenance Toggle */}
       <ConfirmModal
-        isOpen={confirmModalOpen}
+        open={confirmModalOpen}
         onClose={() => {
           setConfirmModalOpen(false);
           setConfirmModalData(null);
         }}
         onConfirm={confirmMaintenanceToggle}
+        titleIcon={Wrench}
+        titleIconColor="text-orange-600"
         title={
           confirmModalData?.isCurrentlyMaintenance
             ? "Mark as Available"

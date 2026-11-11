@@ -32,6 +32,9 @@ export default function ConfirmModal({
   icon: Icon = AlertCircle,
   iconBg = "bg-amber-50",
   iconColor = "text-amber-600",
+  titleIcon: TitleIcon,
+  titleIconColor = "text-slate-600",
+  confirmButtonClass = "bg-[#0B6E4F] hover:bg-[#08523B]",
 }) {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -55,13 +58,19 @@ export default function ConfirmModal({
         className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Icon badge */ }
-        <div className={`w-10 h-10 rounded-full ${iconBg} ${iconColor} flex items-center justify-center mb-3`}>
-          <Icon size={20} />
-        </div>
-
-        {/* Title & Message */ }
-        <h3 className="text-base font-semibold text-slate-800">{title}</h3>
+        {TitleIcon ? (
+          <div className="mb-3 flex items-center gap-2">
+            <TitleIcon size={20} className={titleIconColor} />
+            <h3 className="text-base font-semibold text-slate-800">{title}</h3>
+          </div>
+        ) : (
+          <>
+            <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full ${iconBg} ${iconColor}`}>
+              <Icon size={20} />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800">{title}</h3>
+          </>
+        )}
         <p className="text-xs text-slate-600 mt-1">{message}</p>
 
         {/* Action Buttons */ }
@@ -76,7 +85,7 @@ export default function ConfirmModal({
           <button
             onClick={handleConfirm}
             disabled={isProcessing}
-            className="flex-1 px-4 py-2 rounded-lg bg-[#0B6E4F] hover:bg-[#08523B] text-white text-xs font-medium transition-colors disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-75 ${confirmButtonClass}`}
           >
             {isProcessing ? (
               <>
