@@ -1,5 +1,28 @@
 # Render deployment
 
+## Configure Google sign-in
+
+The Google OAuth redirect must return to the frontend callback route, which
+handles the authorization code before posting it to the Laravel API.
+
+1. In the Render backend service environment, set:
+
+   ```env
+   GOOGLE_CLIENT_ID=<Google OAuth client ID>
+   GOOGLE_CLIENT_SECRET=<Google OAuth client secret>
+   FRONTEND_URL=https://<your-frontend-domain>
+   ```
+
+   Do not add a trailing slash to `FRONTEND_URL`. The backend constructs the
+   callback URI as `FRONTEND_URL/auth/google/callback`; `GOOGLE_REDIRECT_URI` is
+   no longer used.
+2. In Google Cloud Console, open **APIs & Services → Credentials**, edit the
+   OAuth 2.0 Web client, and add:
+   - **Authorized JavaScript origin:** `https://<your-frontend-domain>`
+   - **Authorized redirect URI:** `https://<your-frontend-domain>/auth/google/callback`
+3. Save the settings and redeploy the backend after updating its environment.
+   The frontend callback route must also be deployed.
+
 ## Store uploaded images in Supabase Storage
 
 Render's free service filesystem is ephemeral. Store uploads in Supabase Storage

@@ -99,7 +99,6 @@ DB_PASSWORD=your_secure_password_here
 
 # Update these for new domain
 GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_REDIRECT_URI=https://your-domain.com/auth/google/callback
 FRONTEND_URL=https://your-domain.com
 
 # Brevo for email (keep existing API key)

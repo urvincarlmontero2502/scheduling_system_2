@@ -392,12 +392,12 @@ class AuthController extends Controller
      */
     public function redirectToGoogle()
     {
-        $clientId = config('services.google.client_id') ?: env('GOOGLE_CLIENT_ID');
-        $redirectUri = config('services.google.redirect') ?: env('GOOGLE_REDIRECT_URI');
+        $clientId = config('services.google.client_id');
+        $redirectUri = config('services.google.redirect');
 
         if (empty($clientId) || empty($redirectUri)) {
             return response()->json([
-                'message' => 'Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.',
+                'message' => 'Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and FRONTEND_URL environment variables.',
             ], 500);
         }
 
@@ -427,8 +427,8 @@ class AuthController extends Controller
     public function handleGoogleCallback(Request $request)
     {
         // Defensive guard: ensure Google OAuth is configured before proceeding
-        $clientId = config('services.google.client_id') ?: env('GOOGLE_CLIENT_ID');
-        $clientSecret = config('services.google.client_secret') ?: env('GOOGLE_CLIENT_SECRET');
+        $clientId = config('services.google.client_id');
+        $clientSecret = config('services.google.client_secret');
 
         if (empty($clientId) || empty($clientSecret)) {
             return response()->json([
@@ -450,7 +450,7 @@ class AuthController extends Controller
             $tokenResponse = $http->post('https://oauth2.googleapis.com/token', [
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
-                'redirect_uri' => config('services.google.redirect') ?: env('GOOGLE_REDIRECT_URI'),
+                'redirect_uri' => config('services.google.redirect'),
                 'grant_type' => 'authorization_code',
                 'code' => $code,
             ]);

@@ -87,7 +87,7 @@ The frontend will run at `http://localhost:5173`
 
 For local development, add these redirect URIs in [Google Cloud Console](https://console.cloud.google.com/):
 
-- `http://localhost:8000/auth/google/callback`
+- `http://localhost:5173/auth/google/callback` (Authorized redirect URI)
 - `http://localhost:5173` (Authorized JavaScript origin)
 
 ## Step 5: Access the Application
@@ -116,8 +116,9 @@ Install the PHP PostgreSQL extension:
 
 ### Google OAuth not working
 - Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are in `.env`
-- Verify the redirect URI in Google Cloud Console matches `.env`
-- Check that `GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback`
+- Verify the Authorized redirect URI in Google Cloud Console is
+  `http://localhost:5173/auth/google/callback`
+- Set `FRONTEND_URL=http://localhost:5173` in the backend `.env`
 
 ### Already have PHP installed but missing extensions
 ```bash

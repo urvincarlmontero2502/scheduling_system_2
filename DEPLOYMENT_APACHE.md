@@ -129,10 +129,9 @@ MAIL_FROM_ADDRESS=noreply@your-domain.com
 MAIL_FROM_NAME="${APP_NAME}"
 BREVO_API_KEY=your_brevo_api_key_here
 
-# Google OAuth — UPDATE THIS to your new domain
+# Google OAuth — set FRONTEND_URL to your frontend origin
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=https://your-domain.com/auth/google/callback
 FRONTEND_URL=https://your-domain.com
 
 # Filesystem
