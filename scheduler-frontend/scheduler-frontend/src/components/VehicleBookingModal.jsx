@@ -504,12 +504,12 @@ export default function VehicleBookingModal({
             <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:items-start">
             {/* LEFT: image + details - sticky on desktop */}
             <div className="md:col-span-5 md:sticky md:top-0 space-y-4">
-              <div className="relative flex h-32 sm:h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
+              <div className="relative flex h-40 sm:h-56 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-slate-100">
                 {resourceImages.length > 0 ? (
                   <img
                     src={resourceImages[visibleImageIndex]}
                     alt={`${selectedVehicle.name} photo ${visibleImageIndex + 1}`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2 text-steel">
