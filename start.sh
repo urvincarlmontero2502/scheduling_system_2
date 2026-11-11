@@ -7,6 +7,17 @@ php artisan optimize:clear
 # Then re-cache only the config (NOT routes — route:cache can cause stale routes)
 php artisan config:cache
 
+# Prepare the resource-upload directory for a Render persistent disk mounted
+# at /var/www/html/storage/app/public/uploads.
+UPLOADS_DIR=/var/www/html/storage/app/public/uploads
+mkdir -p "$UPLOADS_DIR"
+for directory in "$UPLOADS_DIR" "$UPLOADS_DIR/facilities" "$UPLOADS_DIR/vehicles" "$UPLOADS_DIR/profiles" "$UPLOADS_DIR/branding"; do
+  if [ -d "$directory" ]; then
+    chown www-data:www-data "$directory"
+    chmod u+rwx "$directory"
+  fi
+done
+
 # Apply resource schema changes before the full migration batch. A legacy
 # duplicate registration migration can stop the batch before these run.
 php artisan migrate --path=database/migrations/2026_11_11_000001_add_buffer_minutes_to_resources_table.php --force
