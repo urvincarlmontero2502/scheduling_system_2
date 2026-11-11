@@ -26,17 +26,20 @@ export default function GoogleCallback() {
 
     if (error) {
       setStatus("error");
-      setMessage("Google authentication was denied or failed.");
+      setMessage(
+        searchParams.get("error_description") ||
+          "Google could not complete authentication. Please try again."
+      );
       localStorage.setItem("google_auth_success", "false");
-      setTimeout(() => navigate("/login"), 3000);
       return;
     }
 
     if (!code) {
       setStatus("error");
-      setMessage("Authorization code not found.");
+      setMessage(
+        "Google did not return an authorization code. Please start sign-in again."
+      );
       localStorage.setItem("google_auth_success", "false");
-      setTimeout(() => navigate("/login"), 3000);
       return;
     }
 
@@ -80,16 +83,14 @@ export default function GoogleCallback() {
         setStatus("error");
         setMessage(
           err.response?.data?.message ||
-            "Google authentication failed. Please try again."
+            (err.response
+              ? "Google sign-in could not be completed. Please try again."
+              : "Could not reach the sign-in service. Check your connection and try again.")
         );
         if (err.response?.data?.error_detail) {
           console.error("Error details:", err.response.data.error_detail);
-          setMessage(
-            `${err.response?.data?.message || "Google authentication failed."}\nDetails: ${err.response.data.error_detail}`
-          );
         }
         localStorage.setItem("google_auth_success", "false");
-        setTimeout(() => navigate("/login"), 5000);
       });
   }, [searchParams, navigate, refreshUser]);
 
@@ -123,13 +124,27 @@ export default function GoogleCallback() {
 
           {status === "error" && (
             <>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-status-rejected/10">
-                <AlertCircle size={28} className="text-status-rejected" />
+              <div
+                role="alert"
+                className="w-full rounded-lg border border-red-200 bg-red-50 p-4 text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={22} className="mt-0.5 shrink-0 text-red-600" />
+                  <div>
+                    <h2 className="text-[15px] font-semibold text-red-800">
+                      Sign-in or registration could not be completed
+                    </h2>
+                    <p className="mt-1 text-[13px] text-red-700">{message}</p>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-[18px] font-semibold text-ink">
-                Authentication Failed
-              </h2>
-              <p className="text-[13px] text-steel whitespace-pre-wrap">{message}</p>
+              <button
+                type="button"
+                onClick={() => navigate("/login", { replace: true })}
+                className="w-full rounded-lg bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover"
+              >
+                Return to sign in
+              </button>
             </>
           )}
         </div>

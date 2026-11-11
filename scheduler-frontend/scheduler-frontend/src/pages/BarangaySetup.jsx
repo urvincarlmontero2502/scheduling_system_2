@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 const FALLBACK_BARANGAYS = [
   "A. Beltran",
@@ -169,7 +170,15 @@ export default function BarangaySetup() {
         </div>
 
         {error && (
-          <p className="mt-4 text-[13px] text-status-rejected">{error}</p>
+          <div
+            role="alert"
+            className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-left"
+          >
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" />
+            <p className="whitespace-pre-wrap text-[13px] text-red-700">
+              {error}
+            </p>
+          </div>
         )}
 
         <button
@@ -178,7 +187,12 @@ export default function BarangaySetup() {
           className="mt-6 w-full rounded-lg bg-brand py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
         >
           {loading
-            ? "Submitting..."
+            ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 size={16} className="animate-spin" />
+                {registrationToken ? "Submitting registration..." : "Saving..."}
+              </span>
+            )
             : registrationToken
               ? "Submit Registration Request"
               : "Save Barangay"}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CalendarClock, Eye, EyeOff, AlertCircle, CheckCircle, Building2, Truck, FileText } from "lucide-react";
+import { CalendarClock, Eye, EyeOff, AlertCircle, CheckCircle, Building2, Truck, FileText, Loader2 } from "lucide-react";
 import jabongaLogo from "../assets/jabonga-logo.png";
 import { useAuth } from "../context/AuthContext";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
@@ -25,6 +25,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -67,13 +68,17 @@ export default function Login() {
 
   async function handleGoogleSignIn() {
     setError("");
+    setGoogleSubmitting(true);
     try {
       await signInWithGoogle();
-      navigate(from, { replace: true });
     } catch (err) {
       setError(
-        "Google sign-in failed. Please try again."
+        err.response?.data?.message ||
+          (err.response
+            ? "Google sign-in could not be started. Please try again."
+            : "Could not connect to the sign-in service. Check your internet connection and try again.")
       );
+      setGoogleSubmitting(false);
     }
   }
 
@@ -227,7 +232,7 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || googleSubmitting}
             className="w-full rounded-md bg-blue-600 py-2 text-[14px] font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
             {submitting ? (
               <div className="flex items-center justify-center gap-2">
@@ -250,13 +255,22 @@ export default function Login() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="mb-4 flex w-full items-center justify-center gap-3 rounded-md border border-blue-200 bg-white px-4 py-2.5 text-[13px] font-medium text-blue-800 transition hover:bg-blue-50">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            disabled={googleSubmitting || submitting}
+            aria-live="polite"
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-md border border-blue-200 bg-white px-4 py-2.5 text-[13px] font-medium text-blue-800 transition hover:bg-blue-50 disabled:cursor-wait disabled:opacity-70">
+            {googleSubmitting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Connecting to Google…
+              </>
+            ) : (
+              <>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -273,8 +287,10 @@ export default function Login() {
                 fill="#EA4335"
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
-            </svg>
-            Sign in with Google
+                </svg>
+                Sign in with Google
+              </>
+            )}
           </button>
         </form>
 
