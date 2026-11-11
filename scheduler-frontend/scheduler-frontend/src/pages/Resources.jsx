@@ -91,7 +91,8 @@ export default function Resources() {
     type: "facility",
     description: "",
     capacity: "",
-    image: null,
+    buffer_minutes: 30,
+    images: [],
   });
 
   // Handle resource mutations (create/edit/delete/maintenance toggle)
@@ -107,7 +108,8 @@ export default function Resources() {
         capacity: resource.capacity
           ? resource.capacity.replace(" pax", "")
           : "",
-        image: null,
+        buffer_minutes: resource.buffer_minutes ?? 30,
+        images: [],
       });
     } else {
       setEditingResource(null);
@@ -116,7 +118,8 @@ export default function Resources() {
         type: "facility",
         description: "",
         capacity: "",
-        image: null,
+        buffer_minutes: 30,
+        images: [],
       });
     }
     setIsModalOpen(true);
@@ -318,6 +321,7 @@ export default function Resources() {
     data.append("name", formData.name);
     data.append("type", formData.type);
     data.append("description", formData.description || "");
+    data.append("buffer_minutes", formData.buffer_minutes);
 
     if (formData.type === "facility") {
       data.append("capacity", formData.capacity || "");
@@ -325,9 +329,7 @@ export default function Resources() {
       data.append("unit_name", formData.capacity || "");
     }
 
-    if (formData.image) {
-      data.append("image", formData.image);
-    }
+    formData.images.forEach((image) => data.append("images[]", image));
 
     if (editingResource) {
       data.append("_method", "PUT");
@@ -501,7 +503,7 @@ export default function Resources() {
         <div className="flex flex-col">
           <div className="flex items-start justify-between gap-1 mb-1">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-slate-800 truncate" title={item.name}>
+              <h3 className="text-sm font-bold text-slate-800 line-clamp-1 flex-1 pr-1">
                 {item.name}
               </h3>
             </div>
@@ -592,15 +594,14 @@ export default function Resources() {
 
   return (
     <div className="p-4">
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-[20px] font-semibold text-slate-900">
           Facilities &amp; Vehicles
         </h1>
         {isAdmin && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-800 transition-colors shrink-0 shadow-xs self-start sm:self-auto">
+            className="flex shrink-0 items-center justify-center gap-1 rounded-lg bg-blue-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-800">
             <Plus size={14} />
             Add Resource
           </button>
@@ -610,10 +611,10 @@ export default function Resources() {
       {/* Action Toolbar Row: Filter Pills (Left) + Search Bar (Right) */}
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6 w-full">
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap w-full lg:w-auto">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={() => handleTabClick("all")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
               activeFilter === "all"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -626,7 +627,7 @@ export default function Resources() {
           </button>
           <button
             onClick={() => handleTabClick("vehicle")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
               activeFilter === "vehicle"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -639,7 +640,7 @@ export default function Resources() {
           </button>
           <button
             onClick={() => handleTabClick("facility")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
               activeFilter === "facility"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -652,7 +653,7 @@ export default function Resources() {
           </button>
           <button
             onClick={() => handleTabClick("maintenance")}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
               activeFilter === "maintenance"
                 ? "bg-brand text-white shadow-sm border-brand"
                 : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -661,10 +662,8 @@ export default function Resources() {
           </button>
         </div>
 
-        {/* Right Stack: Search Bar */}
-        <div className="flex flex-col items-end gap-2 w-full lg:w-auto shrink-0">
-          {/* Search Bar aligned baseline with filter tabs */}
-          <div className="relative w-full lg:w-72">
+        {/* Search Bar aligned baseline with filter tabs */}
+        <div className="relative w-full lg:w-72">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
               <Search size={15} className="w-4 h-4" />
             </div>
@@ -682,7 +681,6 @@ export default function Resources() {
                 ×
               </button>
             )}
-          </div>
         </div>
       </div>
 
@@ -795,6 +793,7 @@ export default function Resources() {
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Resource Name
+                  <span className="text-red-500 ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
@@ -811,6 +810,7 @@ export default function Resources() {
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Type
+                  <span className="text-red-500 ml-0.5">*</span>
                 </label>
                 <select
                   value={formData.type}
@@ -828,6 +828,9 @@ export default function Resources() {
                   {formData.type === "facility"
                     ? "Capacity (pax)"
                     : "Unit Name / Plate"}
+                  {formData.type === "facility" && (
+                    <span className="text-red-500 ml-0.5">*</span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -839,6 +842,27 @@ export default function Resources() {
                   placeholder={
                     formData.type === "facility" ? "e.g., 50" : "e.g., ABC-1234"
                   }
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Buffer Time (Minutes)
+                  <span className="text-red-500 ml-0.5">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  value={formData.buffer_minutes}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      buffer_minutes: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
@@ -859,16 +883,35 @@ export default function Resources() {
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Resource Image
+                  Resource Images (up to 3)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) =>
-                    setFormData({ ...formData, image: e.target.files[0] })
-                  }
+                  multiple
+                  onChange={(e) => {
+                    const selectedImages = Array.from(e.target.files || []);
+                    if (selectedImages.length > 3) {
+                      toast.error("Select no more than 3 images.");
+                    }
+                    setFormData({
+                      ...formData,
+                      images: selectedImages.slice(0, 3),
+                    });
+                  }}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  The first image is used as the resource thumbnail.
+                  {editingResource?.images?.length
+                    ? " Select new images to replace the current gallery."
+                    : ""}
+                </p>
+                {formData.images.length > 0 && (
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    Selected: {formData.images.map((image) => image.name).join(", ")}
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

@@ -237,13 +237,13 @@ export default function Overview() {
         {/* Filter & Search Row */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
           {/* Left: Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap w-full lg:w-auto">
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full lg:w-auto">
             <button
               onClick={() => {
                 setMainFilter("all");
                 setVehicleSubFilter("all");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "all"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -254,7 +254,7 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("facility");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "facility"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -265,7 +265,7 @@ export default function Overview() {
               onClick={() => {
                 setMainFilter("vehicle");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "vehicle"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -277,7 +277,7 @@ export default function Overview() {
                 setMainFilter("maintenance");
                 setVehicleSubFilter("all");
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 whitespace-nowrap ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-lg border transition-all shrink-0 ${
                 mainFilter === "maintenance"
                   ? "bg-brand text-white shadow-sm border-brand"
                   : "bg-white border border-line text-steel hover:bg-paper transition-colors"
@@ -286,7 +286,7 @@ export default function Overview() {
             </button>
           </div>
 
-          {/* Right: Add Resource Button + Search Bar (vertical stack) */}
+          {/*-Search Bar*/}
           <div className="flex flex-col items-end gap-3 w-full lg:w-auto">
             <div className="relative w-full lg:w-64 flex items-center">
               <Search
@@ -408,9 +408,7 @@ export default function Overview() {
                               />
                               Capacity:{" "}
                               <span className="text-slate-700">
-                                {item.capacity
-                                  ? `${item.capacity}${String(item.capacity).toLowerCase().includes('pax') ? '' : ' pax'}`
-                                  : "N/A"}
+                                {item.capacity || "-"}
                               </span>
                             </p>
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
@@ -546,7 +544,7 @@ export default function Overview() {
                               />
                               Unit Details:{" "}
                               <span className="text-slate-700">
-                                {item.unit_name || item.capacity || "N/A"}
+                                {item.unit_name || item.capacity || "-"}
                               </span>
                             </p>
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">

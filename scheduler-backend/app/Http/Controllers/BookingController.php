@@ -17,15 +17,6 @@ use Exception;
 
 class BookingController extends Controller
 {
-    /**
-     * Mandatory buffer/turnaround time in minutes after each booking
-     * on each side of an active reservation before another reservation can
-     * use the same resource.
-     * Applies to both vehicle (inspection, refueling, driver rest)
-     * and facility (sanitation, setup) resources.
-     */
-    const BUFFER_MINUTES = 30;
-
     /*
     |--------------------------------------------------------------------------
     | Dashboard Statistics
@@ -92,6 +83,7 @@ class BookingController extends Controller
                     'id' => $b->booking_id,
                     'resource_id' => $b->resource_id,
                     'resource' => $b->resource?->name ?? 'Unknown Resource',
+                    'buffer_minutes' => $b->resource?->buffer_minutes ?? 30,
                     'resource_image' => ($b->resource && $b->resource->image) ? \Illuminate\Support\Facades\Storage::disk('assets')->url($b->resource->image) : null,
                     'full_name' => $displayName,
                     'requester' => $displayName,
@@ -145,12 +137,19 @@ class BookingController extends Controller
         $startMins = $this->timeToMinutes($request->input('start_time'));
         $endMins = $this->timeToMinutes($request->input('end_time'));
 
-        $slots = $this->findAvailableSlots($resourceId, $date, $startMins, $endMins);
+        $bufferMinutes = $this->bufferMinutesForResource($resourceId);
+        $slots = $this->findAvailableSlots(
+            $resourceId,
+            $date,
+            $startMins,
+            $endMins,
+            $bufferMinutes
+        );
 
         return response()->json([
             'date' => $date,
             'available_slots' => $slots,
-            'buffer_minutes' => self::BUFFER_MINUTES,
+            'buffer_minutes' => $bufferMinutes,
         ]);
     }
 
@@ -528,8 +527,8 @@ class BookingController extends Controller
 
     /**
      * Check pending and approved bookings using datetime interval overlap.
-     * Existing reservations block the resource for BUFFER_MINUTES before
-     * and after their scheduled interval.
+     * Existing reservations block the resource for its configured buffer
+     * before and after their scheduled interval.
      *
      * @param int $resourceId
      * @param string $startDate  (Y-m-d)
@@ -545,11 +544,15 @@ class BookingController extends Controller
         $endDate,
         $startTime,
         $endTime,
-        $excludeBookingId = null
+        $excludeBookingId = null,
+        $bufferMinutes = null
     ) {
         if (!$resourceId) {
             return null;
         }
+
+        $bufferMinutes ??= $this->bufferMinutesForResource($resourceId);
+        $bufferDays = intdiv($bufferMinutes, 1440) + ($bufferMinutes > 0 ? 1 : 0);
 
         [$requestedStart, $requestedEnd] = $this->bookingDateTimeRange(
             $startDate,
@@ -560,8 +563,8 @@ class BookingController extends Controller
 
         $candidates = BookingRequest::where('resource_id', $resourceId)
             ->whereIn('status', ['pending', 'approved'])
-            ->whereDate('start_date', '<=', Carbon::parse($endDate)->addDay()->toDateString())
-            ->whereDate('end_date', '>=', Carbon::parse($startDate)->subDay()->toDateString())
+            ->whereDate('start_date', '<=', Carbon::parse($endDate)->addDays($bufferDays)->toDateString())
+            ->whereDate('end_date', '>=', Carbon::parse($startDate)->subDays($bufferDays)->toDateString())
             ->when(
                 $excludeBookingId !== null,
                 fn ($query) => $query->where('booking_id', '!=', $excludeBookingId)
@@ -577,8 +580,8 @@ class BookingController extends Controller
                 $c->start_time,
                 $c->end_time
             );
-            $blockingStart = $existingStart->copy()->subMinutes(self::BUFFER_MINUTES);
-            $blockingEnd = $existingEnd->copy()->addMinutes(self::BUFFER_MINUTES);
+            $blockingStart = $existingStart->copy()->subMinutes($bufferMinutes);
+            $blockingEnd = $existingEnd->copy()->addMinutes($bufferMinutes);
 
             if ($blockingStart->lt($requestedEnd) && $blockingEnd->gt($requestedStart)) {
                 return $c;
@@ -618,6 +621,7 @@ class BookingController extends Controller
         $endTime,
         BookingRequest $conflict
     ) {
+        $bufferMinutes = $this->bufferMinutesForResource($resourceId);
         [$requestedStart, $requestedEnd] = $this->bookingDateTimeRange(
             $startDate,
             $endDate,
@@ -639,7 +643,7 @@ class BookingController extends Controller
 
         $sameDayStart = $requestedStart->copy()->startOfDay();
         $sameDayEnd = $sameDayStart->copy()->endOfDay();
-        $candidateStart = $conflictEnd->copy()->addMinutes(self::BUFFER_MINUTES);
+        $candidateStart = $conflictEnd->copy()->addMinutes($bufferMinutes);
         if ($candidateStart->lt($requestedStart)) {
             $candidateStart = $requestedStart->copy();
         }
@@ -656,7 +660,9 @@ class BookingController extends Controller
                 $candidateStart->toDateString(),
                 $candidateEnd->toDateString(),
                 $candidateStartTime,
-                $candidateEndTime
+                $candidateEndTime,
+                null,
+                $bufferMinutes
             );
 
             if (!$nextConflict) {
@@ -674,7 +680,7 @@ class BookingController extends Controller
                 $nextConflict->start_time,
                 $nextConflict->end_time
             );
-            $candidateStart = $nextConflictEnd->copy()->addMinutes(self::BUFFER_MINUTES);
+            $candidateStart = $nextConflictEnd->copy()->addMinutes($bufferMinutes);
         }
 
         $nextDate = $requestedStart->copy()->addDay()->startOfDay();
@@ -704,7 +710,9 @@ class BookingController extends Controller
                 $nextDate->toDateString(),
                 $candidateEnd->toDateString(),
                 $candidateStartTime,
-                $candidateEndTime
+                $candidateEndTime,
+                null,
+                $bufferMinutes
             )) {
                 $suggestions[] = [
                     'start_time' => $nextDate->format('Y-m-d H:i:s'),
@@ -747,7 +755,7 @@ class BookingController extends Controller
         $candidates = Resource::where('type', $resourceType)
             ->where('status', '!=', 'maintenance')
             ->where('resource_id', '!=', $excludeResourceId)
-            ->get(['resource_id', 'name', 'type', 'status']);
+            ->get(['resource_id', 'name', 'type', 'status', 'buffer_minutes']);
 
         $alternatives = [];
 
@@ -757,7 +765,9 @@ class BookingController extends Controller
                 $startDate,
                 $endDate,
                 $startTime,
-                $endTime
+                $endTime,
+                null,
+                $resource->buffer_minutes ?? 30
             );
 
             if (!$conflict) {
@@ -790,10 +800,15 @@ class BookingController extends Controller
     /**
      * Find available time slots on a given date that are long enough
      * for the requested duration. Pending and approved reservations are
-     * extended by BUFFER_MINUTES on both sides.
+     * extended by the resource's buffer on both sides.
      */
-    private function findAvailableSlots($resourceId, $date, $reqStartMins = null, $reqEndMins = null)
-    {
+    private function findAvailableSlots(
+        $resourceId,
+        $date,
+        $reqStartMins = null,
+        $reqEndMins = null,
+        $bufferMinutes = 30
+    ) {
         if (!$resourceId) {
             return [];
         }
@@ -812,11 +827,13 @@ class BookingController extends Controller
         $dayStartDate = Carbon::parse($date)->startOfDay();
         $dayEndDate = $dayStartDate->copy()->endOfDay();
 
-        // Include adjacent dates because their 30-minute buffer can cross midnight.
+        $bufferDays = intdiv($bufferMinutes, 1440) + ($bufferMinutes > 0 ? 1 : 0);
+
+        // Include adjacent dates because resource buffers can cross midnight.
         $bookings = BookingRequest::where('resource_id', $resourceId)
             ->whereIn('status', ['pending', 'approved'])
-            ->whereDate('start_date', '<=', $dayStartDate->copy()->addDay()->toDateString())
-            ->whereDate('end_date', '>=', $dayStartDate->copy()->subDay()->toDateString())
+            ->whereDate('start_date', '<=', $dayStartDate->copy()->addDays($bufferDays)->toDateString())
+            ->whereDate('end_date', '>=', $dayStartDate->copy()->subDays($bufferDays)->toDateString())
             ->orderBy('start_date')
             ->get();
 
@@ -832,8 +849,8 @@ class BookingController extends Controller
                 $b->start_time,
                 $b->end_time
             );
-            $blockingStart = $bookingStart->copy()->subMinutes(self::BUFFER_MINUTES);
-            $blockingEnd = $bookingEnd->copy()->addMinutes(self::BUFFER_MINUTES);
+            $blockingStart = $bookingStart->copy()->subMinutes($bufferMinutes);
+            $blockingEnd = $bookingEnd->copy()->addMinutes($bufferMinutes);
 
             if ($blockingStart->gt($dayEndDate) || $blockingEnd->lt($dayStartDate)) {
                 continue;
@@ -899,6 +916,11 @@ class BookingController extends Controller
         }
 
         return $available;
+    }
+
+    private function bufferMinutesForResource($resourceId)
+    {
+        return (int) (Resource::whereKey($resourceId)->value('buffer_minutes') ?? 30);
     }
 
     /**

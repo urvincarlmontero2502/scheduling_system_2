@@ -18,6 +18,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import * as api from "../api/endpoints";
 
 import { useNotifications } from "../context/NotificationContext";
 
@@ -96,6 +97,81 @@ export default function DashboardLayout() {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const { toggleDropdown, closeDropdown, dropdownOpen, bellRef } = useNotifications();
+
+  const [pendingRequestCounts, setPendingRequestCounts] = useState({
+    bookings: 0,
+    registrations: 0,
+  });
+
+  useEffect(() => {
+    if (!user) {
+      setPendingRequestCounts({ bookings: 0, registrations: 0 });
+      return;
+    }
+
+    let active = true;
+    const canReviewRegistrations = ["admin", "barangay_admin"].includes(user.role);
+
+    const refreshCounts = async () => {
+      try {
+        const response = await api.fetchBookings({});
+        const data = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.data?.data)
+            ? response.data.data
+            : [];
+        if (active) {
+          setPendingRequestCounts((counts) => ({
+            ...counts,
+            bookings: data.filter(
+              (booking) => booking?.status?.toLowerCase() === "pending",
+            ).length,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to refresh pending booking count:", error);
+      }
+
+      if (!canReviewRegistrations) return;
+
+      try {
+        const response = await api.fetchRegistrationRequests();
+        const data = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.data?.data)
+            ? response.data.data
+            : [];
+        if (active) {
+          setPendingRequestCounts((counts) => ({
+            ...counts,
+            registrations: data.filter(
+              (request) => request?.status?.toLowerCase() === "pending",
+            ).length,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to refresh pending registration count:", error);
+      }
+    };
+
+    refreshCounts();
+    const intervalId = window.setInterval(() => {
+      if (!document.hidden) refreshCounts();
+    }, 30_000);
+    window.addEventListener("bookingUpdated", refreshCounts);
+    window.addEventListener("bookingChanged", refreshCounts);
+    window.addEventListener("registrationUpdated", refreshCounts);
+    window.addEventListener("cacheInvalidated", refreshCounts);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("bookingUpdated", refreshCounts);
+      window.removeEventListener("bookingChanged", refreshCounts);
+      window.removeEventListener("registrationUpdated", refreshCounts);
+      window.removeEventListener("cacheInvalidated", refreshCounts);
+    };
+  }, [user?.user_id, user?.role]);
 
 
 
@@ -293,35 +369,37 @@ export default function DashboardLayout() {
 
         <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-3 md:h-[calc(100vh-8rem)]">
 
-          {visibleItems.map(({ to, label, icon: Icon, end }) => (
+          {visibleItems.map(({ to, label, icon: Icon, end }) => {
+            const badgeCount =
+              to === "/bookings"
+                ? pendingRequestCounts.bookings
+                : to === "/registration-requests"
+                  ? pendingRequestCounts.registrations
+                  : 0;
 
-            <NavLink
-
-              key={to}
-
-              to={to}
-
-              end={end}
-
-              style={itemStyle}
-
-              className={({ isActive }) =>
-
-                isActive
-
-                  ? "bg-brand-light text-brand-dark shadow-sm"
-
-                  : "text-steel hover:bg-paper hover:text-ink"
-
-              }>
-
-              <Icon size={20} />
-
-              {label}
-
-            </NavLink>
-
-          ))}
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                style={itemStyle}
+                className={({ isActive }) =>
+                  isActive
+                    ? "bg-brand-light text-brand-dark shadow-sm"
+                    : "text-steel hover:bg-paper hover:text-ink"
+                }>
+                <Icon size={20} />
+                {label}
+                {badgeCount > 0 && (
+                  <span
+                    aria-label={`${badgeCount} pending requests`}
+                    className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
 
         </nav>
 
@@ -602,4 +680,3 @@ export default function DashboardLayout() {
   );
 
 }
-

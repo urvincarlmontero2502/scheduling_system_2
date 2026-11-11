@@ -15,17 +15,25 @@ class ResourceController extends Controller
      */
     protected function formatResource($resource)
     {
+        $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
+        $imageUrls = array_map(
+            fn ($path) => Storage::disk('assets')->url($path),
+            $imagePaths
+        );
+
         return [
             'id' => $resource->resource_id,
             'resource_id' => $resource->resource_id,
             'name' => $resource->name,
             'type' => $resource->type,
-            'image' => $resource->image ? Storage::disk('assets')->url($resource->image) : null,
-            'image_url' => $resource->image ? Storage::disk('assets')->url($resource->image) : null,
+            'image' => $imageUrls[0] ?? null,
+            'image_url' => $imageUrls[0] ?? null,
+            'images' => $imageUrls,
             'available' => $resource->status === 'available',
             'status' => $resource->status,
             'is_maintenance' => $resource->status === 'maintenance',
             'description' => $resource->description ?? null,
+            'buffer_minutes' => $resource->buffer_minutes ?? 30,
             'capacity' => $resource->type === 'facility' && $resource->facilityDetails
                 ? $resource->facilityDetails->capacity . ' pax'
                 : null,
@@ -39,10 +47,18 @@ class ResourceController extends Controller
     {
         try {
             // Select only necessary columns to minimize payload:
-            // resource_id, name, type, status, image, description
+            // resource_id, name, type, status, image, description, buffer_minutes
             // Use explicit table prefix on resource_id to avoid ambiguity when
             // joining facility_details and vehicle_details (both have resource_id)
-            $columns = ['resources.resource_id', 'resources.name', 'resources.type', 'resources.status', 'resources.image'];
+            $columns = [
+                'resources.resource_id',
+                'resources.name',
+                'resources.type',
+                'resources.status',
+                'resources.image',
+                'resources.images',
+                'resources.buffer_minutes',
+            ];
 
             // Check if description column exists before selecting it
             if (Schema::hasColumn('resources', 'description')) {
@@ -73,17 +89,25 @@ class ResourceController extends Controller
             }
 
             $resources = $query->get()->map(function ($r) {
+                $imagePaths = $r->images ?: ($r->image ? [$r->image] : []);
+                $imageUrls = array_map(
+                    fn ($path) => Storage::disk('assets')->url($path),
+                    $imagePaths
+                );
+
                 return [
                     'id' => $r->resource_id,
                     'resource_id' => $r->resource_id,
                     'name' => $r->name,
                     'type' => $r->type,
-                    'image' => $r->image ? Storage::disk('assets')->url($r->image) : null,
-                    'image_url' => $r->image ? Storage::disk('assets')->url($r->image) : null,
+                    'image' => $imageUrls[0] ?? null,
+                    'image_url' => $imageUrls[0] ?? null,
+                    'images' => $imageUrls,
                     'available' => $r->status === 'available',
                     'status' => $r->status,
                     'is_maintenance' => $r->status === 'maintenance',
                     'description' => $r->description ?? null,
+                    'buffer_minutes' => $r->buffer_minutes ?? 30,
                     'capacity' => $r->type === 'facility' && $r->facility_capacity
                         ? $r->facility_capacity . ' pax'
                         : null,
@@ -107,24 +131,24 @@ class ResourceController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:facility,vehicle'],
             'description' => ['nullable', 'string'],
+            'buffer_minutes' => ['required', 'integer', 'min:0'],
             'capacity' => ['nullable', 'integer'], // Specific to facilities
             'unit_name' => ['nullable', 'string'], // Specific to vehicles
             'image' => ['nullable', 'image', 'max:2048'], // Optional image upload validation
+            'images' => ['sometimes', 'array', 'max:3'],
+            'images.*' => ['image', 'max:2048'],
         ]);
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $subdir = $validated['type'] === 'facility' ? 'facilities' : 'vehicles';
-            $filename = \Illuminate\Support\Str::uuid() . '.' . $request->file('image')->getClientOriginalExtension();
-            $imagePath = $request->file('image')->storeAs($subdir, $filename, 'assets');
-        }
+        $imagePaths = $this->storeResourceImages($request, $validated['type']);
 
         // Create the parent resource record
         $resource = Resource::create([
             'name' => $validated['name'],
             'type' => $validated['type'],
             'description' => $validated['description'] ?? null,
-            'image' => $imagePath,
+            'buffer_minutes' => $validated['buffer_minutes'] ?? 30,
+            'image' => $imagePaths[0] ?? null,
+            'images' => $imagePaths,
             'status' => 'available',
         ]);
 
@@ -153,20 +177,20 @@ class ResourceController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:facility,vehicle'],
             'description' => ['nullable', 'string'],
+            'buffer_minutes' => ['required', 'integer', 'min:0'],
             'capacity' => ['nullable', 'string'],
             'status' => ['nullable', 'in:available,unavailable,maintenance'],
             'image' => ['nullable', 'image', 'max:2048'], // Optional image upload on update
+            'images' => ['sometimes', 'array', 'max:3'],
+            'images.*' => ['image', 'max:2048'],
         ]);
 
         $imagePath = $resource->image;
-        if ($request->hasFile('image')) {
-            // Delete old image if a new one is uploaded
-            if ($resource->image) {
-                Storage::disk('assets')->delete($resource->image);
-            }
-            $subdir = $validated['type'] === 'facility' ? 'facilities' : 'vehicles';
-            $filename = \Illuminate\Support\Str::uuid() . '.' . $request->file('image')->getClientOriginalExtension();
-            $imagePath = $request->file('image')->storeAs($subdir, $filename, 'assets');
+        $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
+        if ($request->hasFile('images') || $request->hasFile('image')) {
+            Storage::disk('assets')->delete(array_unique($imagePaths));
+            $imagePaths = $this->storeResourceImages($request, $validated['type']);
+            $imagePath = $imagePaths[0] ?? null;
         }
 
         $updateData = [
@@ -174,7 +198,10 @@ class ResourceController extends Controller
             'type' => $validated['type'],
             'description' => $validated['description'] ?? null,
             'image' => $imagePath,
+            'images' => $imagePaths,
         ];
+
+        $updateData['buffer_minutes'] = $validated['buffer_minutes'];
 
         if (isset($validated['status'])) {
             $updateData['status'] = $validated['status'];
@@ -205,10 +232,8 @@ class ResourceController extends Controller
     {
         $resource = Resource::findOrFail($id);
 
-        // Delete image file from storage if it exists
-        if ($resource->image) {
-            Storage::disk('assets')->delete($resource->image);
-        }
+        $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
+        Storage::disk('assets')->delete(array_unique($imagePaths));
 
         // Cascade deletes child details automatically if configured in DB,
         // otherwise delete them explicitly:
@@ -218,6 +243,24 @@ class ResourceController extends Controller
         $resource->delete();
 
         return response()->json(['message' => 'Resource deleted successfully']);
+    }
+
+    private function storeResourceImages(Request $request, string $type): array
+    {
+        $files = $request->file('images', []);
+        if (!is_array($files)) {
+            $files = [$files];
+        }
+        if (empty($files) && $request->hasFile('image')) {
+            $files = [$request->file('image')];
+        }
+
+        $subdir = $type === 'facility' ? 'facilities' : 'vehicles';
+
+        return array_map(function ($file) use ($subdir) {
+            $filename = \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension();
+            return $file->storeAs($subdir, $filename, 'assets');
+        }, $files);
     }
 
     public function setMaintenance($id)

@@ -90,6 +90,21 @@ export default function FacilityBookingModal({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitAlternatives, setSubmitAlternatives] = useState([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const resourceImages = selectedFacility?.images?.length
+    ? selectedFacility.images
+    : selectedFacility?.image
+      ? [selectedFacility.image]
+      : [];
+  const visibleImageIndex = Math.min(
+    currentImageIndex,
+    Math.max(resourceImages.length - 1, 0),
+  );
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [isOpen, selectedFacility?.resource_id, selectedFacility?.id]);
 
   // Load bookings so the calendar can show pending / approved days
   useEffect(() => {
@@ -190,9 +205,11 @@ export default function FacilityBookingModal({
     }
   });
 
-  // Approved bookings of this resource that overlap the chosen dates and times
-  // A 30-minute buffer (BUFFER_MINUTES) is enforced after each booking ends
-  const BUFFER_MINUTES = 30;
+  // Approved bookings are blocked by this resource's turnaround buffer.
+  const BUFFER_MINUTES = Math.max(
+    0,
+    Number(selectedFacility.buffer_minutes ?? 30),
+  );
   const toMins = (t) => {
     const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (!m) return null;
@@ -202,24 +219,46 @@ export default function FacilityBookingModal({
     if (ap === "AM" && h === 12) h = 0;
     return h * 60 + Number(m[2]);
   };
+  const toDateTimeMins = (date, time, isEnd = false) => {
+    const datePart = String(date || "").split("T")[0];
+    const dayStart = Date.parse(`${datePart}T00:00:00Z`);
+    if (!Number.isFinite(dayStart)) return null;
+    return (
+      dayStart / 60000 +
+      (toMins(time) ?? (isEnd ? 24 * 60 : 0))
+    );
+  };
+  const requestedStart = toDateTimeMins(
+    formData.start_date,
+    formData.start_time,
+  );
+  const requestedEnd = toDateTimeMins(
+    formData.end_date,
+    formData.end_time,
+    true,
+  );
   const conflict =
     formData.start_date && formData.end_date
       ? bookings.find((b) => {
           if (!isApprovedStatus(b.status)) return false;
           if (!isMatch(b, resourceId)) return false;
-          const bStart = (b.start_date || "").split("T")[0];
-          const bEnd = (b.end_date || b.start_date || "").split("T")[0];
-          if (!bStart) return false;
-          if (!(formData.start_date <= bEnd && bStart <= formData.end_date))
-            return false;
-          const ns = toMins(formData.start_time);
-          const ne = toMins(formData.end_time);
-          const bs = toMins(b.start_time);
-          const be = toMins(b.end_time);
-          if ([ns, ne, bs, be].some((v) => v === null)) return true;
-          // Buffer: new booking cannot start within BUFFER_MINUTES
-          // after an existing booking ends
-          return Math.max(ns, bs) < Math.min(ne, be + BUFFER_MINUTES);
+          const bookingStart = toDateTimeMins(b.start_date, b.start_time);
+          const bookingEnd = toDateTimeMins(
+            b.end_date || b.start_date,
+            b.end_time,
+            true,
+          );
+          if (
+            [requestedStart, requestedEnd, bookingStart, bookingEnd].some(
+              (v) => v === null,
+            )
+          ) {
+            return true;
+          }
+          return (
+            Math.max(requestedStart, bookingStart - BUFFER_MINUTES) <
+            Math.min(requestedEnd, bookingEnd + BUFFER_MINUTES)
+          );
         })
       : null;
 
@@ -483,11 +522,10 @@ export default function FacilityBookingModal({
             {/* LEFT: image + details - sticky on desktop */}
             <div className="md:col-span-5 md:sticky md:top-0 space-y-4">
               <div className="relative flex h-32 sm:h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-paper">
-                {selectedFacility.image &&
-                selectedFacility.image.trim() !== "" ? (
+                {resourceImages.length > 0 ? (
                   <img
-                    src={selectedFacility.image}
-                    alt={selectedFacility.name}
+                    src={resourceImages[visibleImageIndex]}
+                    alt={`${selectedFacility.name} photo ${visibleImageIndex + 1}`}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -497,6 +535,36 @@ export default function FacilityBookingModal({
                     </div>
                     <span className="text-[11px]">No image provided</span>
                   </div>
+                )}
+                {resourceImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous resource photo"
+                      onClick={() =>
+                        setCurrentImageIndex(
+                          (visibleImageIndex - 1 + resourceImages.length) %
+                            resourceImages.length,
+                        )
+                      }
+                      className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75">
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next resource photo"
+                      onClick={() =>
+                        setCurrentImageIndex(
+                          (visibleImageIndex + 1) % resourceImages.length,
+                        )
+                      }
+                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75">
+                      <ChevronRight size={18} />
+                    </button>
+                    <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                      {visibleImageIndex + 1} / {resourceImages.length}
+                    </span>
+                  </>
                 )}
               </div>
               <div className="space-y-1.5 rounded-lg border border-line bg-paper/50 p-3">
@@ -716,8 +784,8 @@ export default function FacilityBookingModal({
                     )}
                   </p>
                   <p className="mt-0.5 text-[10.5px] text-steel">
-                    A 30-minute buffer is enforced after each booking for
-                    turnaround and preparation.
+                    A {BUFFER_MINUTES}-minute buffer is enforced around each
+                    booking for turnaround and preparation.
                   </p>
                   {(conflict.purpose || conflict.full_name) && (
                     <p className="mt-0.5 text-[10.5px] text-steel">

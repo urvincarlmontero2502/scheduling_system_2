@@ -35,6 +35,8 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('name');
             $table->string('type');
             $table->string('status');
+            $table->unsignedInteger('buffer_minutes')->default(30);
+            $table->json('images')->nullable();
         });
         Schema::create('booking_request', function (Blueprint $table) {
             $table->id('booking_id');

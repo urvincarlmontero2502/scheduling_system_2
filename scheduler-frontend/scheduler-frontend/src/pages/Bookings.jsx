@@ -95,8 +95,22 @@ function timeToMinutes(timeStr) {
   return h * 60 + m;
 }
 
+function dateTimeToMinutes(date, time, isEnd = false) {
+  const datePart = String(date || "").split("T")[0];
+  const dayStart = Date.parse(`${datePart}T00:00:00Z`);
+  if (!Number.isFinite(dayStart)) return null;
+  return (
+    dayStart / 60000 +
+    (timeToMinutes(time) ?? (isEnd ? 24 * 60 : 0))
+  );
+}
+
 // Helper to check for date and time conflicts with existing approved bookings
 function hasTimeDateConflict(targetBooking, allBookings) {
+  const bufferMinutes = Math.max(
+    0,
+    Number(targetBooking.buffer_minutes ?? 30),
+  );
   const targetResource = (
     targetBooking.resource ||
     targetBooking.resource_name ||
@@ -115,8 +129,8 @@ function hasTimeDateConflict(targetBooking, allBookings) {
   const targetEndTime =
     targetBooking.end_time ||
     (targetBooking.time ? targetBooking.time.split("-")[1]?.trim() : null);
-  const tStartMins = timeToMinutes(targetStartTime);
-  const tEndMins = timeToMinutes(targetEndTime);
+  const tStartMins = dateTimeToMinutes(targetStart, targetStartTime);
+  const tEndMins = dateTimeToMinutes(targetEnd, targetEndTime, true);
 
   for (const b of allBookings) {
     const bId = b.id || b.booking_id;
@@ -136,30 +150,26 @@ function hasTimeDateConflict(targetBooking, allBookings) {
     const bStart = b.start_date || b.date;
     const bEnd = b.end_date || b.date || bStart;
     if (!bStart) continue;
+    const bStartTime =
+      b.start_time || (b.time ? b.time.split("-")[0]?.trim() : null);
+    const bEndTime =
+      b.end_time || (b.time ? b.time.split("-")[1]?.trim() : null);
+    const bStartMins = dateTimeToMinutes(bStart, bStartTime);
+    const bEndMins = dateTimeToMinutes(bEnd, bEndTime, true);
 
-    // Check date range overlap
-    if (targetStart <= bEnd && bStart <= targetEnd) {
-      const bStartTime =
-        b.start_time || (b.time ? b.time.split("-")[0]?.trim() : null);
-      const bEndTime =
-        b.end_time || (b.time ? b.time.split("-")[1]?.trim() : null);
-      const bStartMins = timeToMinutes(bStartTime);
-      const bEndMins = timeToMinutes(bEndTime);
+    if (
+      [tStartMins, tEndMins, bStartMins, bEndMins].some(
+        (value) => value === null,
+      )
+    ) {
+      return true;
+    }
 
-      // If either booking spans all day (missing times), treat as a time conflict on overlapping dates
-      if (
-        tStartMins === null ||
-        tEndMins === null ||
-        bStartMins === null ||
-        bEndMins === null
-      ) {
-        return true;
-      }
-
-      // Check time overlap within the matching dates
-      if (Math.max(tStartMins, bStartMins) < Math.min(tEndMins, bEndMins)) {
-        return true;
-      }
+    if (
+      Math.max(tStartMins, bStartMins - bufferMinutes) <
+      Math.min(tEndMins, bEndMins + bufferMinutes)
+    ) {
+      return true;
     }
   }
   return false;
