@@ -21,6 +21,7 @@ import {
   writeCache,
   CACHE_KEYS,
 } from "../utils/cache";
+import { isSpecialEvent } from "../utils/specialEvents";
 
 // Helper to look up resource image by resource_id or name
 function getResourceImage(booking, resources) {
@@ -165,7 +166,11 @@ export default function BookingHistory() {
   const historyBookings = bookings.filter((booking) => {
     const status = (booking.status || "").toLowerCase();
     return (
-      status === "completed" || status === "rejected" || status === "cancelled" || status === "approved"
+      !isSpecialEvent(booking) &&
+      (status === "completed" ||
+        status === "rejected" ||
+        status === "cancelled" ||
+        status === "approved")
     );
   });
 

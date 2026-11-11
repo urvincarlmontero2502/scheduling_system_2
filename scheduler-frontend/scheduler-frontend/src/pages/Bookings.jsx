@@ -393,9 +393,9 @@ export default function Bookings() {
       {/* KPI Summary Cards Row — clickable to toggle filters */}
       <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
           {[
-            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading, tab: "pending" },
-            { label: "Approved Requests", value: approvedCount, Icon: Check, loading, tab: "approved" },
-            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading, tab: "rejected" },
+            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading, tab: "pending", color: "text-orange-500" },
+            { label: "Approved Requests", value: approvedCount, Icon: Check, loading, tab: "approved", color: "text-green-600" },
+            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading, tab: "rejected", color: "text-red-500" },
             { label: "Total Requests", value: requests.length, Icon: FileText, loading, tab: "all" },
           ].map((stat) => (
             <div
@@ -404,16 +404,16 @@ export default function Bookings() {
               className={`cursor-pointer relative p-2.5 rounded-xl border border-line bg-white shadow-xs hover:border-brand/30 transition-all ${stat.loading ? "animate-pulse" : ""}`}
             >
               <div className="flex items-center justify-between">
-                <p className="font-mono text-2xl font-bold text-ink">
+                <p className={`font-mono text-2xl font-bold ${stat.color || "text-ink"}`}>
                   {stat.loading ? (
                     <span className="inline-block h-7 w-10 bg-line rounded-md"></span>
                   ) : (
                     stat.value
                   )}
                 </p>
-                {stat.Icon && <stat.Icon size={18} className="text-steel opacity-50" />}
+                {stat.Icon && <stat.Icon size={18} className={stat.color ? `${stat.color} opacity-70` : "text-steel opacity-50"} />}
               </div>
-              <p className="mt-1 text-[10px] uppercase tracking-wider font-semibold text-steel">
+              <p className={`mt-1 text-[10px] uppercase tracking-wider font-semibold ${stat.color || "text-steel"}`}>
                 {stat.label}
               </p>
             </div>
