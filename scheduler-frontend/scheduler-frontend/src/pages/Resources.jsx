@@ -465,7 +465,7 @@ export default function Resources() {
             <img
               src={item.image}
               alt={item.name}
-              className={`h-full w-full object-cover rounded-lg ${
+              className={`h-full w-full object-contain rounded-lg ${
                 isMaintenance ? "grayscale opacity-60" : ""
               }`}
             />
