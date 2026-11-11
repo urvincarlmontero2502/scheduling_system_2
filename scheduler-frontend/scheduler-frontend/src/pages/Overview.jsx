@@ -178,11 +178,15 @@ export default function Overview() {
       label: "Pending requests",
       value: loading ? "..." : (stats.pending ?? 0),
       icon: Clock,
+      color: "text-orange-500",
+      labelColor: "text-orange-600",
     },
     {
       label: "Approved this week",
       value: loading ? "..." : (stats.approved ?? 0),
       icon: CheckCircle,
+      color: "text-green-600",
+      labelColor: "text-green-700",
     },
     {
       label: "Facilities",
@@ -213,7 +217,7 @@ export default function Overview() {
             key={stat.label}
             className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}>
             <div className="flex items-center justify-between">
-              <p className="font-mono text-3xl font-bold text-slate-900">
+              <p className={`font-mono text-3xl font-bold ${stat.color || "text-slate-900"}`}>
                 {loading ? (
                   <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span>
                 ) : (
@@ -221,10 +225,10 @@ export default function Overview() {
                 )}
               </p>
               {stat.icon && (
-                <stat.icon size={20} className="text-slate-300 opacity-50" />
+                <stat.icon size={20} className={`${stat.color || "text-slate-300"} opacity-70`} />
               )}
             </div>
-            <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-slate-500">
+            <p className={`mt-1 text-xs uppercase tracking-wider font-semibold ${stat.labelColor || "text-slate-500"}`}>
               {stat.label}
               {stat.subLabel ? ` ${stat.subLabel}` : ""}
             </p>
