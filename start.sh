@@ -7,8 +7,13 @@ php artisan optimize:clear
 # Then re-cache only the config (NOT routes — route:cache can cause stale routes)
 php artisan config:cache
 
-# Run migrations. Keep stderr visible: a swallowed SQL error here is
-# what left special events out of the live database.
+# Apply resource schema changes before the full migration batch. A legacy
+# duplicate registration migration can stop the batch before these run.
+php artisan migrate --path=database/migrations/2026_11_11_000001_add_buffer_minutes_to_resources_table.php --force
+php artisan migrate --path=database/migrations/2026_11_11_000002_add_images_to_resources_table.php --force
+
+# Run remaining migrations. Keep stderr visible and warn if a legacy migration
+# prevents the rest of the batch from completing.
 php artisan migrate --force || echo "Migrations completed (some may have already run)"
 
 # Optional one-time seeding: set RUN_SEED=true in Render, deploy once, then remove it
