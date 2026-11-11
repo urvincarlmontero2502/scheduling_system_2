@@ -48,23 +48,23 @@ export default function Dashboard() {
               {/* Pending Requests */}
               <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-[28px] font-bold text-black">
+                  <span className="text-[28px] font-bold text-orange-500">
                     {stats.pending || 0}
                   </span>
-                  <Clock size={20} className="text-steel" />
+                  <Clock size={20} className="text-orange-500" />
                 </div>
-                <p className="text-[13px] text-steel mt-2">Pending requests</p>
+                <p className="text-[13px] text-orange-600 mt-2">Pending requests</p>
               </div>
 
               {/* Approved This Week */}
               <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-[28px] font-bold text-black">
+                  <span className="text-[28px] font-bold text-green-600">
                     {stats.approvedWeekly || 0}
                   </span>
-                  <CheckCircle2 size={20} className="text-steel" />
+                  <CheckCircle2 size={20} className="text-green-600" />
                 </div>
-                <p className="text-[13px] text-steel mt-2">Approved this week</p>
+                <p className="text-[13px] text-green-700 mt-2">Approved this week</p>
               </div>
 
               {/* Facilities Count */}
