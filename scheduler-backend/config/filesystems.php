@@ -47,12 +47,16 @@ return [
             'report' => false,
         ],
 
-        'assets' => [
-            'driver' => 'local',
-            'root' => storage_path('app/public/uploads'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/uploads',
-            'visibility' => 'public',
-            'throw' => false,
+        'assets' => array_merge([
+            'driver' => env('ASSETS_DRIVER', 'local'),
+            'key' => env('SUPABASE_S3_ACCESS_KEY_ID'),
+            'secret' => env('SUPABASE_S3_SECRET_ACCESS_KEY'),
+            'region' => env('SUPABASE_S3_REGION', 'us-east-1'),
+            'bucket' => env('SUPABASE_S3_BUCKET'),
+            'url' => env('SUPABASE_STORAGE_PUBLIC_URL', rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/uploads'),
+            'endpoint' => env('SUPABASE_S3_ENDPOINT'),
+            'use_path_style_endpoint' => env('SUPABASE_S3_USE_PATH_STYLE_ENDPOINT', true),
+            'throw' => env('ASSETS_DRIVER', 'local') !== 'local',
             'report' => false,
             'subdirs' => [
                 'facilities',
@@ -60,7 +64,10 @@ return [
                 'profiles',
                 'branding',
             ],
-        ],
+        ], env('ASSETS_DRIVER', 'local') === 'local' ? [
+            'root' => storage_path('app/public/uploads'),
+            'visibility' => 'public',
+        ] : []),
 
         's3' => [
             'driver' => 's3',

@@ -212,7 +212,15 @@ class AuthController extends Controller
 
         // Delete old profile image if it exists
         if ($user->profile_image) {
-            $oldPath = str_replace('/storage/uploads/', '', $user->profile_image);
+            $oldPath = $user->profile_image;
+            $assetsUrl = rtrim(config('filesystems.disks.assets.url', ''), '/');
+
+            if ($assetsUrl !== '' && str_starts_with($oldPath, $assetsUrl . '/')) {
+                $oldPath = substr($oldPath, strlen($assetsUrl) + 1);
+            } else {
+                $oldPath = ltrim(str_replace('/storage/uploads/', '', $oldPath), '/');
+            }
+
             Storage::disk('assets')->delete($oldPath);
         }
 
