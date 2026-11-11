@@ -179,6 +179,7 @@ class ResourceController extends Controller
             'description' => ['nullable', 'string'],
             'buffer_minutes' => ['required', 'integer', 'min:0'],
             'capacity' => ['nullable', 'string'],
+            'unit_name' => ['nullable', 'string'],
             'status' => ['nullable', 'in:available,unavailable,maintenance'],
             'image' => ['nullable', 'image', 'max:2048'], // Optional image upload on update
             'images' => ['sometimes', 'array', 'max:3'],
@@ -217,7 +218,7 @@ class ResourceController extends Controller
         } else {
             $resource->vehicleDetails()->updateOrCreate(
                 ['resource_id' => $resource->resource_id],
-                ['unit_name' => $validated['capacity'] ?? null]
+                ['unit_name' => $validated['unit_name'] ?? $validated['capacity'] ?? null]
             );
         }
 

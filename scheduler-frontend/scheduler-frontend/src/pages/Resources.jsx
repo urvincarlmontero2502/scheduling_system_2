@@ -317,6 +317,14 @@ export default function Resources() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const oversizedImage = formData.images.find(
+      (image) => image.size > 2 * 1024 * 1024,
+    );
+    if (oversizedImage) {
+      toast.error(`${oversizedImage.name} exceeds the 2 MB limit.`);
+      return;
+    }
+
     const data = new FormData();
     data.append("name", formData.name);
     data.append("type", formData.type);
@@ -335,12 +343,8 @@ export default function Resources() {
       data.append("_method", "PUT");
     }
 
-    // --- Optimistic: close modal + show success immediately ---
     const prevResources = [...resources];
     const actionText = editingResource ? "updated" : "created";
-
-    setIsModalOpen(false);
-    toast.success(`Resource ${actionText} successfully!`, { duration: 3000 });
 
     const request = editingResource
       ? client.post(
@@ -351,6 +355,8 @@ export default function Resources() {
 
     request
       .then((res) => {
+        setIsModalOpen(false);
+        toast.success(`Resource ${actionText} successfully!`, { duration: 3000 });
         // Sync with server response if available
         if (res?.data) {
           const serverResource = res.data.resource || res.data;
@@ -373,8 +379,12 @@ export default function Resources() {
         // Rollback cache
         writeCache(CACHE_KEYS.RESOURCES, prevResources);
         refetchResources();
+        const validationErrors = Object.values(
+          err?.response?.data?.errors || {},
+        ).flat();
         toast.error(
-          err?.response?.data?.message ||
+          validationErrors[0] ||
+            err?.response?.data?.message ||
             "Failed to save resource. Please try again.",
         );
       });
@@ -894,9 +904,19 @@ export default function Resources() {
                     if (selectedImages.length > 3) {
                       toast.error("Select no more than 3 images.");
                     }
+                    const oversizedImage = selectedImages.find(
+                      (image) => image.size > 2 * 1024 * 1024,
+                    );
+                    if (oversizedImage) {
+                      toast.error(
+                        `${oversizedImage.name} exceeds the 2 MB limit.`,
+                      );
+                    }
                     setFormData({
                       ...formData,
-                      images: selectedImages.slice(0, 3),
+                      images: selectedImages
+                        .filter((image) => image.size <= 2 * 1024 * 1024)
+                        .slice(0, 3),
                     });
                   }}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
