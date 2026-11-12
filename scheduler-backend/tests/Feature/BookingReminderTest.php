@@ -6,12 +6,15 @@ use App\Mail\BookingReminder;
 use App\Models\BookingRequest;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\BrevoSmsSender;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
 use Tests\TestCase;
 
 class BookingReminderTest extends TestCase
@@ -55,8 +58,10 @@ class BookingReminderTest extends TestCase
             $table->string('start_time')->nullable();
             $table->string('end_time')->nullable();
             $table->string('email')->nullable();
+            $table->string('cell_number')->nullable();
             $table->string('status');
             $table->timestamp('reminder_sent_at')->nullable();
+            $table->timestamp('reminder_sms_sent_at')->nullable();
         });
         Schema::create('system_settings', function (Blueprint $table) {
             $table->string('key')->primary();
@@ -96,13 +101,18 @@ class BookingReminderTest extends TestCase
             ->assertOk()
             ->assertJsonPath('days_before', 1);
 
-        $this->putJson('/api/admin/settings/booking-reminder', ['days_before' => 3])
+        $this->putJson('/api/admin/settings/booking-reminder', [
+            'days_before' => 3,
+            'sms_enabled' => true,
+        ])
             ->assertOk()
-            ->assertJsonPath('days_before', 3);
+            ->assertJsonPath('days_before', 3)
+            ->assertJsonPath('sms_enabled', true);
 
         $this->getJson('/api/admin/settings/booking-reminder')
             ->assertOk()
-            ->assertJsonPath('days_before', 3);
+            ->assertJsonPath('days_before', 3)
+            ->assertJsonPath('sms_enabled', true);
     }
 
     public function test_each_supported_reminder_interval_is_accepted(): void
@@ -118,6 +128,10 @@ class BookingReminderTest extends TestCase
         $this->putJson('/api/admin/settings/booking-reminder', ['days_before' => 2])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('days_before');
+        $this->putJson('/api/admin/settings/booking-reminder', [
+            'days_before' => 1,
+            'sms_enabled' => 'sometimes',
+        ])->assertUnprocessable()->assertJsonValidationErrors('sms_enabled');
     }
 
     public function test_only_system_admin_can_change_global_reminder_settings(): void
@@ -173,6 +187,73 @@ class BookingReminderTest extends TestCase
         Mail::assertSent(BookingReminder::class, 2);
     }
 
+    public function test_enabled_sms_reminder_uses_brevo_and_tracks_success_separately(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-12 09:00:00', 'Asia/Manila'));
+        config([
+            'services.brevo.key' => 'test-api-key',
+            'services.brevo.sms_sender' => 'Jabonga',
+        ]);
+        DB::table('system_settings')->insert([
+            'key' => 'booking_reminder_days_before',
+            'value' => '1',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('system_settings')->insert([
+            'key' => 'booking_reminder_sms_enabled',
+            'value' => '1',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $booking = $this->createBooking('approved', '2026-11-13');
+        $booking->update(['cell_number' => '09171234567']);
+
+        $requests = [];
+        $client = new MockHttpClient(function (string $method, string $url, array $options) use (&$requests) {
+            $requests[] = [$method, $url, $options];
+
+            return new MockResponse('{"messageId":123,"reference":"test"}', ['http_code' => 201]);
+        });
+        app()->instance(BrevoSmsSender::class, new BrevoSmsSender($client));
+        Mail::fake();
+
+        $this->artisan('bookings:send-reminders')->assertSuccessful();
+
+        $this->assertCount(1, $requests);
+        $this->assertSame('POST', $requests[0][0]);
+        $this->assertSame('https://api.brevo.com/v3/transactionalSMS/sms', $requests[0][1]);
+        $payload = json_decode($requests[0][2]['body'], true);
+        $this->assertSame('+639171234567', $payload['recipient']);
+        $this->assertSame('Jabonga', $payload['sender']);
+        $this->assertNotNull($booking->fresh()->reminder_sent_at);
+        $this->assertNotNull($booking->fresh()->reminder_sms_sent_at);
+        Mail::assertSent(BookingReminder::class, 1);
+    }
+
+    public function test_sms_sender_rejects_invalid_phone_number_without_calling_brevo(): void
+    {
+        config([
+            'services.brevo.key' => 'test-api-key',
+            'services.brevo.sms_sender' => 'Jabonga',
+        ]);
+        $booking = $this->createBooking('approved', '2026-11-13');
+        $booking->update(['cell_number' => '12345']);
+        $client = new MockHttpClient(function () {
+            $this->fail('Brevo must not be called for an invalid Philippine number.');
+        });
+
+        try {
+            (new BrevoSmsSender($client))->sendBookingReminder($booking);
+            $this->fail('An invalid phone number should be rejected.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(
+                'The booking does not have a valid Philippine mobile number.',
+                $exception->getMessage()
+            );
+        }
+    }
+
     private function createBooking(string $status, string $startDate): BookingRequest
     {
         return BookingRequest::create([
@@ -185,6 +266,7 @@ class BookingReminderTest extends TestCase
             'start_time' => '09:00',
             'end_time' => '10:00',
             'email' => $this->requester->email,
+            'cell_number' => '09171234567',
             'status' => $status,
         ]);
     }

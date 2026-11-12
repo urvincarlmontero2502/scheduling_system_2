@@ -32,6 +32,13 @@ Asia/Manila time. The system admin selects a lead time of 1, 3, or 5 days in
 **System Settings → Notifications**. Reminder delivery requires Brevo to be
 configured and the database migrations to have run.
 
+SMS is optional and disabled by default. To offer it, configure
+`BREVO_SMS_SENDER` in the backend environment with an approved Brevo sender
+name, ensure the Brevo account has SMS credits, and enable **Also send SMS
+reminders through Brevo** in System Settings. SMS uses the booking's Philippine
+mobile number; only valid Philippine mobile numbers are sent. Email remains
+enabled. Provider charges/credits apply to each SMS.
+
 Laravel's scheduler must be invoked once per minute for the daily reminder
 schedule to run. In Render, create a **Cron Job** using the same repository and
 backend root directory as the web service:

@@ -16,8 +16,11 @@ export const completeGoogleRegistration = (tempToken, barangay) =>
 // --- System Settings (admin only) ------------------------------------
 export const fetchBookingReminderSettings = () =>
   client.get("/admin/settings/booking-reminder");
-export const updateBookingReminderSettings = (daysBefore) =>
-  client.put("/admin/settings/booking-reminder", { days_before: daysBefore });
+export const updateBookingReminderSettings = (daysBefore, smsEnabled) =>
+  client.put("/admin/settings/booking-reminder", {
+    days_before: daysBefore,
+    sms_enabled: smsEnabled,
+  });
 
 // --- Registration Requests (admin approval workflow) ------------------------
 export const fetchRegistrationRequests = () => client.get("/registration-requests");

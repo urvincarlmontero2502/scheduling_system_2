@@ -43,6 +43,7 @@ return [
 
     'brevo' => [
         'key' => env('BREVO_API_KEY'),
+        'sms_sender' => env('BREVO_SMS_SENDER'),
     ],
 
 ];

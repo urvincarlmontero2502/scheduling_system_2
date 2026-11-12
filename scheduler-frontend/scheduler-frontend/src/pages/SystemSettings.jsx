@@ -13,6 +13,8 @@ export default function SystemSettings() {
   const { user } = useAuth();
   const [daysBefore, setDaysBefore] = useState(1);
   const [savedDaysBefore, setSavedDaysBefore] = useState(1);
+  const [smsEnabled, setSmsEnabled] = useState(false);
+  const [savedSmsEnabled, setSavedSmsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -32,6 +34,8 @@ export default function SystemSettings() {
         if (active) {
           setDaysBefore(data.days_before);
           setSavedDaysBefore(data.days_before);
+          setSmsEnabled(Boolean(data.sms_enabled));
+          setSavedSmsEnabled(Boolean(data.sms_enabled));
         }
       })
       .catch((requestError) => {
@@ -57,9 +61,11 @@ export default function SystemSettings() {
     setSuccess("");
 
     try {
-      const { data } = await api.updateBookingReminderSettings(daysBefore);
+      const { data } = await api.updateBookingReminderSettings(daysBefore, smsEnabled);
       setDaysBefore(data.days_before);
       setSavedDaysBefore(data.days_before);
+      setSmsEnabled(Boolean(data.sms_enabled));
+      setSavedSmsEnabled(Boolean(data.sms_enabled));
       setSuccess("Reminder setting saved.");
     } catch (requestError) {
       setError(
@@ -134,6 +140,29 @@ export default function SystemSettings() {
           </p>
         </div>
 
+        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4">
+          <input
+            type="checkbox"
+            checked={smsEnabled}
+            disabled={loading || saving}
+            onChange={(event) => {
+              setSmsEnabled(event.target.checked);
+              setError("");
+              setSuccess("");
+            }}
+            className="mt-1 h-4 w-4 accent-blue-600"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-slate-800">
+              Also send SMS reminders through Brevo
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">
+              Email reminders stay on. SMS requires Brevo SMS credits, a configured sender name,
+              and a valid Philippine mobile number on the booking. SMS charges may apply.
+            </span>
+          </span>
+        </label>
+
         {error && (
           <p role="alert" className="mt-4 flex items-start gap-2 text-sm text-red-700">
             <AlertCircle size={18} className="mt-0.5 shrink-0" />
@@ -151,7 +180,11 @@ export default function SystemSettings() {
           <button
             type="button"
             onClick={saveSettings}
-            disabled={loading || saving || daysBefore === savedDaysBefore}
+            disabled={
+              loading ||
+              saving ||
+              (daysBefore === savedDaysBefore && smsEnabled === savedSmsEnabled)
+            }
             className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Save size={16} />

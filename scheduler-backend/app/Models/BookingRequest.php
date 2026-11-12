@@ -38,6 +38,7 @@ class BookingRequest extends Model
             'end_date' => 'date',
             'is_special_event' => 'boolean',
             'reminder_sent_at' => 'datetime',
+            'reminder_sms_sent_at' => 'datetime',
         ];
     }
 
