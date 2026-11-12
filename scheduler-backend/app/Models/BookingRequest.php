@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class BookingRequest extends Model
 {
     protected $table = 'booking_request';
+
     protected $primaryKey = 'booking_id';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -35,6 +37,7 @@ class BookingRequest extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'is_special_event' => 'boolean',
+            'reminder_sent_at' => 'datetime',
         ];
     }
 

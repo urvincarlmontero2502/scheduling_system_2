@@ -12,6 +12,7 @@ import BookingHistory from "./pages/BookingHistory"; // 1. Import it here
 import Resources from "./pages/Resources";
 import RegistrationRequests from "./pages/RegistrationRequests";
 import AccountSettings from "./pages/AccountSettings";
+import SystemSettings from "./pages/SystemSettings";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="resources" element={<Resources />} />
             <Route path="registration-requests" element={<RegistrationRequests />} />
             <Route path="account-settings" element={<AccountSettings />} />
+            <Route path="system-settings" element={<SystemSettings />} />
           </Route>
           {/* Public routes */}
           <Route path="/verify-email-change" element={<VerifyEmailChange />} />

@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin", "barangay_admin"] },
 
   { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
+  { to: "/system-settings", label: "System Settings", icon: Settings, roles: ["admin"] },
 
   {
     to: "/registration-requests",
@@ -80,6 +81,7 @@ const PAGE_TITLES = {
   "/resources": { title: "Resources", subtitle: "Manage LGU facilities, fleet, and equipment inventory" },
   "/registration-requests": { title: "Registration Requests", subtitle: "Review and approve new user account registrations" },
   "/account-settings": { title: "Account Settings", subtitle: "Manage your profile and security preferences" },
+  "/system-settings": { title: "System Settings", subtitle: "Configure system-wide booking notifications" },
 };
 
 export default function DashboardLayout() {

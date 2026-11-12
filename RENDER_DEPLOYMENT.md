@@ -25,6 +25,25 @@ handles the authorization code before posting it to the Laravel API.
 3. Save the settings and redeploy the backend after updating its environment.
    The frontend callback route must also be deployed.
 
+## Booking reminder emails
+
+The backend sends email reminders for upcoming approved bookings at 9:00 AM
+Asia/Manila time. The system admin selects a lead time of 1, 3, or 5 days in
+**System Settings → Notifications**. Reminder delivery requires Brevo to be
+configured and the database migrations to have run.
+
+Laravel's scheduler must be invoked once per minute for the daily reminder
+schedule to run. In Render, create a **Cron Job** using the same repository and
+backend root directory as the web service:
+
+- **Schedule:** `* * * * *`
+- **Command:** `php artisan schedule:run`
+- Use the same database, mail, app-key, and other required environment
+  variables as the backend web service.
+
+Without this cron job, saving the setting works, but automatic reminders will
+not be sent.
+
 ## Store uploaded images in Supabase Storage
 
 Render's free service filesystem is ephemeral. Store uploads in Supabase Storage

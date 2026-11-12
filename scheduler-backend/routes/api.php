@@ -5,6 +5,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\SystemSettingsController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -201,6 +202,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::get('/dashboard/stats', [BookingController::class, 'stats']);
+
+    // System-wide admin settings
+    Route::get('/admin/settings/booking-reminder', [SystemSettingsController::class, 'showBookingReminder'])
+        ->middleware('admin');
+    Route::put('/admin/settings/booking-reminder', [SystemSettingsController::class, 'updateBookingReminder'])
+        ->middleware('admin');
 
     // Resources
     Route::get('/resources', [ResourceController::class, 'index']);

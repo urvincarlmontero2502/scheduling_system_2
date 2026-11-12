@@ -13,6 +13,12 @@ export const googleCallback = (code) => client.post("/auth/google/callback", { c
 export const completeGoogleRegistration = (tempToken, barangay) =>
   client.post("/auth/google/complete-registration", { temporary_token: tempToken, barangay });
 
+// --- System Settings (admin only) ------------------------------------
+export const fetchBookingReminderSettings = () =>
+  client.get("/admin/settings/booking-reminder");
+export const updateBookingReminderSettings = (daysBefore) =>
+  client.put("/admin/settings/booking-reminder", { days_before: daysBefore });
+
 // --- Registration Requests (admin approval workflow) ------------------------
 export const fetchRegistrationRequests = () => client.get("/registration-requests");
 export const fetchProcessedRegistrationRequests = () => client.get("/registration-requests/processed");
