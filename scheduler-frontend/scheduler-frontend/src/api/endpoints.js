@@ -21,6 +21,16 @@ export const updateBookingReminderSettings = (daysBefore, smsEnabled) =>
     days_before: daysBefore,
     sms_enabled: smsEnabled,
   });
+export const fetchActivityLogs = (params = {}) =>
+  client.get("/admin/activity-logs", { params });
+export const fetchBookingRemovalRequest = (bookingId) =>
+  client.get(`/bookings/${bookingId}/removal-request`);
+export const requestBookingRemoval = (bookingId) =>
+  client.post(`/bookings/${bookingId}/removal-request`);
+export const fetchBookingRemovalRequests = () =>
+  client.get("/booking-removal-requests");
+export const rejectBookingRemovalRequest = (id) =>
+  client.post(`/booking-removal-requests/${id}/reject`);
 
 // --- Registration Requests (admin approval workflow) ------------------------
 export const fetchRegistrationRequests = () => client.get("/registration-requests");
@@ -122,6 +132,11 @@ export const fetchBookings = (params) => {
     return res;
   });
 };
+export const fetchRemovedBookings = () => client.get("/bookings/removed");
+export const restoreBooking = (id) => {
+  invalidateCache(CACHE_KEYS.BOOKINGS);
+  return client.post(`/bookings/${id}/restore`);
+};
 export const createBooking = (payload) => {
   invalidateCache(CACHE_KEYS.BOOKINGS);
   return client.post("/bookings", payload);
@@ -134,7 +149,14 @@ export const updateBookingStatus = (id, status, extra = {}) =>
 export const invalidateBookingsCache = () => invalidateCache(CACHE_KEYS.BOOKINGS);
 
 // Delete a booking
-export const deleteBooking = (id) => client.delete(`/bookings/${id}`);
+export const deleteBooking = (id) => {
+  invalidateCache(CACHE_KEYS.BOOKINGS);
+  return client.delete(`/bookings/${id}`);
+};
+export const approveBookingRemovalRequest = (id) => {
+  invalidateCache(CACHE_KEYS.BOOKINGS);
+  return client.post(`/booking-removal-requests/${id}/approve`);
+};
 
 // --- Resources (facilities & vehicles) ---------------------------------
 const extractArray = (res) => {

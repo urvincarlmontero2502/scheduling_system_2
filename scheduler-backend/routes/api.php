@@ -1,14 +1,17 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingRemovalRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SystemSettingsController;
 use App\Http\Controllers\UploadController;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 // Public Health Check Endpoint
 Route::get('/health', function () {
@@ -16,7 +19,7 @@ Route::get('/health', function () {
 
     try {
         DB::connection()->getPdo();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         $dbConnected = false;
     }
 
@@ -26,22 +29,22 @@ Route::get('/health', function () {
     try {
         $columns = DB::connection()
             ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
-        $columnNames = array_map(fn($c) => $c->column_name, $columns);
-        
+        $columnNames = array_map(fn ($c) => $c->column_name, $columns);
+
         foreach (['google_id', 'email_verified_at', 'full_name', 'email', 'password_hash', 'role'] as $col) {
-            if (!in_array($col, $columnNames)) {
+            if (! in_array($col, $columnNames)) {
                 $missing[] = $col;
             }
         }
-    } catch (\Exception $e) {
-        $missing = ['error_checking: ' . $e->getMessage()];
+    } catch (Exception $e) {
+        $missing = ['error_checking: '.$e->getMessage()];
     }
 
     // Check personal_access_tokens table
     $tokensTableExists = true;
     try {
-        DB::connection()->select("SELECT 1 FROM personal_access_tokens LIMIT 1");
-    } catch (\Exception $e) {
+        DB::connection()->select('SELECT 1 FROM personal_access_tokens LIMIT 1');
+    } catch (Exception $e) {
         $tokensTableExists = false;
     }
 
@@ -50,7 +53,7 @@ Route::get('/health', function () {
         'database' => $dbConnected,
         'missing_columns' => $missing,
         'personal_access_tokens_table' => $tokensTableExists,
-        'user_columns' => array_map(fn($c) => $c->column_name, $columns),
+        'user_columns' => array_map(fn ($c) => $c->column_name, $columns),
     ]);
 });
 
@@ -67,30 +70,30 @@ Route::get('/diagnostics/oauth-schema', function () {
     $missing = [];
     $columns = [];
     $tablesOk = true;
-    
+
     try {
         $columns = DB::connection()
             ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
-        $columnNames = array_map(fn($c) => $c->column_name, $columns);
-        
+        $columnNames = array_map(fn ($c) => $c->column_name, $columns);
+
         foreach (['google_id', 'email_verified_at', 'full_name', 'email', 'password_hash', 'role'] as $col) {
-            if (!in_array($col, $columnNames)) {
+            if (! in_array($col, $columnNames)) {
                 $missing[] = $col;
             }
         }
-    } catch (\Exception $e) {
-        $missing = ['error: ' . $e->getMessage()];
+    } catch (Exception $e) {
+        $missing = ['error: '.$e->getMessage()];
     }
 
     try {
-        DB::connection()->select("SELECT 1 FROM personal_access_tokens LIMIT 1");
-    } catch (\Exception $e) {
+        DB::connection()->select('SELECT 1 FROM personal_access_tokens LIMIT 1');
+    } catch (Exception $e) {
         $tablesOk = false;
         $missing[] = 'personal_access_tokens table missing';
     }
 
     return response()->json([
-        'users_columns' => array_map(fn($c) => $c->column_name, $columns),
+        'users_columns' => array_map(fn ($c) => $c->column_name, $columns),
         'missing_columns' => $missing,
         'tokens_table_exists' => $tablesOk,
         'all_required_present' => empty($missing),
@@ -100,14 +103,14 @@ Route::get('/diagnostics/oauth-schema', function () {
 // Diagnostic: check resources table schema
 Route::get('/diagnostics/resources-schema', function () {
     $result = ['resources_table_exists' => true, 'columns' => [], 'missing_columns' => []];
-    
+
     try {
         $cols = DB::connection()
             ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'resources'");
-        $result['columns'] = array_map(fn($c) => $c->column_name, $cols);
-        
+        $result['columns'] = array_map(fn ($c) => $c->column_name, $cols);
+
         foreach (['resource_id', 'name', 'type', 'status', 'image', 'description'] as $col) {
-            if (!in_array($col, $result['columns'])) {
+            if (! in_array($col, $result['columns'])) {
                 $result['missing_columns'][] = $col;
             }
         }
@@ -115,16 +118,16 @@ Route::get('/diagnostics/resources-schema', function () {
         $result['resources_table_exists'] = false;
         $result['error'] = $e->getMessage();
     }
-    
+
     // Also check detail tables
     try {
         $tables = DB::connection()
             ->select("SELECT table_name FROM information_schema.tables WHERE table_name IN ('facility_details', 'vehicle_details')");
-        $result['detail_tables'] = array_map(fn($t) => $t->table_name, $tables);
+        $result['detail_tables'] = array_map(fn ($t) => $t->table_name, $tables);
     } catch (Exception $e) {
         $result['detail_tables_error'] = $e->getMessage();
     }
-    
+
     return response()->json($result);
 });
 
@@ -142,15 +145,15 @@ Route::get('/diagnostics/oauth-tokens', function () {
         $tableExists = DB::connection()
             ->select("SELECT 1 FROM information_schema.tables WHERE table_name = 'google_oauth_temp_tokens' LIMIT 1");
 
-        $result['table_exists'] = !empty($tableExists);
+        $result['table_exists'] = ! empty($tableExists);
 
         if ($result['table_exists']) {
             $count = DB::connection()
-                ->select("SELECT COUNT(*) as cnt FROM google_oauth_temp_tokens");
+                ->select('SELECT COUNT(*) as cnt FROM google_oauth_temp_tokens');
             $result['token_count'] = (int) $count[0]->cnt;
 
             // Test write access (insert + delete)
-            $testToken = \Illuminate\Support\Str::random(64);
+            $testToken = Str::random(64);
             try {
                 DB::table('google_oauth_temp_tokens')->insert([
                     'token' => $testToken,
@@ -168,18 +171,18 @@ Route::get('/diagnostics/oauth-tokens', function () {
                 $check = DB::table('google_oauth_temp_tokens')
                     ->where('token', $testToken)
                     ->first();
-                $result['read_test'] = !is_null($check);
+                $result['read_test'] = ! is_null($check);
 
                 // Clean up the test token
                 DB::table('google_oauth_temp_tokens')
                     ->where('token', $testToken)
                     ->delete();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $result['insert_test'] = false;
                 $result['insert_error'] = $e->getMessage();
             }
         }
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         $result['accessible'] = false;
         $result['error'] = $e->getMessage();
     }
@@ -204,6 +207,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [BookingController::class, 'stats']);
 
     // System-wide admin settings
+    Route::get('/admin/activity-logs', [ActivityLogController::class, 'index']);
     Route::get('/admin/settings/booking-reminder', [SystemSettingsController::class, 'showBookingReminder'])
         ->middleware('admin');
     Route::put('/admin/settings/booking-reminder', [SystemSettingsController::class, 'updateBookingReminder'])
@@ -229,6 +233,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Bookings
     Route::get('/bookings', [BookingController::class, 'index']);
+    Route::get('/bookings/removed', [BookingController::class, 'removed']);
+    Route::post('/bookings/{id}/restore', [BookingController::class, 'restore']);
     Route::post('/bookings', [BookingController::class, 'store']);
 
     // Availability suggestions endpoint
@@ -237,8 +243,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/bookings/{booking}/status', [BookingController::class, 'updateStatus'])
         ->middleware('admin');
 
-    Route::delete('/bookings/{id}', [BookingController::class, 'destroy'])
+    Route::get('/bookings/{booking}/removal-request', [BookingRemovalRequestController::class, 'showForBooking']);
+    Route::post('/bookings/{booking}/removal-request', [BookingRemovalRequestController::class, 'store']);
+    Route::get('/booking-removal-requests', [BookingRemovalRequestController::class, 'index'])
         ->middleware('admin');
+    Route::post('/booking-removal-requests/{removalRequest}/approve', [BookingRemovalRequestController::class, 'approve'])
+        ->middleware('admin');
+    Route::post('/booking-removal-requests/{removalRequest}/reject', [BookingRemovalRequestController::class, 'reject'])
+        ->middleware('admin');
+
+    Route::delete('/bookings/{id}', [BookingController::class, 'destroy']);
 
     // Asset / Media Uploads
     Route::post('/uploads', [UploadController::class, 'upload'])
@@ -272,10 +286,10 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('admin');
 
     // Admin: list all users
-    Route::get('/users', [\App\Http\Controllers\AuthController::class, 'listUsers'])
+    Route::get('/users', [AuthController::class, 'listUsers'])
         ->middleware('admin');
 
     // Admin-only: secure test email endpoint (rate-limited)
-    Route::post('/admin/test-email', [\App\Http\Controllers\AuthController::class, 'sendTestEmail'])
+    Route::post('/admin/test-email', [AuthController::class, 'sendTestEmail'])
         ->middleware(['admin', 'throttle:3,1']);
 });

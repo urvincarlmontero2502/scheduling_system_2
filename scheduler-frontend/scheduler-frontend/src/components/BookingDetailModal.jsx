@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin, CheckCircle, XCircle } from "lucide-react";
+import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import ConfirmModal from "./ConfirmModal";
+import * as api from "../api/endpoints";
 
 // Helper to format date
 function formatDate(dateStr) {
@@ -41,21 +43,56 @@ export default function BookingDetailModal({
   onClose,
   onApprove,
   onReject,
+  onDelete,
+  onRequestRemoval,
   canModerate = false,
+  canRemoveApproved = false,
+  canRemovePending = false,
+  canRequestRemoval = false,
 }) {
-  if (!booking) return null;
-
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showRequestRemovalConfirm, setShowRequestRemovalConfirm] = useState(false);
+  const [removalRequestStatus, setRemovalRequestStatus] = useState("");
 
-  const bookingId = booking.id || booking.booking_id;
+  const bookingId = booking?.id || booking?.booking_id;
+  const status = (booking?.status || "pending").toLowerCase();
+  const isPending = status === "pending";
+
+  useEffect(() => {
+    let active = true;
+    setRemovalRequestStatus("");
+
+    if (!bookingId || !canRequestRemoval || !["pending", "approved"].includes(status)) {
+      return () => {
+        active = false;
+      };
+    }
+
+    api.fetchBookingRemovalRequest(bookingId)
+      .then((response) => {
+        if (active) setRemovalRequestStatus(response?.data?.status || "");
+      })
+      .catch((error) => {
+        if (active) {
+          console.error("Failed to load booking removal request status:", error);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [bookingId, canRequestRemoval, status]);
+
+  if (!booking) return null;
+
   const resourceName =
     booking.resource || booking.resource_name || booking.item_name || "Unknown Resource";
   const resourceType =
     (booking.resource_type || booking.item_type || "").toLowerCase().includes("vehicle")
       ? "Vehicle"
       : "Facility";
-  const status = (booking.status || "pending").toLowerCase();
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   const fullName =
@@ -91,8 +128,6 @@ export default function BookingDetailModal({
     }
   }
 
-  const isPending = status === "pending";
-
   const handleApprove = () => {
     if (onApprove) onApprove(bookingId);
   };
@@ -107,6 +142,10 @@ export default function BookingDetailModal({
     setRejectionReason("");
   };
 
+  const handleRemove = () => {
+    setShowRemoveConfirm(true);
+  };
+
   const handleCancelReject = () => {
     setShowRejectInput(false);
     setRejectionReason("");
@@ -115,7 +154,9 @@ export default function BookingDetailModal({
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div
         className="flex max-h-[90vh] w-[95vw] max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
@@ -274,7 +315,42 @@ export default function BookingDetailModal({
                 >
                   <Check size={14} /> Approve
                 </button>
+                {canRemovePending && onDelete && (
+                  <button
+                    onClick={handleRemove}
+                    className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                )}
               </>
+            ) : isPending && canRemovePending && onDelete ? (
+              <button
+                onClick={handleRemove}
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
+              >
+                <Trash2 size={14} /> Remove
+              </button>
+            ) : status === "approved" && canRemoveApproved && onDelete ? (
+              <button
+                onClick={handleRemove}
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
+              >
+                <Trash2 size={14} /> Remove
+              </button>
+            ) : ["pending", "approved"].includes(status) && canRequestRemoval && onRequestRemoval ? (
+              removalRequestStatus === "pending" ? (
+                <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-50 px-4 text-sm font-medium text-amber-700 sm:w-auto">
+                  <Clock size={14} /> Removal request pending
+                </span>
+              ) : (
+                <button
+                  onClick={() => setShowRequestRemovalConfirm(true)}
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 sm:w-auto"
+                >
+                  <FileText size={14} /> Request removal
+                </button>
+              )
             ) : canModerate ? (
               <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-500 sm:w-auto">
                 <FileText size={14} /> No actions available
@@ -330,6 +406,37 @@ export default function BookingDetailModal({
           </div>
         )}
       </div>
+      <ConfirmModal
+        open={showRemoveConfirm}
+        onClose={() => setShowRemoveConfirm(false)}
+        onConfirm={async () => {
+          const removed = await onDelete?.(bookingId);
+          if (removed !== false) setShowRemoveConfirm(false);
+        }}
+        title={`Remove ${status} booking`}
+        message={`Are you sure you want to remove ${status} booking #${bookingId}? This action cannot be undone.`}
+        confirmText="Remove"
+        titleIcon={Trash2}
+        titleIconColor="text-rose-600"
+        confirmButtonClass="bg-rose-600 hover:bg-rose-700"
+      />
+      <ConfirmModal
+        open={showRequestRemovalConfirm}
+        onClose={() => setShowRequestRemovalConfirm(false)}
+        onConfirm={async () => {
+          const submitted = await onRequestRemoval?.(bookingId);
+          if (submitted !== false) {
+            setRemovalRequestStatus("pending");
+            setShowRequestRemovalConfirm(false);
+          }
+        }}
+        title="Request booking removal"
+        message={`Send a removal request for booking #${bookingId} to the administrators for review? Your booking will remain active until it is approved.`}
+        confirmText="Send request"
+        titleIcon={FileText}
+        titleIconColor="text-amber-600"
+        confirmButtonClass="bg-amber-600 hover:bg-amber-700"
+      />
     </div>,
     document.body,
   );

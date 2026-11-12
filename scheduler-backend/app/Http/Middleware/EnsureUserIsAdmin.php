@@ -11,12 +11,15 @@ class EnsureUserIsAdmin
     public function handle(Request $request, Closure $next): Response
     {
         if (!$request->user() || !$request->user()->isAdmin()) {
-            // Allow barangay_admin role to pass through for registration request routes
+            // Allow barangay_admin role to pass through for barangay-scoped review routes.
             if ($request->user() && $request->user()->isBarangayAdmin()) {
                 $path = $request->path();
-                // barangay_admin can only access registration request routes
+                // Barangay admins can only access their scoped review endpoints.
                 // Check both with and without the 'api/' prefix
-                if (str_contains($path, 'registration-requests')) {
+                if (
+                    str_contains($path, 'registration-requests')
+                    || str_contains($path, 'booking-removal-requests')
+                ) {
                     return $next($request);
                 }
             }

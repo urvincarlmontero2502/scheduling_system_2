@@ -9,11 +9,13 @@ use App\Models\BookingRequest;
 use App\Models\Notification;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
@@ -37,7 +39,6 @@ class BookingController extends Controller
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Get All Bookings
@@ -48,13 +49,13 @@ class BookingController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
             $query = BookingRequest::with([
                 'resource',
-                'user'
+                'user',
             ]);
 
             // Barangay admins only see requests from their barangay.
@@ -82,10 +83,11 @@ class BookingController extends Controller
 
                 return [
                     'id' => $b->booking_id,
+                    'owner_user_id' => $b->user_id,
                     'resource_id' => $b->resource_id,
                     'resource' => $b->resource?->name ?? 'Unknown Resource',
                     'buffer_minutes' => $b->resource?->buffer_minutes ?? 30,
-                    'resource_image' => ($b->resource && $b->resource->image) ? \Illuminate\Support\Facades\Storage::disk('assets')->url($b->resource->image) : null,
+                    'resource_image' => ($b->resource && $b->resource->image) ? Storage::disk('assets')->url($b->resource->image) : null,
                     'full_name' => $displayName,
                     'requester' => $displayName,
                     'barangay' => $b->user?->barangay ?? $b->user?->name ?? 'Poblacion',
@@ -93,9 +95,9 @@ class BookingController extends Controller
                     'where_do_you_live' => $b->address ?? 'N/A',
                     'address' => $b->address ?? 'N/A',
                     'purpose' => $b->purpose ?? 'No purpose provided',
-                    'start_date' => \Carbon\Carbon::parse($b->start_date)->toDateString(),
-                    'end_date' => \Carbon\Carbon::parse($b->end_date)->toDateString(),
-                    'date' => \Carbon\Carbon::parse($b->start_date)->toDateString() . ' to ' . \Carbon\Carbon::parse($b->end_date)->toDateString(),
+                    'start_date' => Carbon::parse($b->start_date)->toDateString(),
+                    'end_date' => Carbon::parse($b->end_date)->toDateString(),
+                    'date' => Carbon::parse($b->start_date)->toDateString().' to '.Carbon::parse($b->end_date)->toDateString(),
                     'start_time' => $b->start_time,
                     'end_time' => $b->end_time,
                     'time' => ($b->start_time && $b->end_time) ? "{$b->start_time} - {$b->end_time}" : 'All Day',
@@ -109,10 +111,98 @@ class BookingController extends Controller
             });
 
             return response()->json($formatted);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to fetch bookings: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Failed to fetch bookings: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to fetch bookings.'], 500);
         }
+    }
+
+    public function removed(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $query = BookingRequest::onlyTrashed()->with(['resource', 'user']);
+        if ($user->isBarangayAdmin()) {
+            $query->whereHas('user', fn ($builder) => $builder->where('barangay', $user->barangay));
+        } elseif (! $user->isAdmin()) {
+            $query->where('user_id', $user->user_id);
+        }
+
+        return response()->json($query->latest('deleted_at')->get()->map(function ($booking) {
+            $ownerName = $booking->user?->full_name;
+            $displayName = ($booking->full_name && $booking->full_name !== $ownerName)
+                ? $booking->full_name
+                : '—';
+
+            return [
+                'id' => $booking->booking_id,
+                'booking_id' => $booking->booking_id,
+                'owner_user_id' => $booking->user_id,
+                'resource_id' => $booking->resource_id,
+                'resource' => $booking->resource?->name ?? 'Unknown Resource',
+                'full_name' => $displayName,
+                'requester' => $displayName,
+                'barangay' => $booking->user?->barangay ?? 'Poblacion',
+                'purpose' => $booking->purpose ?? 'No purpose provided',
+                'start_date' => Carbon::parse($booking->start_date)->toDateString(),
+                'end_date' => Carbon::parse($booking->end_date)->toDateString(),
+                'start_time' => $booking->start_time,
+                'end_time' => $booking->end_time,
+                'status' => $booking->status,
+                'reference_id' => $booking->reference_id,
+                'deleted_at' => $booking->deleted_at,
+            ];
+        }));
+    }
+
+    public function restore(Request $request, $id)
+    {
+        $user = $request->user();
+        if (! $user || ! $user->isApprover()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $booking = BookingRequest::onlyTrashed()->with('user')->find($id);
+        if (! $booking) {
+            return response()->json(['message' => 'Removed booking not found.'], 404);
+        }
+        if ($user->isBarangayAdmin() && $booking->user?->barangay !== $user->barangay) {
+            return response()->json(['message' => 'You can only restore bookings from your barangay.'], 403);
+        }
+
+        $conflict = in_array($booking->status, ['pending', 'approved'], true)
+            ? $this->hasBookingConflict(
+                $booking->resource_id,
+                $booking->start_date,
+                $booking->end_date,
+                $booking->start_time,
+                $booking->end_time,
+                $booking->booking_id
+            )
+            : null;
+        if ($conflict) {
+            return response()->json([
+                'message' => 'This booking cannot be restored because it conflicts with another active booking.',
+            ], 409);
+        }
+
+        $booking->restore();
+
+        $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+        app(ActivityLogger::class)->record(
+            $user,
+            'booking.restored',
+            sprintf('Restored booking #%d for %s.', $booking->booking_id, $resourceName),
+            'booking',
+            $booking->booking_id,
+            ['status' => $booking->status]
+        );
+
+        return response()->json(['message' => 'Booking restored successfully.']);
     }
 
     /*
@@ -131,7 +221,7 @@ class BookingController extends Controller
             ?? null;
 
         $date = $request->input('date');
-        if (!$date) {
+        if (! $date) {
             return response()->json(['message' => 'Date is required'], 422);
         }
 
@@ -167,17 +257,17 @@ class BookingController extends Controller
             $validated = $request->validate([
                 'resource_id' => [
                     'nullable',
-                    'exists:resources,resource_id'
+                    'exists:resources,resource_id',
                 ],
 
                 'item_id' => [
                     'nullable',
-                    'exists:resources,resource_id'
+                    'exists:resources,resource_id',
                 ],
 
                 'full_name' => [
                     'nullable',
-                    'string'
+                    'string',
                 ],
 
                 'start_date' => [
@@ -189,7 +279,7 @@ class BookingController extends Controller
                 'end_date' => [
                     'required',
                     'date',
-                    'after_or_equal:start_date'
+                    'after_or_equal:start_date',
                 ],
 
                 'start_time' => [
@@ -206,24 +296,24 @@ class BookingController extends Controller
 
                 'purpose' => [
                     'nullable',
-                    'string'
+                    'string',
                 ],
 
                 'cell_number' => [
                     'nullable',
-                    'string'
+                    'string',
                 ],
 
                 'address' => [
                     'nullable',
-                    'string'
+                    'string',
                 ],
 
                 'email' => ['nullable', 'email', 'string'],
 
                 'status' => [
                     'nullable',
-                    'in:pending,approved,rejected'
+                    'in:pending,approved,rejected',
                 ],
 
                 'attendees' => [
@@ -239,7 +329,7 @@ class BookingController extends Controller
             ]);
 
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
@@ -367,7 +457,7 @@ class BookingController extends Controller
             ]);
 
             // Generate human-readable reference ID: JBG-YYYY-NNNN
-            $referenceId = 'JBG-' . date('Y') . '-' . str_pad($booking->booking_id, 4, '0', STR_PAD_LEFT);
+            $referenceId = 'JBG-'.date('Y').'-'.str_pad($booking->booking_id, 4, '0', STR_PAD_LEFT);
             $booking->update(['reference_id' => $referenceId]);
 
             // Notify administrators of new pending booking request
@@ -387,18 +477,34 @@ class BookingController extends Controller
                 ]);
             }
 
+            app(ActivityLogger::class)->record(
+                $user,
+                $booking->status === 'approved' ? 'booking.allocated' : 'booking.requested',
+                sprintf(
+                    '%s booking #%d for %s (%s to %s).',
+                    $booking->status === 'approved' ? 'Directly allocated' : 'Requested',
+                    $booking->booking_id,
+                    $resourceName,
+                    $booking->start_date,
+                    $booking->end_date
+                ),
+                'booking',
+                $booking->booking_id,
+                ['status' => $booking->status, 'resource_name' => $resourceName]
+            );
+
             return response()->json(
                 $booking->load(['resource', 'user']),
                 201
             );
         } catch (ValidationException $e) {
             throw $e;
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to create booking: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Failed to create booking: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to create booking. Please try again.'], 500);
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -412,19 +518,19 @@ class BookingController extends Controller
     ) {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
             $validated = $request->validate([
                 'status' => [
                     'required',
-                    'in:approved,rejected'
+                    'in:approved,rejected',
                 ],
 
                 'remarks' => [
                     'nullable',
-                    'string'
+                    'string',
                 ],
             ]);
 
@@ -455,7 +561,7 @@ class BookingController extends Controller
             }
 
             $booking->update([
-                'status' => $validated['status']
+                'status' => $validated['status'],
             ]);
 
             Approval::create([
@@ -474,6 +580,21 @@ class BookingController extends Controller
                 'title' => $validated['status'] === 'approved' ? 'Booking Approved' : 'Booking Rejected',
             ]);
 
+            $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+            app(ActivityLogger::class)->record(
+                $user,
+                'booking.'.$validated['status'],
+                sprintf(
+                    '%s booking #%d for %s.',
+                    ucfirst($validated['status']),
+                    $booking->booking_id,
+                    $resourceName
+                ),
+                'booking',
+                $booking->booking_id,
+                ['status' => $validated['status'], 'resource_name' => $resourceName]
+            );
+
             try {
                 $requester = User::find($booking->user_id);
                 $resource = $booking->resource;
@@ -487,16 +608,16 @@ class BookingController extends Controller
                     }
                 }
             } catch (Exception $e) {
-                Log::warning('Failed to send booking status email: ' . $e->getMessage());
+                Log::warning('Failed to send booking status email: '.$e->getMessage());
             }
 
             return response()->json($booking);
-        } catch (\Exception $e) {
-            Log::error('Failed to update booking status: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Failed to update booking status: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to update booking status.'], 500);
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -508,24 +629,55 @@ class BookingController extends Controller
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
             $booking = BookingRequest::find($id);
-            if (!$booking) {
+            if (! $booking) {
                 return response()->json([
-                    'message' => 'Booking already deleted or not found.'
+                    'message' => 'Booking already deleted or not found.',
                 ], 404);
             }
 
+            if (! $user->isAdmin()) {
+                if (! $user->isBarangayAdmin()) {
+                    return response()->json(['message' => 'Forbidden.'], 403);
+                }
+
+                if (! in_array($booking->status, ['pending', 'approved'], true)) {
+                    return response()->json(['message' => 'Barangay admins may only remove pending or approved bookings.'], 403);
+                }
+
+                if ($booking->user?->barangay !== $user->barangay) {
+                    return response()->json(['message' => 'You can only remove pending or approved bookings from your barangay.'], 403);
+                }
+            }
+
+            $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+            $bookingSummary = [
+                'status' => $booking->status,
+                'resource_name' => $resourceName,
+                'start_date' => Carbon::parse($booking->start_date)->toDateString(),
+                'end_date' => Carbon::parse($booking->end_date)->toDateString(),
+            ];
             $booking->delete();
 
+            app(ActivityLogger::class)->record(
+                $user,
+                'booking.deleted',
+                sprintf('Deleted booking #%d for %s.', $id, $resourceName),
+                'booking',
+                $id,
+                $bookingSummary
+            );
+
             return response()->json([
-                'message' => 'Booking deleted successfully.'
+                'message' => 'Booking deleted successfully.',
             ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to delete booking: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Failed to delete booking: '.$e->getMessage());
+
             return response()->json(['message' => 'Failed to delete booking.'], 500);
         }
     }
@@ -535,13 +687,13 @@ class BookingController extends Controller
      * Existing reservations block the resource for its configured buffer
      * before and after their scheduled interval.
      *
-     * @param int $resourceId
-     * @param string $startDate  (Y-m-d)
-     * @param string $endDate    (Y-m-d)
-     * @param string|null $startTime  (HH:MM or HH:MM:SS)
-     * @param string|null $endTime    (HH:MM or HH:MM:SS)
-     * @param int|null $excludeBookingId  Booking ID to exclude (self on update)
-     * @return BookingRequest|null  Returns the conflicting booking or null
+     * @param  int  $resourceId
+     * @param  string  $startDate  (Y-m-d)
+     * @param  string  $endDate  (Y-m-d)
+     * @param  string|null  $startTime  (HH:MM or HH:MM:SS)
+     * @param  string|null  $endTime  (HH:MM or HH:MM:SS)
+     * @param  int|null  $excludeBookingId  Booking ID to exclude (self on update)
+     * @return BookingRequest|null Returns the conflicting booking or null
      */
     private function hasBookingConflict(
         $resourceId,
@@ -552,7 +704,7 @@ class BookingController extends Controller
         $excludeBookingId = null,
         $bufferMinutes = null
     ) {
-        if (!$resourceId) {
+        if (! $resourceId) {
             return null;
         }
 
@@ -604,13 +756,13 @@ class BookingController extends Controller
         $startDay = Carbon::parse($startDate)->startOfDay();
         $endDay = Carbon::parse($endDate)->startOfDay();
 
-        if (!$startTime || !$endTime) {
+        if (! $startTime || ! $endTime) {
             return [$startDay, $endDay->endOfDay()];
         }
 
         return [
-            Carbon::parse($startDate . ' ' . $startTime),
-            Carbon::parse($endDate . ' ' . $endTime),
+            Carbon::parse($startDate.' '.$startTime),
+            Carbon::parse($endDate.' '.$endTime),
         ];
     }
 
@@ -670,7 +822,7 @@ class BookingController extends Controller
                 $bufferMinutes
             );
 
-            if (!$nextConflict) {
+            if (! $nextConflict) {
                 $suggestions[] = [
                     'start_time' => $candidateStart->format('Y-m-d H:i:s'),
                     'end_time' => $candidateEnd->format('Y-m-d H:i:s'),
@@ -710,7 +862,7 @@ class BookingController extends Controller
             $candidateStartTime = $startTime ? $nextDate->format('H:i:s') : null;
             $candidateEndTime = $endTime ? $candidateEnd->format('H:i:s') : null;
 
-            if (!$this->hasBookingConflict(
+            if (! $this->hasBookingConflict(
                 $resourceId,
                 $nextDate->toDateString(),
                 $candidateEnd->toDateString(),
@@ -741,12 +893,12 @@ class BookingController extends Controller
      * the specified resource), testing each against hasBookingConflict().
      * Returns all candidates that have no conflicts.
      *
-     * @param string $resourceType  'vehicle' or 'facility'
-     * @param string $startDate
-     * @param string $endDate
-     * @param string|null $startTime
-     * @param string|null $endTime
-     * @param int $excludeResourceId  Resource ID to exclude from results
+     * @param  string  $resourceType  'vehicle' or 'facility'
+     * @param  string  $startDate
+     * @param  string  $endDate
+     * @param  string|null  $startTime
+     * @param  string|null  $endTime
+     * @param  int  $excludeResourceId  Resource ID to exclude from results
      * @return array
      */
     private function findAvailableAlternatives(
@@ -775,7 +927,7 @@ class BookingController extends Controller
                 $resource->buffer_minutes ?? 30
             );
 
-            if (!$conflict) {
+            if (! $conflict) {
                 $alternatives[] = [
                     'resource_id' => $resource->resource_id,
                     'name' => $resource->name,
@@ -790,7 +942,7 @@ class BookingController extends Controller
 
     private function timeToMinutes($time)
     {
-        if (!$time) {
+        if (! $time) {
             return null;
         }
 
@@ -814,7 +966,7 @@ class BookingController extends Controller
         $reqEndMins = null,
         $bufferMinutes = 30
     ) {
-        if (!$resourceId) {
+        if (! $resourceId) {
             return [];
         }
 
@@ -935,6 +1087,7 @@ class BookingController extends Controller
     {
         $hours = (int) floor($mins / 60);
         $minutes = $mins % 60;
+
         return sprintf('%02d:%02d', $hours, $minutes);
     }
 }

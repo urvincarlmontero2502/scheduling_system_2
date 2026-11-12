@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +55,23 @@ class SystemSettingsController extends Controller
         $settings = DB::table('system_settings')
             ->whereIn('key', [self::BOOKING_REMINDER_KEY, 'booking_reminder_sms_enabled'])
             ->pluck('value', 'key');
+        $smsEnabled = $settings->get('booking_reminder_sms_enabled') === '1';
+
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'settings.booking_reminder_updated',
+            sprintf(
+                'Updated booking reminders: %s day(s) before; SMS %s.',
+                $validated['days_before'],
+                $smsEnabled ? 'enabled' : 'disabled'
+            ),
+            'system_setting',
+            self::BOOKING_REMINDER_KEY,
+            [
+                'days_before' => (int) $validated['days_before'],
+                'sms_enabled' => $smsEnabled,
+            ]
+        );
 
         return response()->json([
             'message' => 'Booking reminder setting saved.',

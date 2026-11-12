@@ -17,3 +17,8 @@ Schedule::command('events:seed-annual')
     ->yearlyOn(1, 1, '00:30')
     ->timezone('Asia/Manila')
     ->withoutOverlapping();
+
+Schedule::command('activity-logs:purge-expired')
+    ->dailyAt('00:45')
+    ->timezone('Asia/Manila')
+    ->withoutOverlapping();

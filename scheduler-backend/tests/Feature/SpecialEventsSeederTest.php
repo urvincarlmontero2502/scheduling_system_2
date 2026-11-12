@@ -43,6 +43,7 @@ class SpecialEventsSeederTest extends TestCase
             $table->string('status');
             $table->boolean('is_special_event');
             $table->timestamp('created_at');
+            $table->timestamp('deleted_at')->nullable();
         });
 
         DB::table('users')->insert([

@@ -16,6 +16,8 @@ import {
   X,
   Loader,
   FileCheck,
+  Activity,
+  ClipboardX,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
@@ -36,15 +38,22 @@ const NAV_ITEMS = [
 
   { to: "/bookings", label: "Bookings", icon: ClipboardList },
 
-  { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin", "barangay_admin"] },
+  { to: "/booking-history", label: "Booking History", icon: History, roles: ["admin", "barangay_admin", "staff", "user"] },
 
   { to: "/resources", label: "Facilities & Vehicles", icon: Building2, roles: ["admin"] },
   { to: "/system-settings", label: "System Settings", icon: Settings, roles: ["admin"] },
+  { to: "/activity-logs", label: "Activity Logs", icon: Activity },
 
   {
     to: "/registration-requests",
     label: "Registration Requests",
     icon: FileCheck,
+    roles: ["admin", "barangay_admin"],
+  },
+  {
+    to: "/booking-removal-requests",
+    label: "Removal Requests",
+    icon: ClipboardX,
     roles: ["admin", "barangay_admin"],
   },
 ];
@@ -82,6 +91,8 @@ const PAGE_TITLES = {
   "/registration-requests": { title: "Registration Requests", subtitle: "Review and approve new user account registrations" },
   "/account-settings": { title: "Account Settings", subtitle: "Manage your profile and security preferences" },
   "/system-settings": { title: "System Settings", subtitle: "Configure system-wide booking notifications" },
+  "/activity-logs": { title: "Activity Logs", subtitle: "Review system activity from the past year" },
+  "/booking-removal-requests": { title: "Removal Requests", subtitle: "Review staff requests to remove bookings" },
 };
 
 export default function DashboardLayout() {
@@ -651,7 +662,9 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/booking-history") && "Booking History"}
               {location.pathname.startsWith("/resources") && "Facilities & Vehicles"}
               {location.pathname.startsWith("/registration-requests") && "Registration Requests"}
+              {location.pathname.startsWith("/booking-removal-requests") && "Removal Requests"}
               {location.pathname.startsWith("/account-settings") && "Account Settings"}
+              {location.pathname.startsWith("/activity-logs") && "Activity Logs"}
               {location.pathname === "/" && "Dashboard Overview"}
             </h1>
             <p className="text-[11px] text-steel leading-tight truncate">
@@ -660,7 +673,9 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/booking-history") && "Archived reservation records and logs"}
               {location.pathname.startsWith("/resources") && "Browse and manage municipal assets and equipment"}
               {location.pathname.startsWith("/registration-requests") && "Manage user accounts and access permissions"}
+              {location.pathname.startsWith("/booking-removal-requests") && "Review staff booking removal requests"}
               {location.pathname.startsWith("/account-settings") && "Manage your profile and security credentials"}
+              {location.pathname.startsWith("/activity-logs") && "Review system activity from the past year"}
               {location.pathname === "/" && "Overview of municipal operations and quick stats"}
             </p>
           </div>

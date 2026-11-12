@@ -281,6 +281,8 @@ export default function CalendarView() {
   const monthDays = getMonthDays(currentDate);
   const currentYear = currentDate.getFullYear();
   const canModerate = user?.role === "admin";
+  const canRemoveApproved = ["admin", "barangay_admin"].includes(user?.role);
+  const canRemovePending = ["admin", "barangay_admin"].includes(user?.role);
 
   const handleBookingStatusChange = async (id, status, remarks) => {
     try {
@@ -299,6 +301,35 @@ export default function CalendarView() {
       toast.error(
         error?.response?.data?.message || "Could not update the booking status.",
       );
+    }
+  };
+
+  const handleBookingDelete = async (id) => {
+    try {
+      await api.deleteBooking(id);
+      toast.success("Booking removed successfully.");
+      setSelectedBooking(null);
+      invalidateCache(CACHE_KEYS.BOOKINGS);
+      invalidateCache(CACHE_KEYS.HEALTH);
+      return true;
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Could not remove the booking.",
+      );
+      return false;
+    }
+  };
+
+  const handleBookingRemovalRequest = async (id) => {
+    try {
+      await api.requestBookingRemoval(id);
+      toast.success("Removal request sent for review.");
+      return true;
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Could not send the removal request.",
+      );
+      return false;
     }
   };
 
@@ -950,11 +981,19 @@ export default function CalendarView() {
         <BookingDetailModal
                     booking={selectedBooking}
                     canModerate={canModerate}
+                    canRemoveApproved={canRemoveApproved}
+                    canRemovePending={canRemovePending}
+                    canRequestRemoval={
+                      !["admin", "barangay_admin"].includes(user?.role) &&
+                      String(selectedBooking.owner_user_id) === String(user?.user_id)
+                    }
                     onClose={() => setSelectedBooking(null)}
                     onApprove={(id) => handleBookingStatusChange(id, "approved")}
                     onReject={(id, reason) =>
                       handleBookingStatusChange(id, "rejected", reason)
                     }
+                    onDelete={handleBookingDelete}
+                    onRequestRemoval={handleBookingRemovalRequest}
         />
       )}
     </div>

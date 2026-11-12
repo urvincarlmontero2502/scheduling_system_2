@@ -57,6 +57,28 @@ backend root directory as the web service:
 Without this cron job, saving the setting works, but automatic reminders will
 not be sent.
 
+## Activity logs
+
+The authenticated-user **Activity Logs** page records booking requests and
+status changes, resource changes and maintenance toggles, registration
+decisions, and booking reminder setting changes. Entries are visible for one
+year and older records are purged daily by the Laravel scheduler.
+
+After deploying the backend, run `php artisan migrate --force`. Keep the Render
+Cron Job above active so expired log entries are removed automatically.
+
+## Removed bookings and restore
+
+Booking removals use soft deletes: they disappear from active bookings and the
+calendar but remain available in **Booking History → Removed Bookings**.
+Administrators can view and restore any removed booking; barangay admins can
+view and restore records for their barangay; staff can view their own removed
+bookings. A booking is not restored if it conflicts with another active
+reservation.
+
+Run `php artisan migrate --force` after deploying so the `deleted_at` column is
+added to the booking table.
+
 ## Store uploaded images in Supabase Storage
 
 Render's free service filesystem is ephemeral. Store uploads in Supabase Storage

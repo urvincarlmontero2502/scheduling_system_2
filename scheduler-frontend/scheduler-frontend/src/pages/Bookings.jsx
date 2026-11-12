@@ -230,6 +230,7 @@ export default function Bookings() {
   const [activeTab, setActiveTab] = useTabUrlSync("tab", "pending");
   const [viewMode, setViewMode] = useViewModeUrlSync("card");
   const [search, setSearch] = useState("");
+  const [approvedReferenceSearch, setApprovedReferenceSearch] = useState("");
   const [barangayFilter, setBarangayFilter] = useState("all");
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectBooking, setRejectBooking] = useState(null);
@@ -237,6 +238,8 @@ export default function Bookings() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const canModerate = user?.role === "admin";
+  const canRemoveApproved = ["admin", "barangay_admin"].includes(user?.role);
+  const canRemovePending = ["admin", "barangay_admin"].includes(user?.role);
 
   // Auto-open booking detail modal when arriving from a notification click
   useEffect(() => {
@@ -304,6 +307,36 @@ export default function Bookings() {
     }
   }
 
+  async function handleDeleteBooking(id) {
+    try {
+      await api.deleteBooking(id);
+      toast.success("Booking removed successfully.");
+      setSelectedBooking(null);
+      invalidateCache(CACHE_KEYS.BOOKINGS);
+      invalidateCache(CACHE_KEYS.HEALTH);
+      window.dispatchEvent(new Event("cacheInvalidated"));
+      return true;
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Could not remove the booking.",
+      );
+      return false;
+    }
+  }
+
+  async function handleRequestBookingRemoval(id) {
+    try {
+      await api.requestBookingRemoval(id);
+      toast.success("Removal request sent for review.");
+      return true;
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Could not send the removal request.",
+      );
+      return false;
+    }
+  }
+
   // Real requests only: special events are never counted, listed or bulk-deleted
   const requests = bookings.filter((b) => !isSpecialEvent(b));
 
@@ -329,6 +362,16 @@ export default function Bookings() {
     if (activeTab === "all") {
       /* show all */
     } else if (status !== activeTab) {
+      return false;
+    }
+
+    if (
+      activeTab === "approved" &&
+      approvedReferenceSearch.trim() &&
+      !String(b.reference_id || "")
+        .toLowerCase()
+        .includes(approvedReferenceSearch.trim().toLowerCase())
+    ) {
       return false;
     }
 
@@ -421,6 +464,27 @@ export default function Bookings() {
         </div>
 
         {/* Consolidated Toolbar — matches Overview.jsx layout */ }
+        {activeTab === "approved" && (
+          <div className="mb-3 max-w-sm">
+            <label htmlFor="approved-reference-search" className="mb-1 block text-xs font-medium text-steel">
+              Search approved request by reference
+            </label>
+            <div className="relative">
+              <Search
+                size={14}
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel"
+              />
+              <input
+                id="approved-reference-search"
+                type="search"
+                placeholder="Enter reference ID (e.g. JBG-2026-0001)"
+                value={approvedReferenceSearch}
+                onChange={(event) => setApprovedReferenceSearch(event.target.value)}
+                className="w-full rounded-lg border border-line bg-white py-2 pl-10 pr-3 text-xs outline-none focus:border-brand"
+              />
+            </div>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           {/* Left: Status Filter Pills */ }
           <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar whitespace-nowrap w-full sm:w-auto">
@@ -922,6 +986,12 @@ export default function Bookings() {
         <BookingDetailModal
           booking={selectedBooking}
           canModerate={canModerate}
+          canRemoveApproved={canRemoveApproved}
+          canRemovePending={canRemovePending}
+          canRequestRemoval={
+            !["admin", "barangay_admin"].includes(user?.role) &&
+            String(selectedBooking.owner_user_id) === String(user?.user_id)
+          }
           onClose={() => {
             setSelectedBooking(null);
             navigate("/bookings", { replace: true });
@@ -936,6 +1006,8 @@ export default function Bookings() {
             setSelectedBooking(null);
             navigate("/bookings", { replace: true });
           }}
+          onDelete={handleDeleteBooking}
+          onRequestRemoval={handleRequestBookingRemoval}
         />
       )}
     </div>

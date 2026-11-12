@@ -24,6 +24,7 @@ class BookingConflictDetectionTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Asia/Manila'));
 
         Schema::dropIfExists('booking_request');
+        Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('resources');
         Schema::dropIfExists('users');
         Schema::create('users', function (Blueprint $table) {
@@ -59,6 +60,19 @@ class BookingConflictDetectionTest extends TestCase
             $table->unsignedInteger('attendees')->nullable();
             $table->string('priority')->nullable();
             $table->boolean('is_special_event')->default(false);
+            $table->timestamp('deleted_at')->nullable();
+        });
+        Schema::create('activity_logs', function (Blueprint $table) {
+            $table->bigIncrements('activity_log_id');
+            $table->unsignedBigInteger('actor_id')->nullable();
+            $table->string('actor_name');
+            $table->string('actor_role');
+            $table->string('action');
+            $table->string('subject_type')->nullable();
+            $table->string('subject_id')->nullable();
+            $table->text('description');
+            $table->json('properties')->nullable();
+            $table->timestamp('created_at');
         });
 
         $this->user = User::create([
@@ -107,6 +121,12 @@ class BookingConflictDetectionTest extends TestCase
             '08:00',
             '17:00'
         ))->assertCreated();
+
+        $this->assertDatabaseHas('activity_logs', [
+            'actor_id' => $this->user->user_id,
+            'action' => 'booking.requested',
+            'subject_type' => 'booking',
+        ]);
     }
 
     public function test_conflicting_full_day_booking_returns_next_day_suggestion(): void

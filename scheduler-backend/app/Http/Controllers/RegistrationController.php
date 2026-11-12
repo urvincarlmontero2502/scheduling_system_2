@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\RegistrationApproved;
+use App\Mail\RegistrationRejected;
+use App\Models\Notification;
 use App\Models\RegistrationRequest;
 use App\Models\User;
-use App\Models\Notification;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -79,6 +81,7 @@ class RegistrationController extends Controller
             $existing = User::where('email', $registrationRequest->email)->first();
             if ($existing) {
                 DB::rollBack();
+
                 return response()->json([
                     'message' => 'A user with this email already exists.',
                 ], 422);
@@ -86,14 +89,14 @@ class RegistrationController extends Controller
 
             // Create the actual user account
             $newUser = User::create([
-                'full_name'      => $registrationRequest->full_name,
-                'email'          => $registrationRequest->email,
-                'password_hash'  => $registrationRequest->password_hash,
-                'role'           => $registrationRequest->role,
-                'barangay'       => $registrationRequest->barangay,
-                'department'     => $registrationRequest->department,
-                'google_id'      => $registrationRequest->google_id,
-                'avatar'         => $registrationRequest->avatar,
+                'full_name' => $registrationRequest->full_name,
+                'email' => $registrationRequest->email,
+                'password_hash' => $registrationRequest->password_hash,
+                'role' => $registrationRequest->role,
+                'barangay' => $registrationRequest->barangay,
+                'department' => $registrationRequest->department,
+                'google_id' => $registrationRequest->google_id,
+                'avatar' => $registrationRequest->avatar,
                 'email_verified_at' => now(),
             ]);
 
@@ -105,12 +108,12 @@ class RegistrationController extends Controller
 
             // Create in-app notification for the newly approved user
             DB::table('notifications')->insert([
-                'user_id'   => $newUser->user_id,
+                'user_id' => $newUser->user_id,
                 'booking_id' => null,
-                'message'   => 'Your account has been approved. You can now log in.',
-                'type'      => 'registration_approved',
-                'title'     => 'Account Approved',
-                'is_read'   => false,
+                'message' => 'Your account has been approved. You can now log in.',
+                'type' => 'registration_approved',
+                'title' => 'Account Approved',
+                'is_read' => false,
                 'created_at' => now(),
             ]);
 
@@ -118,22 +121,40 @@ class RegistrationController extends Controller
             try {
                 Mail::to($newUser->email)
                     ->cc($user->email)
-                    ->send(new \App\Mail\RegistrationApproved($registrationRequest, $newUser, $user));
+                    ->send(new RegistrationApproved($registrationRequest, $newUser, $user));
             } catch (\Exception $mailErr) {
-                \Log::warning('Registration approval email failed: ' . $mailErr->getMessage());
+                \Log::warning('Registration approval email failed: '.$mailErr->getMessage());
             }
+
+            app(ActivityLogger::class)->record(
+                $user,
+                'registration.approved',
+                sprintf(
+                    'Approved registration request #%d for %s.',
+                    $registrationRequest->request_id,
+                    $registrationRequest->full_name
+                ),
+                'registration',
+                $registrationRequest->request_id,
+                [
+                    'applicant_name' => $registrationRequest->full_name,
+                    'role' => $registrationRequest->role,
+                    'barangay' => $registrationRequest->barangay,
+                ]
+            );
 
             DB::commit();
 
             return response()->json([
-                'message'    => 'Registration approved successfully.',
-                'user_id'    => $newUser->user_id,
+                'message' => 'Registration approved successfully.',
+                'user_id' => $newUser->user_id,
                 'request_id' => $registrationRequest->request_id,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Failed to approve registration: ' . $e->getMessage(),
+                'message' => 'Failed to approve registration: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -162,13 +183,30 @@ class RegistrationController extends Controller
         $registrationRequest->reviewed_at = now();
         $registrationRequest->save();
 
+        app(ActivityLogger::class)->record(
+            $user,
+            'registration.rejected',
+            sprintf(
+                'Rejected registration request #%d for %s.',
+                $registrationRequest->request_id,
+                $registrationRequest->full_name
+            ),
+            'registration',
+            $registrationRequest->request_id,
+            [
+                'applicant_name' => $registrationRequest->full_name,
+                'role' => $registrationRequest->role,
+                'barangay' => $registrationRequest->barangay,
+            ]
+        );
+
         // Send rejection email to the applicant (no user account exists yet)
         try {
             Mail::to($registrationRequest->email)
                 ->cc($user->email)
-                ->send(new \App\Mail\RegistrationRejected($registrationRequest, $user));
+                ->send(new RegistrationRejected($registrationRequest, $user));
         } catch (\Exception $mailErr) {
-            \Log::warning('Registration rejection email failed: ' . $mailErr->getMessage());
+            \Log::warning('Registration rejection email failed: '.$mailErr->getMessage());
         }
 
         return response()->json([

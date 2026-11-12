@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BookingRequest extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'booking_request';
 
     protected $primaryKey = 'booking_id';
@@ -39,6 +42,7 @@ class BookingRequest extends Model
             'is_special_event' => 'boolean',
             'reminder_sent_at' => 'datetime',
             'reminder_sms_sent_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 

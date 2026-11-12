@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Resource;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ResourceController extends Controller
 {
@@ -35,7 +37,7 @@ class ResourceController extends Controller
             'description' => $resource->description ?? null,
             'buffer_minutes' => $resource->buffer_minutes ?? 30,
             'capacity' => $resource->type === 'facility' && $resource->facilityDetails
-                ? $resource->facilityDetails->capacity . ' pax'
+                ? $resource->facilityDetails->capacity.' pax'
                 : null,
             'unit_name' => $resource->type === 'vehicle' && $resource->vehicleDetails
                 ? ($resource->vehicleDetails->unit_name ?? null)
@@ -72,19 +74,19 @@ class ResourceController extends Controller
             }
 
             $isFacility = $request->query('type') === 'facility';
-            $isVehicle  = $request->query('type') === 'vehicle';
+            $isVehicle = $request->query('type') === 'vehicle';
 
             // Only join detail tables if they exist
-            if (!$request->has('type') || $isFacility) {
+            if (! $request->has('type') || $isFacility) {
                 if (Schema::hasTable('facility_details')) {
                     $query->leftJoin('facility_details', 'facility_details.resource_id', '=', 'resources.resource_id')
-                           ->addSelect('facility_details.capacity as facility_capacity');
+                        ->addSelect('facility_details.capacity as facility_capacity');
                 }
             }
-            if (!$request->has('type') || $isVehicle) {
+            if (! $request->has('type') || $isVehicle) {
                 if (Schema::hasTable('vehicle_details')) {
                     $query->leftJoin('vehicle_details', 'vehicle_details.resource_id', '=', 'resources.resource_id')
-                           ->addSelect('vehicle_details.unit_name as vehicle_unit_name');
+                        ->addSelect('vehicle_details.unit_name as vehicle_unit_name');
                 }
             }
 
@@ -109,7 +111,7 @@ class ResourceController extends Controller
                     'description' => $r->description ?? null,
                     'buffer_minutes' => $r->buffer_minutes ?? 30,
                     'capacity' => $r->type === 'facility' && $r->facility_capacity
-                        ? $r->facility_capacity . ' pax'
+                        ? $r->facility_capacity.' pax'
                         : null,
                     'unit_name' => $r->type === 'vehicle' ? ($r->vehicle_unit_name ?? null) : null,
                 ];
@@ -119,8 +121,9 @@ class ResourceController extends Controller
         } catch (\Throwable $e) {
             // Return detailed error in dev mode; user-friendly message otherwise
             $message = config('app.debug')
-                ? $e->getMessage() . ' | File: ' . $e->getFile() . ':' . $e->getLine()
+                ? $e->getMessage().' | File: '.$e->getFile().':'.$e->getLine()
                 : 'Failed to fetch resources';
+
             return response()->json(['error' => $message], 500);
         }
     }
@@ -164,6 +167,15 @@ class ResourceController extends Controller
         }
 
         $resource->load(['facilityDetails', 'vehicleDetails']);
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.created',
+            sprintf('Added %s resource "%s".', $validated['type'], $resource->name),
+            'resource',
+            $resource->resource_id,
+            ['resource_name' => $resource->name, 'resource_type' => $resource->type]
+        );
+
         return response()->json([
             'resource' => $this->formatResource($resource),
         ], 201);
@@ -172,6 +184,7 @@ class ResourceController extends Controller
     public function update(Request $request, $id)
     {
         $resource = Resource::findOrFail($id);
+        $previousName = $resource->name;
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -223,15 +236,31 @@ class ResourceController extends Controller
         }
 
         $resource->load(['facilityDetails', 'vehicleDetails']);
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.updated',
+            sprintf('Updated resource "%s".', $resource->name),
+            'resource',
+            $resource->resource_id,
+            [
+                'previous_name' => $previousName,
+                'resource_name' => $resource->name,
+                'resource_type' => $resource->type,
+                'status' => $resource->status,
+            ]
+        );
+
         return response()->json([
             'resource' => $this->formatResource($resource),
             'message' => 'Resource updated successfully.',
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $resource = Resource::findOrFail($id);
+        $resourceName = $resource->name;
+        $resourceType = $resource->type;
 
         $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
         Storage::disk('assets')->delete(array_unique($imagePaths));
@@ -243,13 +272,22 @@ class ResourceController extends Controller
 
         $resource->delete();
 
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.deleted',
+            sprintf('Deleted resource "%s".', $resourceName),
+            'resource',
+            $id,
+            ['resource_name' => $resourceName, 'resource_type' => $resourceType]
+        );
+
         return response()->json(['message' => 'Resource deleted successfully']);
     }
 
     private function storeResourceImages(Request $request, string $type): array
     {
         $files = $request->file('images', []);
-        if (!is_array($files)) {
+        if (! is_array($files)) {
             $files = [$files];
         }
         if (empty($files) && $request->hasFile('image')) {
@@ -259,16 +297,26 @@ class ResourceController extends Controller
         $subdir = $type === 'facility' ? 'facilities' : 'vehicles';
 
         return array_map(function ($file) use ($subdir) {
-            $filename = \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+
             return $file->storeAs($subdir, $filename, 'assets');
         }, $files);
     }
 
-    public function setMaintenance($id)
+    public function setMaintenance(Request $request, $id)
     {
         $resource = Resource::findOrFail($id);
 
         $resource->update(['status' => 'maintenance']);
+
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.maintenance_enabled',
+            sprintf('Marked resource "%s" as under maintenance.', $resource->name),
+            'resource',
+            $resource->resource_id,
+            ['resource_name' => $resource->name]
+        );
 
         return response()->json([
             'message' => "{$resource->name} is now marked for maintenance.",
@@ -276,11 +324,20 @@ class ResourceController extends Controller
         ]);
     }
 
-    public function setAvailable($id)
+    public function setAvailable(Request $request, $id)
     {
         $resource = Resource::findOrFail($id);
 
         $resource->update(['status' => 'available']);
+
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.maintenance_disabled',
+            sprintf('Marked resource "%s" as available.', $resource->name),
+            'resource',
+            $resource->resource_id,
+            ['resource_name' => $resource->name]
+        );
 
         return response()->json([
             'message' => "{$resource->name} is now available.",

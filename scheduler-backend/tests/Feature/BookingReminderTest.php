@@ -30,6 +30,7 @@ class BookingReminderTest extends TestCase
         parent::setUp();
 
         Schema::dropIfExists('booking_request');
+        Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('system_settings');
         Schema::dropIfExists('resources');
         Schema::dropIfExists('users');
@@ -62,11 +63,24 @@ class BookingReminderTest extends TestCase
             $table->string('status');
             $table->timestamp('reminder_sent_at')->nullable();
             $table->timestamp('reminder_sms_sent_at')->nullable();
+            $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('system_settings', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->string('value');
             $table->timestamps();
+        });
+        Schema::create('activity_logs', function (Blueprint $table) {
+            $table->bigIncrements('activity_log_id');
+            $table->unsignedBigInteger('actor_id')->nullable();
+            $table->string('actor_name');
+            $table->string('actor_role');
+            $table->string('action');
+            $table->string('subject_type')->nullable();
+            $table->string('subject_id')->nullable();
+            $table->text('description');
+            $table->json('properties')->nullable();
+            $table->timestamp('created_at');
         });
 
         $this->admin = User::create([
@@ -108,6 +122,11 @@ class BookingReminderTest extends TestCase
             ->assertOk()
             ->assertJsonPath('days_before', 3)
             ->assertJsonPath('sms_enabled', true);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'actor_id' => $this->admin->user_id,
+            'action' => 'settings.booking_reminder_updated',
+        ]);
 
         $this->getJson('/api/admin/settings/booking-reminder')
             ->assertOk()

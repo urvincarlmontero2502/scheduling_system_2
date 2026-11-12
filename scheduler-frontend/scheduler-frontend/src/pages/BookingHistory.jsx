@@ -10,6 +10,7 @@ import {
   Building2,
   FileText,
   ImageIcon,
+  RotateCcw,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import StatusBadge from "../components/StatusBadge";
@@ -17,9 +18,9 @@ import { Skeleton } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../context/AuthContext";
 import {
-  readCache,
   writeCache,
   CACHE_KEYS,
+  invalidateCache,
 } from "../utils/cache";
 import { isSpecialEvent } from "../utils/specialEvents";
 
@@ -114,6 +115,8 @@ function getTimeValue(booking) {
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState([]);
+  const [removedBookings, setRemovedBookings] = useState([]);
+  const [listMode, setListMode] = useState("history");
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -121,9 +124,8 @@ export default function BookingHistory() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const toast = useToast();
   const { user } = useAuth();
-  const canModerate = user?.role === "admin";
-  // Barangay admins can view booking history but cannot delete bookings
   const canDelete = user?.role === "admin";
+  const canRestore = ["admin", "barangay_admin"].includes(user?.role);
 
   // New state variables for bulk print selection
   const [printMode, setPrintMode] = useState("month"); // 'month' or 'year'
@@ -145,8 +147,26 @@ export default function BookingHistory() {
             : [];
         setBookings(data);
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.error("Failed to load booking history:", error);
+        toast.error(error?.response?.data?.message || "Could not load booking history.");
+      })
       .finally(() => setLoading(false));
+
+    api
+      .fetchRemovedBookings()
+      .then((res) => {
+        const data = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+            ? res.data.data
+            : [];
+        setRemovedBookings(data);
+      })
+      .catch((error) => {
+        console.error("Failed to load removed bookings:", error);
+        toast.error(error?.response?.data?.message || "Could not load removed bookings.");
+      });
 
     // Fetch resources for image lookup
     api
@@ -159,7 +179,9 @@ export default function BookingHistory() {
             : [];
         setResources(data);
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error("Failed to load resources for booking history:", error);
+      });
       return () => {}; // cleanup placeholder for safety
   }, []);
 
@@ -174,7 +196,8 @@ export default function BookingHistory() {
     );
   });
 
-  const filteredBookings = historyBookings.filter((booking) => {
+  const displayedBookings = listMode === "removed" ? removedBookings : historyBookings;
+  const filteredBookings = displayedBookings.filter((booking) => {
     const status = (booking.status || "").toLowerCase();
 
     const resource =
@@ -198,31 +221,71 @@ export default function BookingHistory() {
     } ${booking.id || booking.booking_id || ""} ${booking.reference_id || ""}`.toLowerCase();
 
     const matchesSearch = searchText.includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || status === statusFilter;
+    const matchesStatus =
+      listMode === "removed" || statusFilter === "all" || status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   async function handleDelete(bookingId) {
     if (
-      !window.confirm(`Are you sure you want to delete booking #${bookingId}?`)
+      !window.confirm(
+        `Move booking #${bookingId} to Removed Bookings? An administrator can restore it later.`,
+      )
     ) {
       return;
     }
 
     try {
+      const removedBooking = bookings.find(
+        (booking) => (booking.id || booking.booking_id) === bookingId,
+      );
       await api.deleteBooking(bookingId);
       setBookings((prev) =>
         prev.filter((b) => (b.id || b.booking_id) !== bookingId),
       );
+      if (removedBooking) {
+        setRemovedBookings((prev) => [
+          { ...removedBooking, deleted_at: new Date().toISOString() },
+          ...prev,
+        ]);
+      }
       if (
         selectedBooking &&
         (selectedBooking.id || selectedBooking.booking_id) === bookingId
       ) {
         setSelectedBooking(null);
       }
+      invalidateCache(CACHE_KEYS.BOOKINGS);
+      window.dispatchEvent(new Event("cacheInvalidated"));
     } catch (err) {
       alert(err.response?.data?.message || "Failed to delete booking.");
+    }
+  }
+
+  async function handleRestore(bookingId) {
+    try {
+      await api.restoreBooking(bookingId);
+      const restoredBooking = removedBookings.find(
+        (booking) => (booking.id || booking.booking_id) === bookingId,
+      );
+      if (restoredBooking) {
+        setBookings((prev) => [
+          restoredBooking,
+          ...prev.filter((booking) => (booking.id || booking.booking_id) !== bookingId),
+        ]);
+      }
+      setRemovedBookings((prev) =>
+        prev.filter((booking) => (booking.id || booking.booking_id) !== bookingId),
+      );
+      setSelectedBooking(null);
+      invalidateCache(CACHE_KEYS.BOOKINGS);
+      window.dispatchEvent(new Event("cacheInvalidated"));
+      toast.success("Booking restored successfully.");
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Could not restore the booking.",
+      );
     }
   }
 
@@ -233,7 +296,7 @@ export default function BookingHistory() {
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete all ${filteredBookings.length} booking(s) matching the current filter? This action cannot be undone.`,
+      `Move all ${filteredBookings.length} booking(s) matching the current filter to Removed Bookings? An administrator can restore them later.`,
     );
     if (!confirmed) return;
 
@@ -255,7 +318,13 @@ export default function BookingHistory() {
             : api.updateBookingStatus(id, "deleted"),
         ),
       );
+      const removedAt = new Date().toISOString();
+      setRemovedBookings((prev) => [
+        ...filteredBookings.map((booking) => ({ ...booking, deleted_at: removedAt })),
+        ...prev,
+      ]);
       toast.success(`${filteredBookings.length} booking(s) deleted successfully`);
+      invalidateCache(CACHE_KEYS.BOOKINGS);
       window.dispatchEvent(new Event("cacheInvalidated"));
     } catch {
       // Revert on failure
@@ -503,9 +572,35 @@ export default function BookingHistory() {
   return (
     <div className="pb-12">
       <div className="px-4 sm:px-6 py-6 space-y-6">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setListMode("history")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              listMode === "history"
+                ? "bg-brand text-white"
+                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            Booking History
+          </button>
+          <button
+            type="button"
+            onClick={() => setListMode("removed")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              listMode === "removed"
+                ? "bg-brand text-white"
+                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            Removed Bookings ({removedBookings.length})
+          </button>
+        </div>
+
         {/* Unified Control & Toolbar Strip */ }
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
           {/* Left: Batch Print group */ }
+          {listMode === "history" ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[12px] font-medium text-slate-500">
               Batch Print:
@@ -546,6 +641,7 @@ export default function BookingHistory() {
               Print
             </button>
           </div>
+          ) : <div />}
 
           {/* Right: Search + Status Filter + Delete All */ }
           <div className="flex items-center gap-2">
@@ -557,7 +653,11 @@ export default function BookingHistory() {
               />
               <input
                 type="text"
-                placeholder="Search booking, requestor, resource..."
+                placeholder={
+                  listMode === "removed"
+                    ? "Search removed bookings..."
+                    : "Search booking, requestor, resource..."
+                }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full text-xs py-2 pl-9 pr-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
@@ -565,20 +665,22 @@ export default function BookingHistory() {
             </div>
 
             {/* Status Filter */ }
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
-            >
-              <option value="all">All History</option>
-              <option value="completed">Completed</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            {listMode === "history" && (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+              >
+                <option value="all">All History</option>
+                <option value="completed">Completed</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            )}
 
             {/* Delete All */ }
-            {canDelete && filteredBookings.length > 0 && (
+            {listMode === "history" && canDelete && filteredBookings.length > 0 && (
               <button
                 onClick={handleDeleteAll}
                 className="flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-md text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition"
@@ -616,11 +718,15 @@ export default function BookingHistory() {
               <FileText size={32} className="mx-auto mb-3 text-gray-300" />
 
               <p className="text-[14px] font-medium text-gray-600">
-                No booking history found
+                {listMode === "removed"
+                  ? "No removed bookings found"
+                  : "No booking history found"}
               </p>
 
               <p className="mt-1 text-[12px] text-steel">
-                Completed, rejected, and cancelled bookings will appear here.
+                {listMode === "removed"
+                  ? "Bookings removed by an administrator or approved removal request will appear here."
+                  : "Completed, rejected, and cancelled bookings will appear here."}
               </p>
             </div>
           ) : (
@@ -733,9 +839,20 @@ export default function BookingHistory() {
                         </td>
 
                         <td className="px-4 py-4">
-                          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-medium ${statusBadgeClass}`}>
-                            {(booking.status || "unknown").toUpperCase()}
-                          </span>
+                          {listMode === "removed" ? (
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-700">
+                                REMOVED
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                Previously {(booking.status || "unknown").toUpperCase()}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-medium ${statusBadgeClass}`}>
+                              {(booking.status || "unknown").toUpperCase()}
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-4 py-4">
@@ -757,7 +874,15 @@ export default function BookingHistory() {
                             >
                               <Printer size={14} />
                             </button>
-                            {canDelete && (
+                            {listMode === "removed" && canRestore ? (
+                              <button
+                                onClick={() => handleRestore(bookingId)}
+                                className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors"
+                                title="Restore booking"
+                              >
+                                <RotateCcw size={14} />
+                              </button>
+                            ) : listMode === "history" && canDelete ? (
                               <button
                                 onClick={() => handleDelete(bookingId)}
                                 className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors"
@@ -765,7 +890,7 @@ export default function BookingHistory() {
                               >
                                 <Trash2 size={14} />
                               </button>
-                            )}
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -923,7 +1048,17 @@ export default function BookingHistory() {
             </div>
 
             <div className="flex justify-between items-center border-t border-line px-5 py-4">
-              {canDelete && (
+              {listMode === "removed" && canRestore ? (
+                <button
+                  onClick={() =>
+                    handleRestore(selectedBooking.id || selectedBooking.booking_id)
+                  }
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 px-4 py-2 text-[13px] font-medium text-emerald-700 hover:bg-emerald-50"
+                >
+                  <RotateCcw size={15} />
+                  Restore Booking
+                </button>
+              ) : listMode === "history" && canDelete ? (
                 <button
                   onClick={() =>
                     handleDelete(selectedBooking.id || selectedBooking.booking_id)
@@ -932,9 +1067,12 @@ export default function BookingHistory() {
                   <Trash2 size={15} />
                   Delete Booking
                 </button>
-              )}
+              ) : null}
               <div className={`flex gap-2 ${
-                canDelete ? "" : "w-full justify-end"
+                (listMode === "removed" && canRestore) ||
+                (listMode === "history" && canDelete)
+                  ? ""
+                  : "w-full justify-end"
               }`}>
                 <button
                   onClick={() => setSelectedBooking(null)}
