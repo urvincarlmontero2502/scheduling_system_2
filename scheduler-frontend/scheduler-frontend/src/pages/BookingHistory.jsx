@@ -571,44 +571,69 @@ export default function BookingHistory() {
 
   return (
     <div className="pb-12">
-      <div className="px-4 sm:px-6 py-6 space-y-6">
-        <div className="flex items-center gap-2">
+      <div className="px-4 py-5 sm:px-6 sm:py-6 space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2" role="tablist" aria-label="Booking history views">
           <button
             type="button"
             onClick={() => setListMode("history")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            role="tab"
+            aria-selected={listMode === "history"}
+            className={`group flex min-h-[76px] items-center gap-3 rounded-xl border p-4 text-left transition-all ${
               listMode === "history"
-                ? "bg-brand text-white"
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                ? "border-blue-200 bg-white shadow-sm ring-2 ring-blue-100"
+                : "border-slate-200 bg-white/70 hover:border-slate-300 hover:bg-white"
             }`}
           >
-            Booking History
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+              listMode === "history" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"
+            }`}>
+              <Clock size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-slate-800">Booking History</span>
+              <span className="mt-0.5 block text-xs text-slate-500">Completed and reviewed reservations</span>
+            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+              {historyBookings.length}
+            </span>
           </button>
           <button
             type="button"
             onClick={() => setListMode("removed")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            role="tab"
+            aria-selected={listMode === "removed"}
+            className={`group flex min-h-[76px] items-center gap-3 rounded-xl border p-4 text-left transition-all ${
               listMode === "removed"
-                ? "bg-brand text-white"
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                ? "border-blue-200 bg-white shadow-sm ring-2 ring-blue-100"
+                : "border-slate-200 bg-white/70 hover:border-slate-300 hover:bg-white"
             }`}
           >
-            Removed Bookings ({removedBookings.length})
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+              listMode === "removed" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"
+            }`}>
+              <RotateCcw size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-slate-800">Removed Bookings</span>
+              <span className="mt-0.5 block text-xs text-slate-500">Soft-deleted records available for restore</span>
+            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+              {removedBookings.length}
+            </span>
           </button>
         </div>
 
         {/* Unified Control & Toolbar Strip */ }
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
           {/* Left: Batch Print group */ }
           {listMode === "history" ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[12px] font-medium text-slate-500">
-              Batch Print:
-            </span>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <span className="text-xs font-semibold text-slate-700">Batch print</span>
             <select
               value={printMode}
               onChange={(e) => setPrintMode(e.target.value)}
-              className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+              aria-label="Batch print period"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             >
               <option value="month">By Month</option>
               <option value="year">By Year</option>
@@ -619,7 +644,8 @@ export default function BookingHistory() {
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+                aria-label="Select month to print"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             ) : (
               <input
@@ -629,13 +655,14 @@ export default function BookingHistory() {
                 placeholder="YYYY"
                 min="2020"
                 max="2099"
-                className="w-28 text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+                aria-label="Select year to print"
+                className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             )}
 
             <button
               onClick={handlePrintBatch}
-              className="flex items-center justify-center gap-1.5 text-xs py-1.5 px-3 rounded-md bg-slate-800 text-white hover:bg-slate-900 transition"
+              className="flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-900"
             >
               <Printer size={13} />
               Print
@@ -644,15 +671,19 @@ export default function BookingHistory() {
           ) : <div />}
 
           {/* Right: Search + Status Filter + Delete All */ }
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <p className="mr-1 whitespace-nowrap text-xs text-slate-500">
+              <span className="font-semibold text-slate-700">{filteredBookings.length}</span>{" "}
+              {filteredBookings.length === 1 ? "record" : "records"}
+            </p>
             {/* Search */ }
-            <div className="relative flex-1 max-w-sm">
+            <label className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
               <Search
-                size={14}
-                className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel"
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <input
-                type="text"
+                type="search"
                 placeholder={
                   listMode === "removed"
                     ? "Search removed bookings..."
@@ -660,16 +691,18 @@ export default function BookingHistory() {
                 }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full text-xs py-2 pl-9 pr-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+                aria-label="Search booking history"
+                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
-            </div>
+            </label>
 
             {/* Status Filter */ }
             {listMode === "history" && (
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-xs py-1.5 px-3 rounded-md border border-slate-200 bg-white outline-none focus:border-brand"
+                aria-label="Filter booking history by status"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               >
                 <option value="all">All History</option>
                 <option value="completed">Completed</option>
@@ -683,7 +716,7 @@ export default function BookingHistory() {
             {listMode === "history" && canDelete && filteredBookings.length > 0 && (
               <button
                 onClick={handleDeleteAll}
-                className="flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-md text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition"
+                className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
               >
                 <Trash2 size={13} /> Delete All ({filteredBookings.length})
               </button>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ToastProvider } from "./components/Toast";
@@ -10,11 +10,10 @@ import Calendar from "./pages/Calendar";
 import Bookings from "./pages/Bookings";
 import BookingHistory from "./pages/BookingHistory"; // 1. Import it here
 import Resources from "./pages/Resources";
-import RegistrationRequests from "./pages/RegistrationRequests";
 import AccountSettings from "./pages/AccountSettings";
 import SystemSettings from "./pages/SystemSettings";
 import ActivityLogs from "./pages/ActivityLogs";
-import BookingRemovalRequests from "./pages/BookingRemovalRequests";
+import Requests from "./pages/Requests";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
@@ -41,11 +40,12 @@ export default function App() {
             <Route path="booking-history" element={<BookingHistory />} />{" "}
             {/* 2. Add the route here */}
             <Route path="resources" element={<Resources />} />
-            <Route path="registration-requests" element={<RegistrationRequests />} />
+            <Route path="requests" element={<Requests />} />
+            <Route path="registration-requests" element={<Navigate to="/requests?section=registration" replace />} />
             <Route path="account-settings" element={<AccountSettings />} />
             <Route path="system-settings" element={<SystemSettings />} />
             <Route path="activity-logs" element={<ActivityLogs />} />
-            <Route path="booking-removal-requests" element={<BookingRemovalRequests />} />
+            <Route path="booking-removal-requests" element={<Navigate to="/requests?section=removal" replace />} />
           </Route>
           {/* Public routes */}
           <Route path="/verify-email-change" element={<VerifyEmailChange />} />

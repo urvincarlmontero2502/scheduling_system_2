@@ -12,6 +12,7 @@ import {
   Loader2,
   RefreshCw,
   Shield,
+  Search,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
@@ -25,7 +26,7 @@ const STATUS_TABS = [
   { value: "rejected", label: "Rejected", icon: XCircle },
 ];
 
-export default function RegistrationRequests() {
+export default function RegistrationRequests({ embedded = false }) {
   const { user } = useAuth();
   const toast = useToast();
   const [activeTab, setActiveTab] = useTabUrlSync("tab", "pending");
@@ -34,6 +35,7 @@ export default function RegistrationRequests() {
   const [rejectModal, setRejectModal] = useState({ open: false, requestId: null });
   const [rejectReason, setRejectReason] = useState("");
   const [viewModal, setViewModal] = useState({ open: false, request: null });
+  const [search, setSearch] = useState("");
 
   async function handleApprove(requestId) {
     setActionLoading(true);
@@ -102,11 +104,16 @@ export default function RegistrationRequests() {
 
   const isAdmin = user?.role === "admin" || user?.role === "barangay_admin";
   const isBarangayAdmin = user?.role === "barangay_admin";
+  const filteredRequests = requests.filter((request) =>
+    `${request.full_name || ""} ${request.email || ""} ${request.barangay || ""} ${request.department || ""}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase()),
+  );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className={embedded ? "space-y-4" : "mx-auto max-w-6xl space-y-4 p-4 md:p-6"}>
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {!embedded && <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-ink truncate">Registration Requests</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-steel">
@@ -123,49 +130,80 @@ export default function RegistrationRequests() {
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
-      </div>
+      </div>}
 
       {/* Tab Navigation */}
-      <div className="mb-6 flex items-center gap-2 overflow-x-auto no-scrollbar w-full py-1 rounded-lg bg-slate-100 p-1">
-        {STATUS_TABS.map(({ value, label, icon: Icon }) => (
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1">
+          {STATUS_TABS.map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => setActiveTab(value)}
+              className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                activeTab === value
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Icon size={15} />
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search applicants"
+              aria-label="Search registration requests"
+              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
           <button
-            key={value}
-            onClick={() => setActiveTab(value)}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all shrink-0 whitespace-nowrap ${
-              activeTab === value
-                ? "bg-white text-ink shadow-sm"
-                : "text-steel hover:text-ink"
-            }`}
+            onClick={refetch}
+            disabled={loading}
+            aria-label="Refresh registration requests"
+            title="Refresh"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
           >
-            <Icon size={16} />
-            {label}
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
           </button>
-        ))}
+        </div>
       </div>
 
       {/* List */}
       {loading ? (
-        <div className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-lg border border-line bg-white"
+              className="h-40 animate-pulse rounded-xl border border-line bg-white"
             />
           ))}
         </div>
-      ) : requests.length === 0 ? (
-        <div className="py-12 text-center">
+      ) : filteredRequests.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-14 text-center">
           <FileText className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-          <p className="text-lg font-medium text-steel">
-            No {activeTab} registration requests
+          <p className="text-base font-semibold text-slate-800">
+            {search.trim()
+              ? "No matching applicants"
+              : `No ${activeTab} registration requests`}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            {search.trim()
+              ? "Try another name, email, barangay, or department."
+              : "New requests will appear here when submitted."}
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {requests.map((request) => (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {filteredRequests.map((request) => (
             <div
               key={request.request_id}
-              className="rounded-lg border border-line bg-white p-4 transition-shadow hover:shadow-md"
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">

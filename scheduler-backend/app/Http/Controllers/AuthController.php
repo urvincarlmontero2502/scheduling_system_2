@@ -133,10 +133,10 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'full_name' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email,' . $user->user_id . ',user_id'],
+            'email' => ['prohibited'],
             'barangay' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
-            'role' => ['nullable', 'string', 'in:admin,user,staff'],
+            'role' => ['prohibited'],
         ]);
 
         $user->update(array_filter($validated));
@@ -315,6 +315,12 @@ class AuthController extends Controller
             );
         } catch (\Exception $e) {
             \Log::error('Failed to send email verification: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Your email change request was saved, but the verification email could not be sent. Please try again later or contact support.',
+                'verification_required' => true,
+                'email_sent' => false,
+            ], 502);
         }
 
         return response()->json([

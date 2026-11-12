@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Clock, RefreshCw, X } from "lucide-react";
+import { Check, Clock, RefreshCw, Search, X } from "lucide-react";
 import * as api from "../api/endpoints";
 import ConfirmModal from "../components/ConfirmModal";
 import { useToast } from "../components/Toast";
@@ -17,13 +17,14 @@ function formatDate(value) {
       });
 }
 
-export default function BookingRemovalRequests() {
+export default function BookingRemovalRequests({ embedded = false }) {
   const { user } = useAuth();
   const toast = useToast();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState(null);
+  const [search, setSearch] = useState("");
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
@@ -56,6 +57,7 @@ export default function BookingRemovalRequests() {
         toast.success("Removal request declined.");
       }
       setConfirmation(null);
+      window.dispatchEvent(new Event("cacheInvalidated"));
       await loadRequests();
       return true;
     } catch (requestError) {
@@ -67,9 +69,25 @@ export default function BookingRemovalRequests() {
     }
   };
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRequests = requests.filter((request) => {
+    const booking = request.booking_snapshot || {};
+    return [
+      request.requester_name,
+      request.booking_id,
+      request.reason,
+      booking.resource_name,
+      booking.barangay,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedSearch);
+  });
+
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div className={embedded ? "space-y-4" : "mx-auto max-w-6xl space-y-4 p-4 md:p-6"}>
+      {!embedded && <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Booking Removal Requests</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -87,6 +105,38 @@ export default function BookingRemovalRequests() {
           <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
+      </div>}
+
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Pending review</p>
+          <p className="text-xs text-slate-500">
+            {requests.length} {requests.length === 1 ? "request" : "requests"} awaiting a decision
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search requests"
+              aria-label="Search booking removal requests"
+              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={loadRequests}
+            disabled={loading}
+            aria-label="Refresh booking removal requests"
+            title="Refresh"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
+          >
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -95,42 +145,63 @@ export default function BookingRemovalRequests() {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        {loading ? (
-          <p className="p-8 text-center text-sm text-slate-500">Loading requests…</p>
-        ) : requests.length === 0 ? (
-          <p className="p-8 text-center text-sm text-slate-500">No pending removal requests.</p>
+      {loading ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-48 animate-pulse rounded-xl border border-slate-200 bg-white"
+            />
+          ))}
+        </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-14 text-center">
+          <Clock className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+          <p className="text-base font-semibold text-slate-800">
+            {normalizedSearch ? "No matching requests" : "You’re all caught up"}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            {normalizedSearch
+              ? "Try another requester, booking number, resource, or reason."
+              : "There are no booking removal requests awaiting review."}
+          </p>
+        </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {requests.map((request) => {
+        <div className="grid gap-3 lg:grid-cols-2">
+            {filteredRequests.map((request) => {
               const booking = request.booking_snapshot || {};
               const requestId = request.removal_request_id;
               return (
-                <article key={requestId} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-800">
-                        {request.requester_name} requested removal of booking #{request.booking_id}
+                <article key={requestId} className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {booking.resource_name || request.booking?.resource?.name || "Resource"}
                       </p>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
-                        <Clock size={12} /> Pending
-                      </span>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Booking #{request.booking_id} · Requested by {request.requester_name || "Staff"}
+                      </p>
                     </div>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {booking.resource_name || request.booking?.resource?.name || "Resource"} ·{" "}
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      <Clock size={12} /> Pending
+                    </span>
+                  </div>
+                  <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                    <p className="text-sm text-slate-700">
                       {formatDate(booking.start_date)} – {formatDate(booking.end_date)}
                       {booking.barangay ? ` · ${booking.barangay}` : ""}
                     </p>
                     {request.reason && (
-                      <p className="mt-2 text-sm text-slate-500">
-                        <span className="font-medium">Reason:</span> {request.reason}
+                      <p className="mt-2 break-words text-sm text-slate-600">
+                        <span className="font-medium text-slate-700">Reason:</span> {request.reason}
                       </p>
                     )}
-                    <p className="mt-1 text-xs text-slate-400">
-                      Submitted {request.requested_at ? new Date(request.requested_at).toLocaleString() : ""}
-                    </p>
                   </div>
-                  <div className="flex shrink-0 gap-2">
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+                    <p className="text-xs text-slate-400">
+                      Submitted {request.requested_at ? new Date(request.requested_at).toLocaleString() : "—"}
+                    </p>
+                    <div className="flex shrink-0 gap-2">
                     <button
                       type="button"
                       onClick={() => setConfirmation({ request, decision: "rejected" })}
@@ -145,13 +216,13 @@ export default function BookingRemovalRequests() {
                     >
                       <Check size={15} /> Approve removal
                     </button>
+                    </div>
                   </div>
                 </article>
               );
             })}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <ConfirmModal
         open={Boolean(confirmation)}
