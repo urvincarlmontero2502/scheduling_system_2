@@ -875,13 +875,17 @@ export default function Bookings() {
                   {canModerate && isPendingItem && (
                     <div className="mt-2 grid grid-cols-2 gap-3 px-4 pb-4">
                       <button
-                        onClick={() => handleStatusChange(bookingId, "approved")}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleStatusChange(bookingId, "approved");
+                        }}
                         className="flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
                       >
                         <Check size={12} /> Approve
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}

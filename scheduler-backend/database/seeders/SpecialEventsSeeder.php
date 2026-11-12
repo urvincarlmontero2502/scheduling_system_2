@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +14,9 @@ use Illuminate\Support\Facades\DB;
 class SpecialEventsSeeder extends Seeder
 {
     private const START_TIME = '07:00:00';
+
     private const END_TIME = '17:00:00';
+
     private const PURPOSE = 'Annual Community Festival / Official Event';
 
     public function run(): void
@@ -24,72 +25,19 @@ class SpecialEventsSeeder extends Seeder
             ?? DB::table('users')->where('role', 'admin')->orderBy('user_id')->value('user_id')
             ?? DB::table('users')->orderBy('user_id')->value('user_id');
 
-        if (!$systemUserId) {
+        if (! $systemUserId) {
             $this->command?->warn('Special events skipped: no users exist yet. They will be seeded on the next boot.');
 
             return;
         }
 
-        // Consolidated LGU special events with exact date ranges and resource assignments
-        $events = [
-            // 1. Sumayajaw Festival 2026 - 2026-08-11 to 2026-08-15 (5 Days)
-            [
-                'title' => 'Sumayajaw Festival',
-                'start_date' => '2026-08-11',
-                'end_date' => '2026-08-15',
-                'resources' => ['Dumptruck (6-Wheel)', 'Man Lift', 'Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
-            ],
-
-            // 2. Araw ng Habongan - 2026-07-01
-            [
-                'title' => 'Araw ng Habongan',
-                'start_date' => '2026-07-01',
-                'end_date' => '2026-07-01',
-                'resources' => ['Mini-Bus', 'Municipal Gymnasium'],
-            ],
-
-            // 3. Elementary Alumni - 2026-08-16
-            [
-                'title' => 'Elementary Alumni',
-                'start_date' => '2026-08-16',
-                'end_date' => '2026-08-16',
-                'resources' => ['Mini-Bus', 'Municipal Gymnasium'],
-            ],
-
-            // 4. High School Alumni - 2026-10-31
-            [
-                'title' => 'High School Alumni',
-                'start_date' => '2026-10-31',
-                'end_date' => '2026-10-31',
-                'resources' => ['Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
-            ],
-
-            // 5. Sumayajaw Festival 2027 (Days 1-3) - 2027-08-11 to 2027-08-13
-            [
-                'title' => 'Sumayajaw Festival',
-                'start_date' => '2027-08-11',
-                'end_date' => '2027-08-13',
-                'resources' => ['Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
-            ],
-
-            // 6. Sumayajaw Festival 2027 (Days 4-5) - 2027-08-14 to 2027-08-15
-            [
-                'title' => 'Sumayajaw Festival',
-                'start_date' => '2027-08-14',
-                'end_date' => '2027-08-15',
-                'resources' => ['Cargo Truck', 'Municipal Gymnasium'],
-            ],
-        ];
-
         $inserted = 0;
 
-        foreach ($events as $event) {
+        foreach ($this->annualEvents() as $event) {
             $period = CarbonPeriod::create($event['start_date'], $event['end_date']);
 
             foreach ($event['resources'] as $resourceName) {
-                $resourceIds = $this->resourceIds($resourceName);
-
-                foreach ($resourceIds as $resourceId) {
+                foreach ($this->resourceIds($resourceName) as $resourceId) {
                     foreach ($period as $date) {
                         $day = $date->toDateString();
 
@@ -125,6 +73,73 @@ class SpecialEventsSeeder extends Seeder
         $this->command?->info("Special events seed finished. Inserted {$inserted} booking rows (existing rows were skipped).");
     }
 
+    /**
+     * Seed the current and following year. The scheduled yearly run keeps
+     * extending the reservations without creating distant bookings too early.
+     */
+    private function annualEvents(): array
+    {
+        $currentYear = now('Asia/Manila')->year;
+        $events = [];
+
+        for ($year = $currentYear; $year <= $currentYear + 1; $year++) {
+            if ($year === 2026) {
+                $events[] = [
+                    'title' => 'Sumayajaw Festival',
+                    'start_date' => $this->annualDate($year, 8, 11),
+                    'end_date' => $this->annualDate($year, 8, 15),
+                    'resources' => ['Dumptruck (6-Wheel)', 'Man Lift', 'Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
+                ];
+            } else {
+                $events[] = [
+                    'title' => 'Sumayajaw Festival',
+                    'start_date' => $this->annualDate($year, 8, 11),
+                    'end_date' => $this->annualDate($year, 8, 13),
+                    'resources' => ['Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
+                ];
+                $events[] = [
+                    'title' => 'Sumayajaw Festival',
+                    'start_date' => $this->annualDate($year, 8, 14),
+                    'end_date' => $this->annualDate($year, 8, 15),
+                    'resources' => ['Cargo Truck', 'Municipal Gymnasium'],
+                ];
+            }
+
+            $events[] = [
+                'title' => 'Araw ng Habongan',
+                'start_date' => $this->annualDate($year, 7, 1),
+                'end_date' => $this->annualDate($year, 7, 1),
+                'resources' => ['Mini-Bus', 'Municipal Gymnasium'],
+            ];
+            $events[] = [
+                'title' => 'Elementary Alumni',
+                'start_date' => $this->annualDate($year, 8, 16),
+                'end_date' => $this->annualDate($year, 8, 16),
+                'resources' => ['Mini-Bus', 'Municipal Gymnasium'],
+            ];
+            $alumniDate = $this->annualDate($year, 10, 31);
+            $events[] = [
+                'title' => 'High School Alumni',
+                'start_date' => $alumniDate,
+                'end_date' => $alumniDate,
+                'resources' => ['Mini-Bus', 'Cargo Truck', 'Municipal Gymnasium'],
+            ];
+        }
+
+        return $events;
+    }
+
+    /**
+     * Resolve a recurring month/day, backing up to the month's final valid day
+     * if a configured day does not exist in that year.
+     */
+    private function annualDate(int $year, int $month, int $day): string
+    {
+        $lastDay = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+
+        return sprintf('%04d-%02d-%02d', $year, $month, min($day, $lastDay));
+    }
+
     /** Turns resource name into a list of resource IDs (exact match first, then fuzzy). */
     private function resourceIds(string $name): array
     {
@@ -138,16 +153,16 @@ class SpecialEventsSeeder extends Seeder
             ->all();
 
         // Fuzzy match if exact not found
-        if (!$ids) {
+        if (! $ids) {
             $ids = DB::table('resources')
-                ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($name) . '%'])
+                ->whereRaw('LOWER(name) LIKE ?', ['%'.strtolower($name).'%'])
                 ->orderBy('resource_id')
                 ->pluck('resource_id')
                 ->all();
         }
 
         // Auto-create Municipal Gymnasium if missing
-        if (!$ids && strtolower($name) === 'municipal gymnasium') {
+        if (! $ids && strtolower($name) === 'municipal gymnasium') {
             $id = DB::table('resources')->insertGetId([
                 'name' => 'Municipal Gymnasium',
                 'type' => 'facility',

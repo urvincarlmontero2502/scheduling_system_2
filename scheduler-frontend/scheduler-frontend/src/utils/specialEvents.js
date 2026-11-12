@@ -12,3 +12,21 @@ export function isSpecialEvent(booking) {
   const fullName = booking.full_name || "";
   return /festival|alumni|habongan/i.test(purpose) || /festival|alumni|habongan/i.test(fullName);
 }
+
+const RECURRING_SPECIAL_EVENT_DATES = new Set([
+  "07-01",
+  "08-11",
+  "08-12",
+  "08-13",
+  "08-14",
+  "08-15",
+  "08-16",
+  "10-31",
+]);
+
+export function isRecurringSpecialEventDate(dateString) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString || "");
+  if (!match || Number(match[1]) < 2026) return false;
+
+  return RECURRING_SPECIAL_EVENT_DATES.has(`${match[2]}-${match[3]}`);
+}

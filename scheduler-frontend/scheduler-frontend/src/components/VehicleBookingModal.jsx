@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import * as api from "../api/endpoints";
+import { getTodayDateInManila } from "../utils/bookingDates";
 import {
   X,
   Calendar as CalendarIcon,
@@ -92,6 +93,7 @@ export default function VehicleBookingModal({
   const [submitError, setSubmitError] = useState(null);
   const [submitAlternatives, setSubmitAlternatives] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const minimumBookingDate = getTodayDateInManila();
 
   const resourceImages = selectedVehicle?.images?.length
     ? selectedVehicle.images
@@ -310,6 +312,8 @@ export default function VehicleBookingModal({
     );
 
   const handleDateClick = (dateString) => {
+    if (dateString < minimumBookingDate) return;
+
     if (!formData.start_date || (formData.start_date && formData.end_date)) {
       update("start_date", dateString);
       update("end_date", "");
@@ -352,6 +356,7 @@ export default function VehicleBookingModal({
       const formattedDay = String(day).padStart(2, "0");
       const formattedMonth = String(month + 1).padStart(2, "0");
       const dateString = `${year}-${formattedMonth}-${formattedDay}`;
+      const isPastDate = dateString < minimumBookingDate;
 
       const isStart = formData.start_date === dateString;
       const isEnd = formData.end_date === dateString;
@@ -377,8 +382,9 @@ export default function VehicleBookingModal({
         <button
           key={dateString}
           type="button"
+          disabled={isPastDate}
           onClick={() => handleDateClick(dateString)}
-          className={cellStyles}>
+          className={`${cellStyles}${isPastDate ? " cursor-not-allowed text-slate-300 hover:bg-transparent" : ""}`}>
           {day}
           {st && (
             <span className="absolute bottom-[1px] left-1/2 flex -translate-x-1/2 items-center gap-0.5">
@@ -440,7 +446,9 @@ export default function VehicleBookingModal({
 
   const canSubmit =
     formData.start_date &&
+    formData.start_date >= minimumBookingDate &&
     formData.end_date &&
+    formData.end_date >= minimumBookingDate &&
     formData.purpose.trim() &&
     (formData.first_name.trim() || formData.last_name.trim()) &&
     formData.cell_number.length === 11 &&
@@ -618,6 +626,9 @@ export default function VehicleBookingModal({
                   Range & Time
                 </label>
                 {renderCalendarGrid()}
+                <p className="mt-1 text-[10.5px] text-steel">
+                  Past dates are unavailable. Select today or a future date.
+                </p>
                 <div className="mt-2 grid grid-cols-2 gap-2 rounded-md border border-line bg-paper p-2 text-[11px]">
                   <div>
                     <span className="mb-0.5 block text-steel">Start:</span>

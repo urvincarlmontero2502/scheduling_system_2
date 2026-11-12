@@ -12,3 +12,8 @@ Schedule::command('bookings:send-reminders')
     ->dailyAt('09:00')
     ->timezone('Asia/Manila')
     ->withoutOverlapping();
+
+Schedule::command('events:seed-annual')
+    ->yearlyOn(1, 1, '00:30')
+    ->timezone('Asia/Manila')
+    ->withoutOverlapping();

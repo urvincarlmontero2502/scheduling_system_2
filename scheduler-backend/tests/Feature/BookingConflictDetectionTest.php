@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\BookingRequest;
 use App\Models\Resource;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
@@ -19,6 +20,8 @@ class BookingConflictDetectionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Asia/Manila'));
 
         Schema::dropIfExists('booking_request');
         Schema::dropIfExists('resources');
@@ -71,6 +74,39 @@ class BookingConflictDetectionTest extends TestCase
         ]);
 
         Sanctum::actingAs($this->user);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    public function test_booking_request_rejects_dates_before_today_in_manila(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-12 12:00:00', 'Asia/Manila'));
+
+        $this->postJson('/api/bookings', $this->bookingPayload(
+            '2026-11-11',
+            '2026-11-11',
+            '08:00',
+            '17:00'
+        ))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['start_date']);
+    }
+
+    public function test_booking_request_allows_starting_today_in_manila(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-12 12:00:00', 'Asia/Manila'));
+
+        $this->postJson('/api/bookings', $this->bookingPayload(
+            '2026-11-12',
+            '2026-11-12',
+            '08:00',
+            '17:00'
+        ))->assertCreated();
     }
 
     public function test_conflicting_full_day_booking_returns_next_day_suggestion(): void

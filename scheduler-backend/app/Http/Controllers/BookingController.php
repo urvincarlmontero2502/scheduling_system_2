@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\BookingApproved;
+use App\Mail\BookingRejected;
 use App\Models\Approval;
 use App\Models\BookingRequest;
 use App\Models\Notification;
 use App\Models\Resource;
 use App\Models\User;
-use App\Mail\BookingApproved;
-use App\Mail\BookingRejected;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
 {
@@ -162,6 +163,7 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         try {
+            $minimumBookingDate = now('Asia/Manila')->toDateString();
             $validated = $request->validate([
                 'resource_id' => [
                     'nullable',
@@ -180,7 +182,8 @@ class BookingController extends Controller
 
                 'start_date' => [
                     'required',
-                    'date'
+                    'date',
+                    'after_or_equal:'.$minimumBookingDate,
                 ],
 
                 'end_date' => [
@@ -388,6 +391,8 @@ class BookingController extends Controller
                 $booking->load(['resource', 'user']),
                 201
             );
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to create booking: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to create booking. Please try again.'], 500);

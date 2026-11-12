@@ -32,6 +32,12 @@ Asia/Manila time. The system admin selects a lead time of 1, 3, or 5 days in
 **System Settings → Notifications**. Reminder delivery requires Brevo to be
 configured and the database migrations to have run.
 
+Annual special event reservations are seeded for the current and following
+year. The deployment seeder creates the initial rows; the Laravel scheduler
+also runs `events:seed-annual` every January 1 to keep adding future years.
+October 31 is clamped to the last valid date of October if the event date is
+ever configured for a month/year where that day does not exist.
+
 SMS is optional and disabled by default. To offer it, configure
 `BREVO_SMS_SENDER` in the backend environment with an approved Brevo sender
 name, ensure the Brevo account has SMS credits, and enable **Also send SMS

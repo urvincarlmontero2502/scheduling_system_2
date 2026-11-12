@@ -12,7 +12,14 @@ import {
 import * as api from "../api/endpoints";
 import { useCachedData } from "../hooks/useCachedData";
 import { useTabUrlSync } from "../hooks/useTabUrlSync";
-import { isSpecialEvent } from "../utils/specialEvents";
+import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
+import BookingDetailModal from "../components/BookingDetailModal";
+import { invalidateCache, CACHE_KEYS } from "../utils/cache";
+import {
+  isRecurringSpecialEventDate,
+  isSpecialEvent,
+} from "../utils/specialEvents";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -194,8 +201,11 @@ function getMonthDays(date) {
 
 export default function CalendarView() {
   // Cached data hooks — data persists across page switches
+    const { user } = useAuth();
+    const toast = useToast();
   const { data: bookings, loading } = useCachedData("bookings", api.fetchBookings);
     const { data: resources } = useCachedData("resources", api.fetchResources);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
     // Extract and group special events from bookings
         const specialEventsGrouped = useMemo(() => {
@@ -270,6 +280,27 @@ export default function CalendarView() {
   const weekDays = getWeekDays(currentDate);
   const monthDays = getMonthDays(currentDate);
   const currentYear = currentDate.getFullYear();
+  const canModerate = user?.role === "admin";
+
+  const handleBookingStatusChange = async (id, status, remarks) => {
+    try {
+      await api.updateBookingStatus(
+        id,
+        status,
+        remarks ? { remarks } : {},
+      );
+      toast.success(
+        `Booking ${status === "approved" ? "approved" : "rejected"} successfully`,
+      );
+      setSelectedBooking(null);
+      invalidateCache(CACHE_KEYS.BOOKINGS);
+      invalidateCache(CACHE_KEYS.HEALTH);
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Could not update the booking status.",
+      );
+    }
+  };
 
   const handlePrevWeek = () => {
     const prev = new Date(currentDate);
@@ -374,7 +405,7 @@ export default function CalendarView() {
             <div className="flex items-center justify-between sm:justify-start gap-3">
               <h1 className="text-[15px] sm:text-[17px] font-semibold text-ink">
                 {isYearView
-                  ? `Yearly Overview (${currentYear})`
+                  ? "Yearly Overview"
                   : monthYearLabel}
               </h1>
             </div>
@@ -388,11 +419,9 @@ export default function CalendarView() {
                     title="Previous Year">
                     <ChevronLeft size={14} />
                   </button>
-                  <button
-                    onClick={handleToday}
-                    className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border-x border-line bg-paper hover:bg-line/50 text-ink transition">
-                    This Year
-                  </button>
+                  <span className="px-3 py-1.5 text-[12px] sm:text-[13px] font-medium border-x border-line bg-paper text-ink">
+                    {currentYear}
+                  </span>
                   <button
                     onClick={handleNextYear}
                     className="p-1.5 hover:bg-line/50 text-steel transition"
@@ -538,8 +567,15 @@ export default function CalendarView() {
                                                     (yearViewFilter === "all" ||
                                                       yearViewFilter === "pending") &&
                                                     hasPending;
+                                                  const showSpecialEventIndicator =
+                                                    (yearViewFilter === "all" ||
+                                                      yearViewFilter === "approved") &&
+                                                    (specialEventBookings.length > 0 ||
+                                                      isRecurringSpecialEventDate(item.fullDateStr));
                                                   const hasVisibleIndicator =
-                                                    showApprovedIndicator || showPendingIndicator;
+                                                    showApprovedIndicator ||
+                                                    showPendingIndicator ||
+                                                    showSpecialEventIndicator;
 
                                                   return (
                                                     <div
@@ -558,8 +594,15 @@ export default function CalendarView() {
                                                       <span>{item.dayNum}</span>
                                                       {item.isCurrentMonth && hasVisibleIndicator && (
                                                         <div className="flex items-center gap-0.5 absolute bottom-0.5">
-                                                          {specialEventBookings.length > 0 && (
-                                                            <span className="h-1.5 w-1.5 rounded-full bg-purple-600" title="Special Event" />
+                                                          {showSpecialEventIndicator && (
+                                                            <span
+                                                              className="h-1.5 w-1.5 rounded-full bg-purple-600"
+                                                              title={
+                                                                specialEventBookings.length > 0
+                                                                  ? "Special event reservation"
+                                                                  : "Recurring special event date; reservation not yet created"
+                                                              }
+                                                            />
                                                           )}
                                                           {showApprovedIndicator && regularBookings.some(b => (b.status || "").toLowerCase().includes("approv")) && (
                                                             <span className="h-1 w-1 rounded-full bg-blue-500" />
@@ -600,6 +643,12 @@ export default function CalendarView() {
                       className={`text-[11px] sm:text-[13px] font-bold mt-0.5 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
                       {day.dateNum}
                     </span>
+                    {isRecurringSpecialEventDate(day.fullDateStr) && (
+                      <span
+                        className="h-1 w-1 rounded-full bg-purple-600 mt-0.5"
+                        title="Recurring special event date; reservation not yet created"
+                      />
+                    )}
                   </div>
                 ))}
 
@@ -670,6 +719,19 @@ export default function CalendarView() {
                                                 <div
                                                   key={b.id || b.booking_id}
                                                   title={`${resourceName} - ${b.status || ""} - ${requesterName}${isSpecial ? " ⭐ Special Event" : ""}`}
+                                                  role="button"
+                                                  tabIndex={0}
+                                                  aria-label={`View ${b.status || "booking"} for ${resourceName}, requested by ${requesterName}`}
+                                                  onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    setSelectedBooking(b);
+                                                  }}
+                                                  onKeyDown={(event) => {
+                                                    if (event.key === "Enter" || event.key === " ") {
+                                                      event.preventDefault();
+                                                      setSelectedBooking(b);
+                                                    }
+                                                  }}
                                                   className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
                                                     isApproved
                                                       ? isSpecial
@@ -760,6 +822,7 @@ export default function CalendarView() {
 
                               const specialEventBookings = dayBookings.filter((b) => isSpecialEvent(b));
                               const regularBookings = dayBookings.filter((b) => !isSpecialEvent(b));
+                              const hasRecurringSpecialEvent = isRecurringSpecialEventDate(item.fullDateStr);
 
                               const hasApproved = dayBookings.some((b) =>
                                 (b.status || "").toLowerCase().includes("approv"),
@@ -788,10 +851,18 @@ export default function CalendarView() {
                                       : "text-steel/30 cursor-default"
                                   } ${isSelected ? "bg-brand text-white font-bold" : ""}`}>
                                   <span>{item.dayNum}</span>
-                                  {item.isCurrentMonth && (hasApproved || hasPending) && (
+                                  {item.isCurrentMonth &&
+                                    (hasApproved || hasPending || hasRecurringSpecialEvent) && (
                                     <div className="flex items-center gap-0.5 absolute bottom-0.5">
-                                      {specialEventBookings.length > 0 && (
-                                        <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-purple-300" : "bg-purple-600"}`} title="Special Event" />
+                                      {(specialEventBookings.length > 0 || hasRecurringSpecialEvent) && (
+                                        <span
+                                          className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-purple-300" : "bg-purple-600"}`}
+                                          title={
+                                            specialEventBookings.length > 0
+                                              ? "Special event reservation"
+                                              : "Recurring special event date; reservation not yet created"
+                                          }
+                                        />
                                       )}
                                       {hasApproved && regularBookings.some(b => (b.status || "").toLowerCase().includes("approv")) && (
                                         <span
@@ -875,6 +946,17 @@ export default function CalendarView() {
                     </div>
         </div>
       </div>
+      {selectedBooking && (
+        <BookingDetailModal
+                    booking={selectedBooking}
+                    canModerate={canModerate}
+                    onClose={() => setSelectedBooking(null)}
+                    onApprove={(id) => handleBookingStatusChange(id, "approved")}
+                    onReject={(id, reason) =>
+                      handleBookingStatusChange(id, "rejected", reason)
+                    }
+        />
+      )}
     </div>
   );
 }
