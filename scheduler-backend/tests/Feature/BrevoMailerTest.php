@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Mail;
 use ReflectionProperty;
 use RuntimeException;
+use Symfony\Component\HttpClient\NativeHttpClient;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoApiTransport;
+use Symfony\Component\Mailer\Transport\AbstractHttpTransport;
 use Tests\TestCase;
 
 class BrevoMailerTest extends TestCase
@@ -20,6 +22,18 @@ class BrevoMailerTest extends TestCase
             ->getValue($transport);
 
         $this->assertSame('test-brevo-api-key', $apiKey);
+    }
+
+    public function test_brevo_transport_uses_the_native_http_client(): void
+    {
+        config(['services.brevo.key' => 'test-brevo-api-key']);
+        Mail::purge('brevo');
+
+        $transport = Mail::mailer('brevo')->getSymfonyTransport();
+        $client = (new ReflectionProperty(AbstractHttpTransport::class, 'client'))
+            ->getValue($transport);
+
+        $this->assertInstanceOf(NativeHttpClient::class, $client);
     }
 
     public function test_brevo_transport_reports_a_missing_api_key(): void

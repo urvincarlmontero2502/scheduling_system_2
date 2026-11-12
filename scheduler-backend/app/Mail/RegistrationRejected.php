@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\RegistrationRequest;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -15,9 +16,13 @@ class RegistrationRejected extends Mailable
     use Queueable, SerializesModels;
 
     public $registrationRequest;
+
     public $reviewer;
+
     public $fullName;
+
     public $barangay;
+
     public $rejectReason;
 
     public function __construct(RegistrationRequest $registrationRequest, ?User $reviewer = null)
@@ -32,7 +37,7 @@ class RegistrationRejected extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Registration Request Was Not Approved — ' . $this->barangay,
+            subject: 'Your Registration Request Was Not Approved — '.$this->barangay,
         );
     }
 
@@ -41,12 +46,13 @@ class RegistrationRejected extends Mailable
         return new Content(
             view: 'mail.registration.rejected',
             with: [
-                'fullName'    => $this->fullName,
-                'barangay'    => $this->barangay,
-                'rejectReason'=> $this->rejectReason,
-                'reviewer'    => $this->reviewer,
-                'reviewedAt'  => $this->registrationRequest->reviewed_at
-                    ? \Carbon\Carbon::parse($this->registrationRequest->reviewed_at)->format('F j, Y \a\t g:i A')
+                'fullName' => $this->fullName,
+                'barangay' => $this->barangay,
+                'rejectReason' => $this->rejectReason,
+                'reviewer' => $this->reviewer,
+                'logoUrl' => config('app.mail_logo_url'),
+                'reviewedAt' => $this->registrationRequest->reviewed_at
+                    ? Carbon::parse($this->registrationRequest->reviewed_at)->format('F j, Y \a\t g:i A')
                     : now()->format('F j, Y \a\t g:i A'),
             ],
         );

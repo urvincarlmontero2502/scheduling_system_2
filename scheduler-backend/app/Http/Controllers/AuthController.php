@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -679,20 +680,11 @@ class AuthController extends Controller
             DB::beginTransaction();
 
             // Check which columns exist in users table to avoid SQL errors
-            $columns = DB::connection()
-                ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
-            $columnNames = array_map(fn($c) => $c->column_name, $columns);
-
-            // Check if registration_requests table exists (it may not if migration hasn't run yet)
-            $regColumnNames = ['request_id', 'full_name', 'email', 'password_hash', 'google_id', 'avatar', 'barangay', 'department', 'role', 'status', 'reject_reason', 'reviewed_by', 'reviewed_at', 'created_at', 'updated_at'];
-            try {
-                $regColumns = DB::connection()
-                    ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'registration_requests'");
-                $regColumnNames = array_merge($regColumnNames, array_map(fn($c) => $c->column_name, $regColumns));
-            } catch (\Exception $e) {
-                // Table may not exist yet — use default columns
-                \Log::warning('registration_requests table check: ' . $e->getMessage());
-            }
+            $columnNames = Schema::getColumnListing('users');
+            $tableExists = Schema::hasTable('registration_requests');
+            $regColumnNames = $tableExists
+                ? Schema::getColumnListing('registration_requests')
+                : [];
 
             // Prepare registration request data
             $regData = [
@@ -712,16 +704,6 @@ class AuthController extends Controller
             }
             if (in_array('department', $regColumnNames)) {
                 $regData['department'] = null;
-            }
-
-            // Check if the registration_requests table exists
-            $tableExists = false;
-            try {
-                DB::connection()
-                    ->select("SELECT 1 FROM information_schema.tables WHERE table_name = 'registration_requests' LIMIT 1");
-                $tableExists = true;
-            } catch (\Exception $e) {
-                $tableExists = false;
             }
 
             if ($tableExists) {

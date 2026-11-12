@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Loader2 } from "lucide-react";
+import jabongaLogo from "../assets/jabonga-logo.png";
 
 const FALLBACK_BARANGAYS = [
   "A. Beltran",
@@ -29,6 +30,9 @@ export default function BarangaySetup() {
   const [selectedBarangay, setSelectedBarangay] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [barangayMenuOpen, setBarangayMenuOpen] = useState(false);
+  const barangayDropdownRef = useRef(null);
+  const barangayTriggerRef = useRef(null);
 
   // For the registration flow, we need a temporary token, not a regular auth token
   const registrationToken = localStorage.getItem("google_registration_token");
@@ -63,6 +67,29 @@ export default function BarangaySetup() {
         .catch(() => {});
     }
   }, [navigate, registrationToken, hasAuthToken]);
+
+  useEffect(() => {
+    if (!barangayMenuOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!barangayDropdownRef.current?.contains(event.target)) {
+        setBarangayMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setBarangayMenuOpen(false);
+        barangayTriggerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [barangayMenuOpen]);
 
   const handleSubmit = async () => {
     if (!selectedBarangay) {
@@ -116,25 +143,28 @@ export default function BarangaySetup() {
     }
   };
 
+  const handleCancel = () => {
+    if (registrationToken) {
+      localStorage.removeItem("google_registration_token");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    navigate("/");
+  };
+
+  const getBarangayLabel = (barangay) =>
+    barangay === "Poblacion" ? "Poblacion (Jabonga)" : barangay;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <div className="w-full max-w-md rounded-xl border border-line bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand/10">
-            <svg
-              className="h-8 w-8 text-brand"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17.25 12h-.75v-.75h-3.75v3h3.75V12M9 12V9a3 3 0 013-3h.75a.75.75 0 01.75.75V12m-3 0v3.75a.75.75 0 001.5 0V12m-1.5 0H9z"
-              />
-            </svg>
-          </div>
+          <img
+            src={jabongaLogo}
+            alt="Municipality of Jabonga logo"
+            className="h-16 w-16 object-contain"
+          />
 
           <h2 className="text-[18px] font-semibold text-ink">
             Select Your Barangay
@@ -150,23 +180,71 @@ export default function BarangaySetup() {
           </p>
         </div>
 
-        <div className="mt-6 space-y-2">
-          {barangays.map((brgy) => (
-            <label
-              key={brgy}
-              className="flex items-center gap-3 rounded-lg border border-line p-3 cursor-pointer transition-colors"
+        <div className="mt-6">
+          <label className="mb-1.5 block text-left text-[13px] font-medium text-ink">
+            Barangay
+          </label>
+          <div className="relative" ref={barangayDropdownRef}>
+            <button
+              ref={barangayTriggerRef}
+              id="barangay"
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={barangayMenuOpen}
+              aria-controls="barangay-options"
+              disabled={loading}
+              onClick={() => setBarangayMenuOpen((isOpen) => !isOpen)}
+              className={`flex w-full items-center justify-between rounded-lg border bg-white px-3.5 py-3 text-left text-[14px] transition-all focus:outline-none focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:opacity-60 ${
+                barangayMenuOpen
+                  ? "border-brand ring-4 ring-brand/10"
+                  : "border-line hover:border-slate-300"
+              }`}
             >
-              <input
-                type="radio"
-                name="barangay"
-                value={brgy}
-                checked={selectedBarangay === brgy}
-                onChange={(e) => setSelectedBarangay(e.target.value)}
-                className="h-4 w-4 text-brand focus:ring-brand"
+              <span className={selectedBarangay ? "text-ink" : "text-slate-400"}>
+                {selectedBarangay
+                  ? getBarangayLabel(selectedBarangay)
+                  : "Select your barangay"}
+              </span>
+              <ChevronDown
+                size={18}
+                className={`text-slate-500 transition-transform ${barangayMenuOpen ? "rotate-180" : ""}`}
               />
-              <span className="text-[14px] text-ink">{brgy}</span>
-            </label>
-          ))}
+            </button>
+
+            {barangayMenuOpen && (
+              <div
+                id="barangay-options"
+                role="listbox"
+                aria-label="Barangay options"
+                className="absolute left-0 right-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10 ring-1 ring-black/5"
+              >
+                {barangays.map((brgy) => {
+                  const isSelected = selectedBarangay === brgy;
+                  return (
+                    <button
+                      key={brgy}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        setSelectedBarangay(brgy);
+                        setError("");
+                        setBarangayMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${
+                        isSelected
+                          ? "bg-blue-50 font-semibold text-brand"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {getBarangayLabel(brgy)}
+                      {isSelected && <Check size={16} className="text-brand" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -181,22 +259,33 @@ export default function BarangaySetup() {
           </div>
         )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !selectedBarangay}
-          className="mt-6 w-full rounded-lg bg-brand py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
-        >
-          {loading
-            ? (
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={loading}
+            className="min-h-10 flex-1 whitespace-nowrap rounded-lg border border-line bg-white px-3 py-2 text-[13px] font-semibold text-steel transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || !selectedBarangay}
+            className="min-h-10 flex-1 whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 size={16} className="animate-spin" />
-                {registrationToken ? "Submitting registration..." : "Saving..."}
+                {registrationToken ? "Submitting..." : "Saving..."}
               </span>
-            )
-            : registrationToken
-              ? "Submit Registration Request"
-              : "Save Barangay"}
-        </button>
+            ) : registrationToken ? (
+              "Submit Request"
+            ) : (
+              "Save Barangay"
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

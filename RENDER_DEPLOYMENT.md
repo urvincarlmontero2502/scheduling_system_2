@@ -11,11 +11,13 @@ handles the authorization code before posting it to the Laravel API.
    GOOGLE_CLIENT_ID=<Google OAuth client ID>
    GOOGLE_CLIENT_SECRET=<Google OAuth client secret>
    FRONTEND_URL=https://<your-frontend-domain>
+   MAIL_LOGO_URL=https://<your-frontend-domain>/jabonga-logo.png
    ```
 
    Do not add a trailing slash to `FRONTEND_URL`. The backend constructs the
    callback URI as `FRONTEND_URL/auth/google/callback`; `GOOGLE_REDIRECT_URI` is
-   no longer used.
+   no longer used. `MAIL_LOGO_URL` must be a publicly accessible URL so
+   recipients' email clients can load the logo.
 2. In Google Cloud Console, open **APIs & Services → Credentials**, edit the
    OAuth 2.0 Web client, and add:
    - **Authorized JavaScript origin:** `https://<your-frontend-domain>`

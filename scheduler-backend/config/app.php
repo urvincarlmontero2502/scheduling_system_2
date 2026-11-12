@@ -54,6 +54,13 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
+    'mail_logo_url' => env(
+        'MAIL_LOGO_URL',
+        rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/jabonga-logo.png'
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
