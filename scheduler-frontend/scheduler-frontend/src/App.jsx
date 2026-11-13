@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ToastProvider } from "./components/Toast";
@@ -18,6 +18,23 @@ import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
 import RegistrationStatus from "./pages/RegistrationStatus";
+import LandingPage from "./pages/LandingPage";
+import { useAuth } from "./context/AuthContext";
+
+function LandingOrDashboard() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (location.pathname === "/" && !loading && !user) {
+    return <LandingPage />;
+  }
+
+  return (
+    <ProtectedRoute>
+      <DashboardLayout />
+    </ProtectedRoute>
+  );
+}
 
 export default function App() {
   return (
@@ -29,11 +46,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route
             path="/"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
+            element={<LandingOrDashboard />}>
             <Route index element={<Overview />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="bookings" element={<Bookings />} />

@@ -33,6 +33,7 @@ export default function Login() {
   const urlParams = new URLSearchParams(location.search);
   const registrationPending = urlParams.get("registration") === "pending";
   const registrationApproved = urlParams.get("registration") === "approved";
+  const requestingStaffAccount = urlParams.get("request") === "staff";
 
   // Auto-advance slideshow
   useEffect(() => {
@@ -134,9 +135,17 @@ export default function Login() {
                 Facility & Vehicle Scheduler
               </p>
               <p className="text-[13px] text-blue-800 leading-tight">
-                Sign in to manage bookings
+                {requestingStaffAccount
+                  ? "Request staff access or sign in"
+                  : "Sign in to manage bookings"}
               </p>
             </div>
+            {requestingStaffAccount && (
+              <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2.5 text-[12.5px] leading-5 text-blue-800">
+                New staff? Continue with Google to submit an account request for
+                your barangay. An administrator must approve your request.
+              </div>
+            )}
           </div>
           {/* Pending Approval Info */}
           {registrationPending && (
@@ -288,7 +297,9 @@ export default function Login() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
                 </svg>
-                Sign in with Google
+                {requestingStaffAccount
+                  ? "Continue with Google to request access"
+                  : "Sign in with Google"}
               </>
             )}
           </button>
