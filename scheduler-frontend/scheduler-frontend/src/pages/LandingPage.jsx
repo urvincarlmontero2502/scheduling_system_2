@@ -220,7 +220,7 @@ export default function LandingPage() {
             <p>
               Staff account requests start with Google sign-in and require
               approval. Email changes must be verified using the link sent to
-              the new address[cite: 14].
+              the new address.
             </p>
             <div className="mt-4 flex flex-col items-start gap-2">
               <Link
