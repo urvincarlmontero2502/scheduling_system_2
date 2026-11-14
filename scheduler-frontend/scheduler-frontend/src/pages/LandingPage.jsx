@@ -83,9 +83,9 @@ export default function LandingPage() {
           </Link>
           <div className="flex items-center gap-2.5">
             <Link
-              to="/login?request=staff"
+              to="/registration-status"
               className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              Sign Up
+              Check Status
             </Link>
             <Link
               to="/login"
@@ -222,9 +222,9 @@ export default function LandingPage() {
             </p>
             <div className="mt-4 flex flex-col items-start gap-2">
               <Link
-                to="/login?request=staff"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 no-underline hover:text-blue-900">
-                Request a staff account
+                to="/registration-status"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 no-underline hover:text-slate-900">
+                Check registration status
                 <ArrowRight size={15} />
               </Link>
               <Link
