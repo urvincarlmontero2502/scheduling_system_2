@@ -222,9 +222,9 @@ export default function LandingPage() {
             </p>
             <div className="mt-4 flex flex-col items-start gap-2">
               <Link
-                to="/registration-status"
+                to="/login?request=staff"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 no-underline hover:text-slate-900">
-                Check registration status
+                Request a staff account
                 <ArrowRight size={15} />
               </Link>
               <Link
