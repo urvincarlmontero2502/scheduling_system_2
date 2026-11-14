@@ -193,6 +193,9 @@ Route::get('/diagnostics/oauth-tokens', function () {
 // Public: get barangays list (no auth required — needed during registration flow)
 Route::get('/barangays', [AuthController::class, 'getBarangays']);
 
+// Public: check registration request status by email
+Route::get('/registration-lookup', [RegistrationController::class, 'lookup']);
+
 Route::middleware('auth:sanctum')->group(function () {
 
     // Authentication

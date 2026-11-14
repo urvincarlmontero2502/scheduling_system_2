@@ -15,6 +15,35 @@ use Illuminate\Support\Facades\Mail;
 class RegistrationController extends Controller
 {
     /**
+     * Public lookup: Get registration request details by email.
+     * No authentication required - returns request status if found.
+     */
+    public function lookup(Request $request)
+    {
+        $email = $request->query('email');
+
+        if (!$email) {
+            return response()->json(['message' => 'Email parameter is required.'], 400);
+        }
+
+        $registrationRequest = RegistrationRequest::where('email', $email)->first();
+
+        if ($registrationRequest) {
+            return response()->json([
+                'request_id' => $registrationRequest->request_id,
+                'email' => $registrationRequest->email,
+                'full_name' => $registrationRequest->full_name,
+                'barangay' => $registrationRequest->barangay,
+                'role' => $registrationRequest->role,
+                'status' => $registrationRequest->status,
+                'reviewed_at' => $registrationRequest->reviewed_at,
+            ], 200);
+        } else {
+            return response()->json(['message' => 'No registration request found for this email.'], 404);
+        }
+    }
+
+    /**
      * Get all pending registration requests.
      * Admin sees all; barangay_admin sees only their barangay.
      */
