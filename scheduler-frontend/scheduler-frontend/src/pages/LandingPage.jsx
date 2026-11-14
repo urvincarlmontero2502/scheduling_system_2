@@ -65,33 +65,35 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <Link to="/" className="flex min-w-0 items-center gap-3 no-underline">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8">
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-2 no-underline sm:gap-3">
             <img
               src="/jabonga-logo.png"
               alt="Municipality of Jabonga seal"
-              className="h-11 w-11 shrink-0 object-contain"
+              className="h-9 w-9 shrink-0 object-contain sm:h-11 sm:w-11"
             />
             <span className="min-w-0">
-              <span className="block text-xs font-bold tracking-tight text-slate-900 sm:text-sm md:text-base">
+              <span className="block text-xs font-bold leading-tight tracking-tight text-slate-900 sm:text-sm md:text-base">
                 Facility &amp; Vehicle Scheduler
               </span>
-              <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
+              <span className="mt-0.5 block text-[11px] leading-tight text-slate-500 sm:text-xs">
                 Municipality of Jabonga
               </span>
             </span>
           </Link>
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <Link
               to="/registration-status"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 no-underline shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:px-4 sm:py-2.5 sm:text-sm">
               Check Status
             </Link>
             <Link
               to="/login"
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-700 px-2.5 py-2 text-xs font-semibold text-white no-underline shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm">
               Sign In
-              <ArrowRight size={16} />
+              <ArrowRight size={14} className="sm:h-4 sm:w-4" />
             </Link>
           </div>
         </div>
@@ -206,7 +208,7 @@ export default function LandingPage() {
                   className="mt-0.5 shrink-0 text-emerald-700"
                 />
                 Automated Email and SMS alerts are sent for booking updates and
-                approval notices.
+                approval notices[cite: 14].
               </li>
             </ul>
           </InfoCard>
@@ -218,7 +220,7 @@ export default function LandingPage() {
             <p>
               Staff account requests start with Google sign-in and require
               approval. Email changes must be verified using the link sent to
-              the new address.
+              the new address[cite: 14].
             </p>
             <div className="mt-4 flex flex-col items-start gap-2">
               <Link
