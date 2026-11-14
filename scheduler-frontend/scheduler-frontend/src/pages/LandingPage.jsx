@@ -73,10 +73,10 @@ export default function LandingPage() {
               className="h-11 w-11 shrink-0 object-contain"
             />
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold tracking-tight text-slate-900 sm:text-base">
+              <span className="block text-xs font-bold tracking-tight text-slate-900 sm:text-sm md:text-base">
                 Facility &amp; Vehicle Scheduler
               </span>
-              <span className="mt-0.5 block text-xs text-slate-500">
+              <span className="mt-0.5 block text-[11px] text-slate-500 sm:text-xs">
                 Municipality of Jabonga
               </span>
             </span>
@@ -205,8 +205,8 @@ export default function LandingPage() {
                   size={15}
                   className="mt-0.5 shrink-0 text-emerald-700"
                 />
-                Automated SMS alerts may be sent for booking updates when
-                enabled.
+                Automated Email and SMS alerts are sent for booking updates and
+                approval notices.
               </li>
             </ul>
           </InfoCard>
