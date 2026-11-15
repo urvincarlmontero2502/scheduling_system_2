@@ -20,6 +20,13 @@ import * as api from "../api/endpoints";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import VehicleBookingModal from "../components/VehicleBookingModal";
 
+/** Format capacity with "pax" suffix, avoiding duplication */
+function formatCapacity(cap) {
+  if (!cap) return "Not specified";
+  if (/\bpax$/i.test(cap)) return cap;
+  return `${cap} pax`;
+}
+
 export default function Overview() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -364,6 +371,13 @@ export default function Overview() {
                   .map((item) => {
                     const isMaintenance =
                       item.is_maintenance || item.status === "maintenance";
+                    const rawCap = (item.capacity || "").trim();
+                    const isValidCap =
+                      rawCap &&
+                      rawCap !== "pax" &&
+                      rawCap !== "-" &&
+                      rawCap !== "N/A";
+
                     return (
                       <div
                         key={item.resource_id || item.id}
@@ -410,20 +424,15 @@ export default function Overview() {
                             <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 break-words mb-2 min-h-[2.5rem]">
                               {item.name}
                             </h3>
-                            {item.capacity &&
-                              item.capacity.trim() !== "" &&
-                              item.capacity !== "N/A" && (
-                                <p className="text-xs text-slate-500 font-medium mb-1">
-                                  <UserGroupIcon
-                                    size={12}
-                                    className="inline mr-1"
-                                  />
-                                  Capacity:{" "}
-                                  <span className="text-slate-700">
-                                    {item.capacity}
-                                  </span>
-                                </p>
-                              )}
+                            <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
+                              <UserGroupIcon size={12} className="inline" />
+                              Capacity:{" "}
+                              <span className="font-medium text-slate-700">
+                                {isValidCap
+                                  ? formatCapacity(rawCap)
+                                  : "Not specified"}
+                              </span>
+                            </p>
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
                               {item.description || "No description available"}
                             </p>
@@ -504,6 +513,12 @@ export default function Overview() {
                   .map((item) => {
                     const isMaintenance =
                       item.is_maintenance || item.status === "maintenance";
+                    const unitDetails =
+                      item.unit_name || item.unit_details || item.capacity;
+                    const rawUnit = (unitDetails || "").trim();
+                    const isValidUnit =
+                      rawUnit && rawUnit !== "-" && rawUnit !== "N/A";
+
                     return (
                       <div
                         key={item.resource_id || item.id}
@@ -550,20 +565,13 @@ export default function Overview() {
                             <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 break-words mb-2 min-h-[2.5rem]">
                               {item.name}
                             </h3>
-                            {(item.unit_name || item.capacity) &&
-                              (item.unit_name || item.capacity).trim() !==
-                                "" && (
-                                <p className="text-xs text-slate-500 font-medium mb-1">
-                                  <UserGroupIcon
-                                    size={12}
-                                    className="inline mr-1"
-                                  />
-                                  Unit Details:{" "}
-                                  <span className="text-slate-700">
-                                    {item.unit_name || item.capacity}
-                                  </span>
-                                </p>
-                              )}
+                            <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
+                              <UserGroupIcon size={12} className="inline" />
+                              Unit Details:{" "}
+                              <span className="font-medium text-slate-700">
+                                {isValidUnit ? rawUnit : "Not specified"}
+                              </span>
+                            </p>
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
                               {item.description || "No description available"}
                             </p>

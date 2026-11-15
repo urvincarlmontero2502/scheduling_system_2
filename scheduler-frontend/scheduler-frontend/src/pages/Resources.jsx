@@ -47,7 +47,7 @@ const STATUS_VARIANTS = {
 
 /** Format capacity with "pax" suffix, avoiding duplication */
 function formatCapacity(cap) {
-  if (!cap) return "N/A";
+  if (!cap) return "Not specified";
   if (/\bpax$/i.test(cap)) return cap;
   return `${cap} pax`;
 }
@@ -82,6 +82,7 @@ export default function Resources() {
   const [editingResource, setEditingResource] = useState(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState(null);
+  const [confirmActionType, setConfirmActionType] = useState(null); // "delete" or "maintenance"
   const [selectedResource, setSelectedResource] = useState(null);
   const [resourceType, setResourceType] = useState(null);
   const [isDirectUse, setIsDirectUse] = useState(false);
@@ -96,9 +97,6 @@ export default function Resources() {
     buffer_minutes: 30,
     images: [],
   });
-
-  // Handle resource mutations (create/edit/delete/maintenance toggle)
-  // These call refetchResources() via the useCachedData hook after API calls
 
   const handleOpenModal = (resource = null) => {
     if (resource) {
@@ -133,32 +131,22 @@ export default function Resources() {
     setIsDirectUse(direct);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this resource?")) {
-      // Optimistically remove from cache immediately
-      const cached = readCache(CACHE_KEYS.RESOURCES) || [];
-      const updated = cached.filter(
-        (r) => String(r.resource_id || r.id) !== String(id),
+  const handleDelete = (item) => {
+    const resourceId = item.resource_id || item.id;
+    if (!resourceId) {
+      toast.error(
+        "Error: Resource ID is missing. Please refresh and try again.",
       );
-      writeCache(CACHE_KEYS.RESOURCES, updated);
-
-      api
-        .deleteResource?.(id)
-        .then(() => {
-          toast.success("Resource deleted successfully");
-          refetchResources();
-          window.dispatchEvent(new Event("cacheInvalidated"));
-        })
-        .catch((err) => {
-          // Rollback cache
-          writeCache(CACHE_KEYS.RESOURCES, cached);
-          const msg =
-            err?.response?.data?.message ||
-            err?.message ||
-            "Failed to delete resource. Please try again.";
-          toast.error(msg);
-        });
+      return;
     }
+
+    setConfirmActionType("delete");
+    setConfirmModalData({
+      item,
+      resourceId,
+      actionText: "delete",
+    });
+    setConfirmModalOpen(true);
   };
 
   const handleBookingSubmit = (payload) => {
@@ -176,11 +164,9 @@ export default function Resources() {
       status: payload.status || "pending",
     };
 
-    // --- Optimistic update ---
     const cachedResources = readCache(CACHE_KEYS.RESOURCES) || [];
     const isDirectUse = payload.status === "approved";
 
-    // Optimistically update resource availability
     if (isDirectUse) {
       const updated = cachedResources.map((r) =>
         String(r.resource_id || r.id) === String(payload.item_id)
@@ -190,7 +176,6 @@ export default function Resources() {
       writeCache(CACHE_KEYS.RESOURCES, updated);
     }
 
-    // Close modal + show toast immediately
     setSelectedResource(null);
     setResourceType(null);
     toast.success(
@@ -201,16 +186,13 @@ export default function Resources() {
 
     window.dispatchEvent(new Event("bookingUpdated"));
 
-    // --- Background: fire API request ---
     return api
       .createBooking(apiPayload)
       .then(() => {
-        // Success — cache already updated optimistically
         invalidateCache(CACHE_KEYS.HEALTH);
         refetchResources();
       })
       .catch((err) => {
-        // --- Rollback ---
         if (isDirectUse) {
           const restored = cachedResources.map((r) =>
             String(r.resource_id || r.id) === String(payload.item_id)
@@ -229,7 +211,6 @@ export default function Resources() {
           "Failed to submit booking request. Please try again.";
         toast.error(msg);
 
-        // If conflict, reopen modal
         if (err?.response?.status === 409 || err?.response?.status === 422) {
           setSelectedResource(payload._originalResource || null);
         }
@@ -252,7 +233,7 @@ export default function Resources() {
       ? "available"
       : "under maintenance";
 
-    // Open custom confirmation modal instead of window.confirm
+    setConfirmActionType("maintenance");
     setConfirmModalData({
       item,
       resourceId,
@@ -264,14 +245,12 @@ export default function Resources() {
 
   const confirmMaintenanceToggle = async () => {
     if (!confirmModalData) return;
-    const { item, resourceId, isCurrentlyMaintenance, actionText } =
-      confirmModalData;
+    const { resourceId, isCurrentlyMaintenance, actionText } = confirmModalData;
 
     const request = isCurrentlyMaintenance
       ? api.setResourceAvailable?.(resourceId)
       : api.setResourceMaintenance?.(resourceId);
 
-    // Optimistically update cache immediately
     const prevResources = [...resources];
     const updated = resources.map((r) =>
       String(r.resource_id || r.id) === String(resourceId)
@@ -285,9 +264,9 @@ export default function Resources() {
     );
     writeCache(CACHE_KEYS.RESOURCES, updated);
 
-    // Close modal immediately and disable interactions
     setConfirmModalOpen(false);
     setConfirmModalData(null);
+    setConfirmActionType(null);
 
     try {
       await request;
@@ -295,7 +274,6 @@ export default function Resources() {
       refetchResources();
       window.dispatchEvent(new Event("cacheInvalidated"));
     } catch (err) {
-      // Rollback cache
       writeCache(CACHE_KEYS.RESOURCES, prevResources);
       refetchResources();
 
@@ -316,11 +294,46 @@ export default function Resources() {
     }
   };
 
+  const handleConfirmAction = async () => {
+    if (!confirmModalData) return;
+
+    if (confirmActionType === "delete") {
+      const { resourceId } = confirmModalData;
+      const cached = readCache(CACHE_KEYS.RESOURCES) || [];
+      const updated = cached.filter(
+        (r) => String(r.resource_id || r.id) !== String(resourceId),
+      );
+      writeCache(CACHE_KEYS.RESOURCES, updated);
+
+      setConfirmModalOpen(false);
+      setConfirmModalData(null);
+      setConfirmActionType(null);
+
+      api
+        .deleteResource?.(resourceId)
+        .then(() => {
+          toast.success("Resource deleted successfully");
+          refetchResources();
+          window.dispatchEvent(new Event("cacheInvalidated"));
+        })
+        .catch((err) => {
+          writeCache(CACHE_KEYS.RESOURCES, cached);
+          refetchResources();
+          const msg =
+            err?.response?.data?.message ||
+            err?.message ||
+            "Failed to delete resource. Please try again.";
+          toast.error(msg);
+        });
+    } else {
+      await confirmMaintenanceToggle();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Validate supported image types
     const unsupportedFile = formData.images.find((file) => {
       const type = (file.type || "").toLowerCase();
       return !["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(
@@ -400,7 +413,6 @@ export default function Resources() {
         toast.success(`Resource ${actionText} successfully.`, {
           duration: 3000,
         });
-        // Sync with server response if available
         if (res?.data) {
           const serverResource = res.data.resource || res.data;
           if (serverResource) {
@@ -420,7 +432,6 @@ export default function Resources() {
       })
       .catch((err) => {
         setIsSubmitting(false);
-        // Rollback cache
         writeCache(CACHE_KEYS.RESOURCES, prevResources);
         refetchResources();
         const validationErrors = Object.values(
@@ -434,7 +445,6 @@ export default function Resources() {
       });
   };
 
-  // Helper to filter resources by search query
   const matchesSearch = (item) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -448,7 +458,6 @@ export default function Resources() {
     );
   };
 
-  // Compute filtered resources based on active filter
   const allVehicles = resources.filter(
     (item) => item.type === "vehicle" && matchesSearch(item),
   );
@@ -461,11 +470,9 @@ export default function Resources() {
       matchesSearch(item),
   );
 
-  // Determine which resources to display based on filter
   let displayedItems = [];
   let displayedCount = 0;
 
-  // Sort displayed items alphabetically by name (A to Z)
   const sortByName = (items) =>
     [...items].sort((a, b) => (a?.name || "").localeCompare(b?.name || ""));
 
@@ -542,12 +549,10 @@ export default function Resources() {
             </div>
           )}
 
-          {/* Desaturation overlay for maintenance items */}
           {isMaintenance && (
             <div className="absolute inset-0 bg-yellow-100/30" />
           )}
 
-          {/* Status badge overlay on thumbnail */}
           <span
             className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full border ${statusConfig.className}`}>
             {statusConfig.label}
@@ -555,59 +560,59 @@ export default function Resources() {
         </div>
 
         <div className="flex flex-col flex-1">
-          <h3 className="text-sm font-bold text-slate-800 line-clamp-2 break-words mb-1 min-h-[2.5rem]">
-            {item.name}
-          </h3>
+          {/* Header Row: Title & Clean Inline Admin Toolbar */}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h3 className="text-sm font-bold text-slate-800 line-clamp-2 break-words leading-snug">
+              {item.name}
+            </h3>
 
-          {isAdmin && (
-            <div className="flex items-center justify-end gap-1 mb-2 shrink-0">
-              <button
-                onClick={() => handleOpenModal(item)}
-                className="p-2 sm:p-1.5 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                title="Edit Resource">
-                <Edit2 size={14} />
-              </button>
-              <button
-                onClick={() => handleMaintenanceToggle(item)}
-                className={`p-2 sm:p-1.5 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-lg transition-colors ${
-                  isMaintenance
-                    ? "text-orange-600 hover:text-orange-700 hover:bg-slate-100"
-                    : "text-slate-500 hover:text-orange-600 hover:bg-slate-100"
-                }`}
-                title={
-                  isMaintenance
-                    ? "Mark as Available"
-                    : "Mark as Under Maintenance"
-                }>
-                <Wrench size={14} />
-              </button>
-              <button
-                onClick={() => handleDelete(item.resource_id || item.id)}
-                className="p-2 sm:p-1.5 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors"
-                title="Delete Resource">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          )}
+            {isAdmin && (
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  onClick={() => handleOpenModal(item)}
+                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+                  title="Edit Resource">
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  onClick={() => handleMaintenanceToggle(item)}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    isMaintenance
+                      ? "text-orange-600 hover:text-orange-700 hover:bg-slate-100"
+                      : "text-slate-400 hover:text-orange-600 hover:bg-slate-100"
+                  }`}
+                  title={
+                    isMaintenance
+                      ? "Mark as Available"
+                      : "Mark as Under Maintenance"
+                  }>
+                  <Wrench size={14} />
+                </button>
+                <button
+                  onClick={() => handleDelete(item)}
+                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded-md transition-colors"
+                  title="Delete Resource">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
+          </div>
 
           {(() => {
-            const isFacility = (item.type || "").toLowerCase() === "facility";
+            const isFacility = resourceType === "facility";
             if (isFacility) {
               const rawCap = (item.capacity || "").trim();
-              if (
-                !rawCap ||
-                rawCap === "pax" ||
-                rawCap === "-" ||
-                rawCap === "N/A"
-              ) {
-                return null;
-              }
+              const isValidCap =
+                rawCap &&
+                rawCap !== "pax" &&
+                rawCap !== "-" &&
+                rawCap !== "N/A";
               return (
                 <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
                   <UserGroupIcon size={12} className="inline" />
                   Capacity:{" "}
                   <span className="font-medium text-slate-700">
-                    {formatCapacity(rawCap)}
+                    {isValidCap ? formatCapacity(rawCap) : "Not specified"}
                   </span>
                 </p>
               );
@@ -615,14 +620,15 @@ export default function Resources() {
               const unitDetails =
                 item.unit_name || item.unit_details || item.capacity;
               const rawUnit = (unitDetails || "").trim();
-              if (!rawUnit || rawUnit === "-" || rawUnit === "N/A") {
-                return null;
-              }
+              const isValidUnit =
+                rawUnit && rawUnit !== "-" && rawUnit !== "N/A";
               return (
                 <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
                   <UserGroupIcon size={12} className="inline" />
                   Unit Details:{" "}
-                  <span className="font-medium text-slate-700">{rawUnit}</span>
+                  <span className="font-medium text-slate-700">
+                    {isValidUnit ? rawUnit : "Not specified"}
+                  </span>
                 </p>
               );
             }
@@ -729,7 +735,7 @@ export default function Resources() {
           </button>
         </div>
 
-        {/* Search Bar aligned baseline with filter tabs */}
+        {/* Search Bar */}
         <div className="relative w-full lg:w-72">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <Search size={15} className="w-4 h-4" />
@@ -758,21 +764,18 @@ export default function Resources() {
           ))}
         </div>
       ) : !isInitialized ? (
-        // Still initializing — show skeleton instead of empty state
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonResourceCard key={`skeleton-init-${i}`} />
           ))}
         </div>
       ) : displayedCount === 0 ? (
-        // No data after initialization — show skeleton loading style
         <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonResourceCard key={`skeleton-empty-${i}`} />
           ))}
         </div>
       ) : (
-        // Split into facilities and vehicles sections with headings (A-Z sorted within each)
         (() => {
           const facilitiesList = displayedItems
             .filter((item) => (item?.type || "").toLowerCase() === "facility")
@@ -810,7 +813,7 @@ export default function Resources() {
         })()
       )}
 
-      {/* Vehicle Booking Modal (uses dedicated component) */}
+      {/* Vehicle Booking Modal */}
       <VehicleBookingModal
         isOpen={!!selectedResource && resourceType === "vehicle"}
         onClose={() => {
@@ -829,7 +832,7 @@ export default function Resources() {
         isDirectUse={isDirectUse}
       />
 
-      {/* Facility Booking Modal (uses dedicated component) */}
+      {/* Facility Booking Modal */}
       <FacilityBookingModal
         isOpen={!!selectedResource && resourceType === "facility"}
         onClose={() => {
@@ -1019,24 +1022,37 @@ export default function Resources() {
         </div>
       )}
 
-      {/* Confirmation Modal for Maintenance Toggle */}
+      {/* Unified Confirmation Modal for Maintenance & Deletion */}
       <ConfirmModal
         open={confirmModalOpen}
         onClose={() => {
           setConfirmModalOpen(false);
           setConfirmModalData(null);
+          setConfirmActionType(null);
         }}
-        onConfirm={confirmMaintenanceToggle}
-        titleIcon={Wrench}
-        titleIconColor="text-orange-600"
-        title={
-          confirmModalData?.isCurrentlyMaintenance
-            ? "Mark as Available"
-            : "Mark as Under Maintenance"
+        onConfirm={handleConfirmAction}
+        titleIcon={confirmActionType === "delete" ? Trash2 : Wrench}
+        titleIconColor={
+          confirmActionType === "delete" ? "text-red-600" : "text-orange-600"
         }
-        message={`Are you sure you want to mark "${confirmModalData?.item?.name}" as ${confirmModalData?.actionText}?`}
-        confirmText="Confirm"
-        confirmButtonClass="bg-blue-600 hover:bg-blue-700 text-white"
+        title={
+          confirmActionType === "delete"
+            ? "Delete Resource"
+            : confirmModalData?.isCurrentlyMaintenance
+              ? "Mark as Available"
+              : "Mark as Under Maintenance"
+        }
+        message={
+          confirmActionType === "delete"
+            ? `Are you sure you want to delete "${confirmModalData?.item?.name}"? This action cannot be undone.`
+            : `Are you sure you want to mark "${confirmModalData?.item?.name}" as ${confirmModalData?.actionText}?`
+        }
+        confirmText={confirmActionType === "delete" ? "Delete" : "Confirm"}
+        confirmButtonClass={
+          confirmActionType === "delete"
+            ? "bg-red-600 hover:bg-red-700 text-white"
+            : "bg-blue-600 hover:bg-blue-700 text-white"
+        }
       />
     </div>
   );
