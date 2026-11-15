@@ -55,7 +55,7 @@ return [
             'bucket' => env('SUPABASE_S3_BUCKET'),
             'url' => env('SUPABASE_STORAGE_PUBLIC_URL', rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/uploads'),
             'endpoint' => env('SUPABASE_S3_ENDPOINT'),
-            'use_path_style_endpoint' => env('SUPABASE_S3_USE_PATH_STYLE_ENDPOINT', true),
+            'use_path_style_endpoint' => filter_var(env('SUPABASE_S3_USE_PATH_STYLE_ENDPOINT', true), FILTER_VALIDATE_BOOLEAN),
             'throw' => env('ASSETS_DRIVER', 'local') !== 'local',
             'report' => false,
             'subdirs' => [

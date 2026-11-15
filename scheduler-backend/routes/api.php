@@ -211,6 +211,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // System-wide admin settings
     Route::get('/admin/activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('/admin/storage-check', [SystemSettingsController::class, 'storageCheck'])
+        ->middleware(['admin', 'throttle:5,1']);
     Route::get('/admin/settings/booking-reminder', [SystemSettingsController::class, 'showBookingReminder'])
         ->middleware('admin');
     Route::put('/admin/settings/booking-reminder', [SystemSettingsController::class, 'updateBookingReminder'])
