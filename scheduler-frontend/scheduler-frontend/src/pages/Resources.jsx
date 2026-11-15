@@ -921,7 +921,7 @@ export default function Resources() {
                     setFormData({
                       ...formData,
                       images: selectedImages
-                        .filter((image) => image.size <= 2 * 1024 * 1024)
+                        .filter((image) => image.size <= 5 * 1024 * 1024)
                         .slice(0, 3),
                     });
                   }}
