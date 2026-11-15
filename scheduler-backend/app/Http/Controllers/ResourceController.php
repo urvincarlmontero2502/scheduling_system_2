@@ -204,12 +204,22 @@ class ResourceController extends Controller
         ]);
 
         $imagePath = $resource->image;
-        $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
+        $imagePaths = is_array($resource->images) ? $resource->images : ($resource->image ? [$resource->image] : []);
         if ($request->hasFile('images') || $request->hasFile('image')) {
-            $newImagePaths = $this->storeResourceImages($request, $validated['type'], $resource->resource_id);
-            Storage::disk('assets')->delete(array_unique($imagePaths));
-            $imagePaths = $newImagePaths;
-            $imagePath = $imagePaths[0] ?? null;
+            try {
+                $newImagePaths = $this->storeResourceImages($request, $validated['type'], $resource->resource_id);
+                if (! empty($imagePaths)) {
+                    Storage::disk('assets')->delete(array_unique($imagePaths));
+                }
+                $imagePaths = $newImagePaths;
+                $imagePath = $imagePaths[0] ?? null;
+            } catch (\Throwable $e) {
+                \Log::error('Resource image upload failed: '.$e->getMessage());
+                return response()->json([
+                    'message' => 'Could not save the image to storage. Please try again.',
+                    'code' => 'storage_error',
+                ], 502);
+            }
         }
 
         $updateData = [
