@@ -55,7 +55,8 @@ export default function AccountSettings() {
   const fileInputRef = useRef(null);
 
   // Resolve the current profile image URL
-  const profileImageUrl = user?.profile_image_url || user?.image || user?.profile_image || null;
+  const profileImageUrl =
+    user?.profile_image_url || user?.image || user?.profile_image || null;
 
   // Change Email state
   const [emailForm, setEmailForm] = useState({
@@ -140,9 +141,9 @@ export default function AccountSettings() {
       return;
     }
 
-    // Validate file size — allow up to 10MB before compression
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError("Image file is too large. Maximum size is 10MB.");
+    // Validate file size — allow up to 5MB before compression
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image file is too large. Maximum size is 5MB.");
       return;
     }
 
@@ -165,7 +166,7 @@ export default function AccountSettings() {
       console.error("Failed to upload profile image:", err);
       setUploadError(
         err.response?.data?.message ||
-          "Failed to upload profile picture. Please try again."
+          "Failed to upload profile picture. Please try again.",
       );
     } finally {
       setUploading(false);
@@ -202,7 +203,9 @@ export default function AccountSettings() {
         password: "",
         password_confirmation: "",
       });
-      setPasswordSuccess(response?.data?.message || "Password updated successfully.");
+      setPasswordSuccess(
+        response?.data?.message || "Password updated successfully.",
+      );
     } catch (requestError) {
       setPasswordError(
         requestError?.response?.data?.message ||
@@ -237,7 +240,7 @@ export default function AccountSettings() {
         setVerificationPending(true);
         setSuccess(
           response.message ||
-            "A verification email has been sent to your new address. Please check your inbox and click the confirmation link to complete the change."
+            "A verification email has been sent to your new address. Please check your inbox and click the confirmation link to complete the change.",
         );
         // Clear the form fields
         setEmailForm({
@@ -265,7 +268,7 @@ export default function AccountSettings() {
         err.response?.data?.message ||
           err.response?.data?.data?.current_password?.[0] ||
           err.response?.data?.data?.email?.[0] ||
-          "Failed to update email. Please try again."
+          "Failed to update email. Please try again.",
       );
     } finally {
       setEmailLoading(false);
@@ -276,7 +279,9 @@ export default function AccountSettings() {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== user?.email) {
-      setDeleteError("Please type your email exactly to confirm account deletion.");
+      setDeleteError(
+        "Please type your email exactly to confirm account deletion.",
+      );
       return;
     }
 
@@ -296,7 +301,7 @@ export default function AccountSettings() {
       console.error("Failed to delete account:", err);
       setDeleteError(
         err.response?.data?.message ||
-          "Failed to delete account. Please try again."
+          "Failed to delete account. Please try again.",
       );
     } finally {
       setDeleting(false);
@@ -310,86 +315,92 @@ export default function AccountSettings() {
         <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400" />
           <div className="flex flex-col items-start justify-between gap-5 pt-1 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-50 text-blue-700 ring-4 ring-slate-50">
-              {profileLoading ? (
-                <SkeletonAvatar size="h-20 w-20" />
-              ) : profileImageUrl ? (
-                <img
-                  src={profileImageUrl}
-                  alt={user?.full_name || "User"}
-                  className="h-full w-full object-cover"
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-50 text-blue-700 ring-4 ring-slate-50">
+                {profileLoading ? (
+                  <SkeletonAvatar size="h-20 w-20" />
+                ) : profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt={user?.full_name || "User"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User size={28} />
+                )}
+                {/* Camera overlay - appears on hover */}
+                <button
+                  type="button"
+                  aria-label="Change profile picture"
+                  disabled={uploading || profileLoading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute inset-0 flex cursor-pointer items-center justify-center bg-slate-950/45 text-white opacity-0 transition-opacity hover:opacity-100 focus:opacity-100 disabled:cursor-not-allowed">
+                  <Camera size={19} />
+                </button>
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
                 />
-              ) : (
-                <User size={28} />
-              )}
-              {/* Camera overlay - appears on hover */}
+              </div>
+              <div>
+                {profileLoading ? (
+                  <>
+                    <SkeletonText lines={1} className="w-40 h-4" />
+                    <SkeletonText lines={1} className="w-56 h-3 mt-1" />
+                    <SkeletonText lines={1} className="w-24 h-3 mt-1" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-base font-semibold text-slate-900">
+                      {formData.full_name || "Your Name"}
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {formData.email}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium capitalize text-blue-700">
+                        <Shield size={13} />
+                        {userRole === "admin"
+                          ? "Administrator"
+                          : userRole.replaceAll("_", " ")}
+                      </span>
+                      {user?.barangay && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                          <MapPin size={12} />
+                          {user.barangay}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-start gap-2 sm:items-end">
               <button
                 type="button"
-                aria-label="Change profile picture"
-                disabled={uploading || profileLoading}
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 flex cursor-pointer items-center justify-center bg-slate-950/45 text-white opacity-0 transition-opacity hover:opacity-100 focus:opacity-100 disabled:cursor-not-allowed"
-              >
-                <Camera size={19} />
+                disabled={uploading || profileLoading}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                <Camera size={15} />
+                {uploading ? "Uploading..." : "Update photo"}
               </button>
-              {/* Hidden file input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </div>
-            <div>
-              {profileLoading ? (
-                <>
-                  <SkeletonText lines={1} className="w-40 h-4" />
-                  <SkeletonText lines={1} className="w-56 h-3 mt-1" />
-                  <SkeletonText lines={1} className="w-24 h-3 mt-1" />
-                </>
-              ) : (
-                <>
-                  <p className="text-base font-semibold text-slate-900">
-                    {formData.full_name || "Your Name"}
-                  </p>
-                  <p className="mt-0.5 text-sm text-slate-500">{formData.email}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium capitalize text-blue-700">
-                      <Shield size={13} />
-                      {userRole === "admin" ? "Administrator" : userRole.replaceAll("_", " ")}
-                    </span>
-                    {user?.barangay && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                        <MapPin size={12} />
-                        {user.barangay}
-                      </span>
-                    )}
-                  </div>
-                </>
+              {uploadSuccess && (
+                <p className="text-xs text-green-600">{uploadSuccess}</p>
               )}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading || profileLoading}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-            >
-              <Camera size={15} />
-              {uploading ? "Uploading..." : "Update photo"}
-            </button>
-            {uploadSuccess && <p className="text-xs text-green-600">{uploadSuccess}</p>}
-            {uploadError && <p className="text-xs text-rose-600">{uploadError}</p>}
-            {uploading && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                Uploading photo
-              </div>
-            )}
+              {uploadError && (
+                <p className="text-xs text-rose-600">{uploadError}</p>
+              )}
+              {uploading && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                  Uploading photo
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -397,14 +408,21 @@ export default function AccountSettings() {
         {/* Form Section */}
         <div className="space-y-5">
           {/* Personal Information */}
-          <form id="profile-form" onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <form
+            id="profile-form"
+            onSubmit={handleSubmit}
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex items-start gap-3 border-b border-slate-100 pb-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
                 <User size={17} />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Personal information</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Keep your contact and organization details up to date.</p>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Personal information
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Keep your contact and organization details up to date.
+                </p>
               </div>
             </div>
 
@@ -446,7 +464,8 @@ export default function AccountSettings() {
                 )}
                 {!profileLoading && (
                   <p className="mt-1 text-[11.5px] text-steel">
-                    Use Change Email in Security to request a verified email change.
+                    Use Change Email in Security to request a verified email
+                    change.
                   </p>
                 )}
               </div>
@@ -495,11 +514,13 @@ export default function AccountSettings() {
                   Role
                 </label>
                 <div className="flex min-h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm capitalize text-slate-600">
-                  {profileLoading
-                    ? <Skeleton className="h-4 w-24 rounded" />
-                    : userRole === "admin"
-                      ? "Administrator"
-                      : userRole.replaceAll("_", " ")}
+                  {profileLoading ? (
+                    <Skeleton className="h-4 w-24 rounded" />
+                  ) : userRole === "admin" ? (
+                    "Administrator"
+                  ) : (
+                    userRole.replaceAll("_", " ")
+                  )}
                 </div>
                 <p className="mt-1 text-[11.5px] text-steel">
                   Contact an administrator if your account role needs to change.
@@ -511,15 +532,13 @@ export default function AccountSettings() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-              >
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !hasChanges()}
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
                 {loading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -542,8 +561,12 @@ export default function AccountSettings() {
                 <Shield size={17} />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Security</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Manage your sign-in credentials and email verification.</p>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Security
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Manage your sign-in credentials and email verification.
+                </p>
               </div>
             </div>
 
@@ -566,9 +589,13 @@ export default function AccountSettings() {
                 <span className="text-xs text-slate-500">Update it below</span>
               </div>
 
-              <form onSubmit={handlePasswordSubmit} className="space-y-4 rounded-xl border border-slate-200 p-4">
+              <form
+                onSubmit={handlePasswordSubmit}
+                className="space-y-4 rounded-xl border border-slate-200 p-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="current-password">
+                  <label
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                    htmlFor="current-password">
                     Current password
                   </label>
                   <input
@@ -576,14 +603,21 @@ export default function AccountSettings() {
                     type="password"
                     autoComplete="current-password"
                     value={passwordForm.current_password}
-                    onChange={(event) => handlePasswordChange("current_password", event.target.value)}
+                    onChange={(event) =>
+                      handlePasswordChange(
+                        "current_password",
+                        event.target.value,
+                      )
+                    }
                     required
                     className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="new-password">
+                    <label
+                      className="mb-1.5 block text-sm font-medium text-slate-700"
+                      htmlFor="new-password">
                       New password
                     </label>
                     <input
@@ -591,15 +625,21 @@ export default function AccountSettings() {
                       type="password"
                       autoComplete="new-password"
                       value={passwordForm.password}
-                      onChange={(event) => handlePasswordChange("password", event.target.value)}
+                      onChange={(event) =>
+                        handlePasswordChange("password", event.target.value)
+                      }
                       minLength={8}
                       required
                       className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
-                    <p className="mt-1 text-xs text-slate-500">Use at least 8 characters.</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Use at least 8 characters.
+                    </p>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="confirm-new-password">
+                    <label
+                      className="mb-1.5 block text-sm font-medium text-slate-700"
+                      htmlFor="confirm-new-password">
                       Confirm new password
                     </label>
                     <input
@@ -607,7 +647,12 @@ export default function AccountSettings() {
                       type="password"
                       autoComplete="new-password"
                       value={passwordForm.password_confirmation}
-                      onChange={(event) => handlePasswordChange("password_confirmation", event.target.value)}
+                      onChange={(event) =>
+                        handlePasswordChange(
+                          "password_confirmation",
+                          event.target.value,
+                        )
+                      }
                       minLength={8}
                       required
                       className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
@@ -615,20 +660,23 @@ export default function AccountSettings() {
                   </div>
                 </div>
                 {passwordError && (
-                  <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                     {passwordError}
                   </p>
                 )}
                 {passwordSuccess && (
-                  <p role="status" className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  <p
+                    role="status"
+                    className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
                     {passwordSuccess}
                   </p>
                 )}
                 <button
                   type="submit"
                   disabled={passwordLoading}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
                   {passwordLoading ? "Updating password..." : "Update password"}
                 </button>
               </form>
@@ -744,8 +792,13 @@ export default function AccountSettings() {
 
             {deleteError && (
               <div className="flex items-start gap-2 rounded-lg border border-status-rejected/20 bg-status-rejected/10 px-4 py-2.5 mb-3">
-                <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-status-rejected" />
-                <p className="text-[12.5px] text-status-rejected">{deleteError}</p>
+                <AlertCircle
+                  size={16}
+                  className="mt-0.5 flex-shrink-0 text-status-rejected"
+                />
+                <p className="text-[12.5px] text-status-rejected">
+                  {deleteError}
+                </p>
               </div>
             )}
 
@@ -763,8 +816,7 @@ export default function AccountSettings() {
             <button
               onClick={handleDeleteAccount}
               disabled={deleting || !deleteConfirm}
-              className="w-full rounded-lg bg-status-rejected py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-status-rejected/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+              className="w-full rounded-lg bg-status-rejected py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-status-rejected/90 disabled:cursor-not-allowed disabled:opacity-50">
               {deleting ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -803,7 +855,6 @@ export default function AccountSettings() {
               <p className="text-[12.5px] text-green-700">{success}</p>
             </div>
           )}
-
         </div>
       </div>
     </div>

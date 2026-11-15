@@ -318,10 +318,10 @@ export default function Resources() {
     e.preventDefault();
 
     const oversizedImage = formData.images.find(
-      (image) => image.size > 2 * 1024 * 1024,
+      (image) => image.size > 5 * 1024 * 1024,
     );
     if (oversizedImage) {
-      toast.error(`${oversizedImage.name} exceeds the 2 MB limit.`);
+      toast.error(`${oversizedImage.name} exceeds the 5 MB limit.`);
       return;
     }
 
@@ -356,7 +356,9 @@ export default function Resources() {
     request
       .then((res) => {
         setIsModalOpen(false);
-        toast.success(`Resource ${actionText} successfully!`, { duration: 3000 });
+        toast.success(`Resource ${actionText} successfully!`, {
+          duration: 3000,
+        });
         // Sync with server response if available
         if (res?.data) {
           const serverResource = res.data.resource || res.data;
@@ -674,23 +676,23 @@ export default function Resources() {
 
         {/* Search Bar aligned baseline with filter tabs */}
         <div className="relative w-full lg:w-72">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={15} className="w-4 h-4" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search resources..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 pl-9 pr-8 py-2 text-[13px] bg-white outline-none focus:border-blue-600 transition-colors shadow-xs"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm">
-                ×
-              </button>
-            )}
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search size={15} className="w-4 h-4" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search resources..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 pl-9 pr-8 py-2 text-[13px] bg-white outline-none focus:border-blue-600 transition-colors shadow-xs"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 text-sm">
+              ×
+            </button>
+          )}
         </div>
       </div>
 
@@ -905,11 +907,11 @@ export default function Resources() {
                       toast.error("Select no more than 3 images.");
                     }
                     const oversizedImage = selectedImages.find(
-                      (image) => image.size > 2 * 1024 * 1024,
+                      (image) => image.size > 5 * 1024 * 1024,
                     );
                     if (oversizedImage) {
                       toast.error(
-                        `${oversizedImage.name} exceeds the 2 MB limit.`,
+                        `${oversizedImage.name} exceeds the 5 MB limit.`,
                       );
                     }
                     setFormData({
@@ -929,7 +931,8 @@ export default function Resources() {
                 </p>
                 {formData.images.length > 0 && (
                   <p className="mt-1 text-[11px] text-slate-600">
-                    Selected: {formData.images.map((image) => image.name).join(", ")}
+                    Selected:{" "}
+                    {formData.images.map((image) => image.name).join(", ")}
                   </p>
                 )}
               </div>
