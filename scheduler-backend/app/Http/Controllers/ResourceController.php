@@ -137,9 +137,9 @@ class ResourceController extends Controller
             'buffer_minutes' => ['required', 'integer', 'min:0'],
             'capacity' => ['nullable', 'integer'], // Specific to facilities
             'unit_name' => ['nullable', 'string'], // Specific to vehicles
-            'image' => ['nullable', 'image', 'max:5120'], // Optional image upload validation
+            'image' => ['nullable', 'image', 'max:10240'], // Optional image upload validation
             'images' => ['sometimes', 'array', 'max:3'],
-            'images.*' => ['image', 'max:5120'],
+            'images.*' => ['image', 'max:10240'],
         ]);
 
         // Create the parent resource record first so we have the resource_id
@@ -198,9 +198,9 @@ class ResourceController extends Controller
             'capacity' => ['nullable', 'string'],
             'unit_name' => ['nullable', 'string'],
             'status' => ['nullable', 'in:available,unavailable,maintenance'],
-            'image' => ['nullable', 'image', 'max:5120'], // Optional image upload on update
+            'image' => ['nullable', 'image', 'max:10240'], // Optional image upload on update
             'images' => ['sometimes', 'array', 'max:3'],
-            'images.*' => ['image', 'max:5120'],
+            'images.*' => ['image', 'max:10240'],
         ]);
 
         $imagePath = $resource->image;

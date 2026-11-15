@@ -141,9 +141,9 @@ export default function AccountSettings() {
       return;
     }
 
-    // Validate file size — allow up to 5MB before compression
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("Image file is too large. Maximum size is 5MB.");
+    // Validate file size — allow up to 10MB before compression
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("Image file is too large. Maximum size is 10MB.");
       return;
     }
 

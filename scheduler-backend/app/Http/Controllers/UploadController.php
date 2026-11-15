@@ -13,7 +13,7 @@ class UploadController extends Controller
      * Allowed file types and max sizes.
      */
     private const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    private const MAX_FILE_SIZE = 5120; // KB (5MB)
+    private const MAX_FILE_SIZE = 10240; // KB (5MB)
     private const SUBDIRS = ['facilities', 'vehicles', 'profiles', 'branding'];
 
     /**

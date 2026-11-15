@@ -370,11 +370,11 @@ export default function Resources() {
     }
 
     const oversizedImage = processedFiles.find(
-      (image) => image.size > 5 * 1024 * 1024,
+      (image) => image.size > 10 * 1024 * 1024,
     );
     if (oversizedImage) {
       setIsSubmitting(false);
-      toast.error(`${oversizedImage.name} exceeds the 5 MB limit.`);
+      toast.error(`${oversizedImage.name} exceeds the 10 MB limit.`);
       return;
     }
 
@@ -965,17 +965,17 @@ export default function Resources() {
                       toast.error("Select no more than 3 images.");
                     }
                     const oversizedImage = selectedImages.find(
-                      (image) => image.size > 5 * 1024 * 1024,
+                      (image) => image.size > 10 * 1024 * 1024,
                     );
                     if (oversizedImage) {
                       toast.error(
-                        `${oversizedImage.name} exceeds the 5 MB limit.`,
+                        `${oversizedImage.name} exceeds the 10 MB limit.`,
                       );
                     }
                     setFormData({
                       ...formData,
                       images: selectedImages
-                        .filter((image) => image.size <= 5 * 1024 * 1024)
+                        .filter((image) => image.size <= 10 * 1024 * 1024)
                         .slice(0, 3),
                     });
                   }}
