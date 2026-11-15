@@ -84,6 +84,7 @@ export default function Resources() {
   const [selectedResource, setSelectedResource] = useState(null);
   const [resourceType, setResourceType] = useState(null);
   const [isDirectUse, setIsDirectUse] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state for creating/editing resources
   const [formData, setFormData] = useState({
@@ -316,6 +317,7 @@ export default function Resources() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const oversizedImage = formData.images.find(
       (image) => image.size > 5 * 1024 * 1024,
@@ -356,6 +358,7 @@ export default function Resources() {
     request
       .then((res) => {
         setIsModalOpen(false);
+        setIsSubmitting(false);
         toast.success(`Resource ${actionText} successfully!`, {
           duration: 3000,
         });
@@ -378,6 +381,7 @@ export default function Resources() {
         window.dispatchEvent(new Event("cacheInvalidated"));
       })
       .catch((err) => {
+        setIsSubmitting(false);
         // Rollback cache
         writeCache(CACHE_KEYS.RESOURCES, prevResources);
         refetchResources();
@@ -941,13 +945,22 @@ export default function Resources() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md">
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md disabled:opacity-50">
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-xs">
-                  {editingResource ? "Save Changes" : "Create Resource"}
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-xs disabled:opacity-50">
+                  {isSubmitting && (
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  )}
+                  {isSubmitting
+                    ? "Saving..."
+                    : editingResource
+                      ? "Save Changes"
+                      : "Create Resource"}
                 </button>
               </div>
             </form>
