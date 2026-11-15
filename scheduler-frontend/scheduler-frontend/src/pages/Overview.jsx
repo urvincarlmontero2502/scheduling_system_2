@@ -217,7 +217,8 @@ export default function Overview() {
             key={stat.label}
             className={`relative p-2.5 rounded-xl border border-slate-200 bg-white shadow-xs ${loading ? "animate-pulse" : ""}`}>
             <div className="flex items-center justify-between">
-              <p className={`font-mono text-3xl font-bold ${stat.color || "text-slate-900"}`}>
+              <p
+                className={`font-mono text-3xl font-bold ${stat.color || "text-slate-900"}`}>
                 {loading ? (
                   <span className="inline-block h-8 w-14 bg-slate-200 rounded-md"></span>
                 ) : (
@@ -225,10 +226,14 @@ export default function Overview() {
                 )}
               </p>
               {stat.icon && (
-                <stat.icon size={20} className={`${stat.color || "text-slate-300"} opacity-70`} />
+                <stat.icon
+                  size={20}
+                  className={`${stat.color || "text-slate-300"} opacity-70`}
+                />
               )}
             </div>
-            <p className={`mt-1 text-xs uppercase tracking-wider font-semibold ${stat.labelColor || "text-slate-500"}`}>
+            <p
+              className={`mt-1 text-xs uppercase tracking-wider font-semibold ${stat.labelColor || "text-slate-500"}`}>
               {stat.label}
               {stat.subLabel ? ` ${stat.subLabel}` : ""}
             </p>
@@ -402,19 +407,23 @@ export default function Overview() {
                         </div>
                         <div className="flex flex-col flex-1 p-2.5 justify-between">
                           <div>
-                            <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
+                            <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 break-words mb-2 min-h-[2.5rem]">
                               {item.name}
                             </h3>
-                            <p className="text-xs text-slate-500 font-medium mb-1">
-                              <UserGroupIcon
-                                size={12}
-                                className="inline mr-1"
-                              />
-                              Capacity:{" "}
-                              <span className="text-slate-700">
-                                {item.capacity || "-"}
-                              </span>
-                            </p>
+                            {item.capacity &&
+                              item.capacity.trim() !== "" &&
+                              item.capacity !== "N/A" && (
+                                <p className="text-xs text-slate-500 font-medium mb-1">
+                                  <UserGroupIcon
+                                    size={12}
+                                    className="inline mr-1"
+                                  />
+                                  Capacity:{" "}
+                                  <span className="text-slate-700">
+                                    {item.capacity}
+                                  </span>
+                                </p>
+                              )}
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
                               {item.description || "No description available"}
                             </p>
@@ -538,19 +547,23 @@ export default function Overview() {
                         </div>
                         <div className="flex flex-col flex-1 p-2.5 justify-between">
                           <div>
-                            <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
+                            <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 break-words mb-2 min-h-[2.5rem]">
                               {item.name}
                             </h3>
-                            <p className="text-xs text-slate-500 font-medium mb-1">
-                              <UserGroupIcon
-                                size={12}
-                                className="inline mr-1"
-                              />
-                              Unit Details:{" "}
-                              <span className="text-slate-700">
-                                {item.unit_name || item.capacity || "-"}
-                              </span>
-                            </p>
+                            {(item.unit_name || item.capacity) &&
+                              (item.unit_name || item.capacity).trim() !==
+                                "" && (
+                                <p className="text-xs text-slate-500 font-medium mb-1">
+                                  <UserGroupIcon
+                                    size={12}
+                                    className="inline mr-1"
+                                  />
+                                  Unit Details:{" "}
+                                  <span className="text-slate-700">
+                                    {item.unit_name || item.capacity}
+                                  </span>
+                                </p>
+                              )}
                             <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2rem]">
                               {item.description || "No description available"}
                             </p>

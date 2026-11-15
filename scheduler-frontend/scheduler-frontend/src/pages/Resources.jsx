@@ -554,65 +554,78 @@ export default function Resources() {
           </span>
         </div>
 
-        <div className="flex flex-col">
-          <div className="flex items-start justify-between gap-1 mb-1">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-slate-800 line-clamp-1 flex-1 pr-1">
-                {item.name}
-              </h3>
+        <div className="flex flex-col flex-1">
+          <h3 className="text-sm font-bold text-slate-800 line-clamp-2 break-words mb-1 min-h-[2.5rem]">
+            {item.name}
+          </h3>
+
+          {isAdmin && (
+            <div className="flex items-center justify-end gap-1 mb-2 shrink-0">
+              <button
+                onClick={() => handleOpenModal(item)}
+                className="p-2 sm:p-1.5 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                title="Edit Resource">
+                <Edit2 size={14} />
+              </button>
+              <button
+                onClick={() => handleMaintenanceToggle(item)}
+                className={`p-2 sm:p-1.5 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-lg transition-colors ${
+                  isMaintenance
+                    ? "text-orange-600 hover:text-orange-700 hover:bg-slate-100"
+                    : "text-slate-500 hover:text-orange-600 hover:bg-slate-100"
+                }`}
+                title={
+                  isMaintenance
+                    ? "Mark as Available"
+                    : "Mark as Under Maintenance"
+                }>
+                <Wrench size={14} />
+              </button>
+              <button
+                onClick={() => handleDelete(item.resource_id || item.id)}
+                className="p-2 sm:p-1.5 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors"
+                title="Delete Resource">
+                <Trash2 size={14} />
+              </button>
             </div>
-            {isAdmin && (
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => handleOpenModal(item)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  title="Edit Resource">
-                  <Edit2 size={12} />
-                </button>
-                <button
-                  onClick={() => handleMaintenanceToggle(item)}
-                  className={`p-1.5 rounded-lg transition-colors ${
-                    isMaintenance
-                      ? "text-orange-600 hover:text-orange-700 hover:bg-slate-100"
-                      : "text-slate-500 hover:text-orange-600 hover:bg-slate-100"
-                  }`}
-                  title={
-                    isMaintenance
-                      ? "Mark as Available"
-                      : "Mark as Under Maintenance"
-                  }>
-                  <Wrench size={12} />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.resource_id || item.id)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors"
-                  title="Delete Resource">
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            )}
-          </div>
+          )}
 
           {(() => {
-            const unitDetails =
-              item.type === "facility"
-                ? item.capacity
-                  ? formatCapacity(item.capacity)
-                  : item.unit_name || item.unit_details
-                : item.unit_name || item.unit_details || item.capacity;
-            const displayDetails =
-              unitDetails && unitDetails !== "N/A" ? unitDetails : null;
-            return displayDetails ? (
-              <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
-                <UserGroupIcon size={12} className="inline" />
-                {item.type === "vehicle" ? "Unit Details:" : "Capacity:"}{" "}
-                <span className="font-medium text-slate-700">
-                  {item.type === "facility"
-                    ? formatCapacity(item.capacity)
-                    : `${item.unit_name || item.capacity}`}
-                </span>
-              </p>
-            ) : null;
+            const isFacility = (item.type || "").toLowerCase() === "facility";
+            if (isFacility) {
+              const rawCap = (item.capacity || "").trim();
+              if (
+                !rawCap ||
+                rawCap === "pax" ||
+                rawCap === "-" ||
+                rawCap === "N/A"
+              ) {
+                return null;
+              }
+              return (
+                <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
+                  <UserGroupIcon size={12} className="inline" />
+                  Capacity:{" "}
+                  <span className="font-medium text-slate-700">
+                    {formatCapacity(rawCap)}
+                  </span>
+                </p>
+              );
+            } else {
+              const unitDetails =
+                item.unit_name || item.unit_details || item.capacity;
+              const rawUnit = (unitDetails || "").trim();
+              if (!rawUnit || rawUnit === "-" || rawUnit === "N/A") {
+                return null;
+              }
+              return (
+                <p className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1">
+                  <UserGroupIcon size={12} className="inline" />
+                  Unit Details:{" "}
+                  <span className="font-medium text-slate-700">{rawUnit}</span>
+                </p>
+              );
+            }
           })()}
           <p className="text-xs text-slate-600 line-clamp-2 leading-tight mb-3 min-h-[2.5rem]">
             {item.description || "No description provided."}
