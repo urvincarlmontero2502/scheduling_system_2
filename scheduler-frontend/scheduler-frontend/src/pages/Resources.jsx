@@ -27,6 +27,7 @@ import VehicleBookingModal from "../components/VehicleBookingModal";
 import FacilityBookingModal from "../components/FacilityBookingModal";
 import { SkeletonResourceCard } from "../components/Skeleton";
 import ConfirmModal from "../components/ConfirmModal";
+import { compressImageFile } from "../utils/imageCompression";
 
 /** Status badge configuration */
 const STATUS_VARIANTS = {
@@ -315,14 +316,51 @@ export default function Resources() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const oversizedImage = formData.images.find(
+    // Validate supported image types
+    const unsupportedFile = formData.images.find((file) => {
+      const type = (file.type || "").toLowerCase();
+      return !["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(
+        type,
+      );
+    });
+    if (unsupportedFile) {
+      setIsSubmitting(false);
+      toast.error("Please use a JPG, PNG or WebP photo.");
+      return;
+    }
+
+    let processedFiles = formData.images;
+    if (formData.images.length > 0) {
+      toast.info("Optimizing photos...");
+      try {
+        processedFiles = await Promise.all(
+          formData.images.map(async (file) => {
+            try {
+              const compressed = await compressImageFile(file, 1200, 0.85);
+              return new File([compressed], file.name, { type: "image/jpeg" });
+            } catch (err) {
+              console.warn(
+                "Photo compression failed, falling back to original:",
+                err,
+              );
+              return file;
+            }
+          }),
+        );
+      } catch (err) {
+        console.warn("Compression step error:", err);
+      }
+    }
+
+    const oversizedImage = processedFiles.find(
       (image) => image.size > 5 * 1024 * 1024,
     );
     if (oversizedImage) {
+      setIsSubmitting(false);
       toast.error(`${oversizedImage.name} exceeds the 5 MB limit.`);
       return;
     }
@@ -339,7 +377,7 @@ export default function Resources() {
       data.append("unit_name", formData.capacity || "");
     }
 
-    formData.images.forEach((image) => data.append("images[]", image));
+    processedFiles.forEach((image) => data.append("images[]", image));
 
     if (editingResource) {
       data.append("_method", "PUT");
