@@ -359,7 +359,7 @@ export default function Resources() {
       .then((res) => {
         setIsModalOpen(false);
         setIsSubmitting(false);
-        toast.success(`Resource ${actionText} successfully!`, {
+        toast.success(`Resource ${actionText} successfully.`, {
           duration: 3000,
         });
         // Sync with server response if available
