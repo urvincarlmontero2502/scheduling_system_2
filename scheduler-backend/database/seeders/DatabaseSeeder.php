@@ -22,48 +22,14 @@ class DatabaseSeeder extends Seeder
                 'status' => 'available',
                 'image' => null,
             ],
-            [
-                'name' => 'Barangay Conference Room',
-                'type' => 'facility',
-                'description' => 'Air-conditioned meeting room for official gatherings.',
-                'status' => 'available',
-                'image' => null,
-            ],
-            [
-                'name' => 'Barangay Hall',
-                'type' => 'facility',
-                'description' => 'Main administrative building for barangay services and meetings.',
-                'status' => 'available',
-                'image' => null,
-            ],
-            [
-                'name' => 'Barangay Multi-Purpose Hall',
+                        [
+                'name' => 'Multi-Purpose Hall',
                 'type' => 'facility',
                 'description' => 'Large hall for community events, assemblies, and sports activities.',
                 'status' => 'available',
-                'image' => null,
+                                'image' => null,
             ],
-            [
-                'name' => 'Barangay Health Center',
-                'type' => 'facility',
-                'description' => 'Facility for medical check-ups, vaccinations, and health consultations.',
-                'status' => 'available',
-                'image' => null,
-            ],
-            [
-                'name' => 'Day Care Centers',
-                'type' => 'facility',
-                'description' => 'Early childhood education and community care facility.',
-                'status' => 'available',
-                'image' => null,
-            ],
-            [
-                'name' => 'Materials Recovery Facilities (MRFs)',
-                'type' => 'facility',
-                'description' => 'Solid waste management, segregation, and recycling center.',
-                'status' => 'available',
-                'image' => null,
-            ],
+
 
             // --- Vehicles & Heavy Equipment ---
             // 3 Dumptrucks

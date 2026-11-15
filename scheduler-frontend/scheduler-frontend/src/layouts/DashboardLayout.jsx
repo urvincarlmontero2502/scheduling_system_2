@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import jabongaLogo from "../assets/jabonga-logo.png";
 
@@ -16,17 +15,14 @@ import {
   X,
   Loader,
   Activity,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
   UserCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
 
 import { useNotifications } from "../context/NotificationContext";
-
 import NotificationBell from "../components/NotificationBell";
-
 import NotificationDropdown from "../components/NotificationDropdown";
 
 const NAV_GROUPS = [
@@ -77,10 +73,7 @@ const NAV_GROUPS = [
 
 export default function DashboardLayout() {
   const { user, signOut } = useAuth();
-  // ... rest of component
-
   const navigate = useNavigate();
-
   const location = useLocation();
 
   const [open, setOpen] = useState(false);
@@ -89,7 +82,6 @@ export default function DashboardLayout() {
   const profileMenuRef = useRef(null);
 
   const [showSignOutModal, setShowSignOutModal] = useState(false);
-
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const { toggleDropdown, closeDropdown, dropdownOpen, bellRef } =
@@ -189,8 +181,6 @@ export default function DashboardLayout() {
     };
   }, [user?.user_id, user?.role]);
 
-  // Close the mobile menu when the page changes
-
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
@@ -215,25 +205,16 @@ export default function DashboardLayout() {
     };
   }, [profileMenuOpen]);
 
-  // Escape closes the menu; lock page scroll while it is open
-
   useEffect(() => {
     if (!open) return;
-
     const onKey = (e) => e.key === "Escape" && setOpen(false);
-
     document.addEventListener("keydown", onKey);
-
     document.body.style.overflow = "hidden";
-
     return () => {
       document.removeEventListener("keydown", onKey);
-
       document.body.style.overflow = "";
     };
   }, [open]);
-
-  // Escape closes the sign-out modal
 
   const closeSignOutModal = () => {
     if (!isSigningOut) setShowSignOutModal(false);
@@ -241,11 +222,8 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     if (!showSignOutModal) return;
-
     const onKey = (e) => e.key === "Escape" && closeSignOutModal();
-
     document.addEventListener("keydown", onKey);
-
     return () => document.removeEventListener("keydown", onKey);
   }, [showSignOutModal, isSigningOut]);
 
@@ -253,11 +231,8 @@ export default function DashboardLayout() {
 
   async function confirmSignOut() {
     setIsSigningOut(true);
-
     await signOut();
-
     setShowSignOutModal(false);
-
     navigate("/login", { replace: true });
   }
 
@@ -271,7 +246,6 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-paper md:flex">
       {/* Mobile top bar */}
-
       <header
         className="w-full max-w-full left-0 right-0 top-0 sticky z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden"
         style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}>
@@ -282,7 +256,6 @@ export default function DashboardLayout() {
           className="flex h-10 w-10 items-center justify-center rounded-lg text-ink hover:bg-paper">
           <Menu size={22} />
         </button>
-
         <div className="flex w-12 h-12 aspect-square items-center justify-center rounded-full bg-transparent text-white overflow-hidden">
           <img
             src={jabongaLogo}
@@ -290,7 +263,6 @@ export default function DashboardLayout() {
             className="h-full w-full object-contain"
           />
         </div>
-
         <div className="flex flex-col min-w-0">
           <p className="truncate whitespace-nowrap text-xs font-bold leading-tight tracking-tight text-slate-900">
             Facility &amp; Vehicle Scheduler
@@ -299,16 +271,12 @@ export default function DashboardLayout() {
             LGU Jabonga Portal
           </p>
         </div>
-
         <div className="ml-auto flex items-center">
           <NotificationBell ref={bellRef} onClick={toggleDropdown} />
         </div>
       </header>
 
-      {/* Desktop top header — Bell is now inline in page headers (e.g., Overview.jsx) */}
-
       {/* Dim background behind the mobile menu */}
-
       {open && (
         <div
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
@@ -318,54 +286,65 @@ export default function DashboardLayout() {
       )}
 
       {/* Sidebar: slide-out on mobile, fixed column on desktop */}
-
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-line bg-white transition-all duration-200 md:sticky md:top-0 md:z-40 md:h-screen md:shrink-0 md:translate-x-0 ${
           sidebarCollapsed ? "md:w-16" : "md:w-64"
         } ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div
-          className={`flex items-center justify-between gap-2 p-3 ${sidebarCollapsed ? "md:flex-col md:justify-center" : ""}`}>
-          <div
-            className={`flex min-w-0 items-center gap-2 ${sidebarCollapsed ? "md:justify-center" : ""}`}>
-            <div className="flex h-10 w-10 shrink-0 aspect-square items-center justify-center overflow-hidden rounded-full bg-transparent text-white">
+          className={`flex items-center ${
+            sidebarCollapsed
+              ? "p-3 md:flex-col md:items-center md:py-4"
+              : "justify-between gap-1.5 pl-3 pr-1.5 py-3"
+          }`}>
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
+              aria-expanded={false}
+              className="mx-auto hidden aspect-square h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-transparent text-white transition hover:opacity-80 md:flex">
               <img
                 src={jabongaLogo}
                 alt="Jabonga Logo"
                 className="h-full w-full object-contain"
               />
-            </div>
-
-            <div
-              className={`flex flex-col min-w-0 ${sidebarCollapsed ? "md:hidden" : ""}`}>
-              <p className="truncate whitespace-nowrap text-xs font-bold leading-tight tracking-tight text-slate-900">
-                Facility &amp; Vehicle Scheduler
-              </p>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                LGU Jabonga Portal
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-            aria-label={
-              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
-            }
-            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!sidebarCollapsed}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 md:flex">
-            {sidebarCollapsed ? (
-              <ChevronRight size={17} />
-            ) : (
-              <ChevronLeft size={17} />
-            )}
-          </button>
+            </button>
+          ) : (
+            <>
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <div className="flex aspect-square h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-transparent text-white">
+                  <img
+                    src={jabongaLogo}
+                    alt="Jabonga Logo"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <p className="whitespace-nowrap text-[12.5px] font-bold leading-tight tracking-tight text-slate-900">
+                    Facility &amp; Vehicle Scheduler
+                  </p>
+                  <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
+                    LGU Jabonga Portal
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed(true)}
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+                aria-expanded={true}
+                className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 md:flex -mr-1">
+                <PanelLeftClose size={17} />
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => setOpen(false)}
             aria-label="Close menu"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-steel hover:bg-paper md:hidden">
+            className="ml-auto flex h-10 w-10 items-center justify-center rounded-lg text-steel hover:bg-paper md:hidden">
             <X size={22} />
           </button>
         </div>
@@ -551,44 +530,29 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Sign Out Confirmation Modal */}
-
       {showSignOutModal && (
         <>
-          {/* Backdrop with blur and fade-in — clicking triggers onClose */}
-
           <div
             className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
             onClick={closeSignOutModal}
             aria-hidden="true"
           />
-
-          {/* Modal container with scale + fade-in animation */}
-
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
               className={`relative w-full max-w-sm rounded-xl border border-line bg-white p-6 shadow-xl transition-all duration-200 ease-out ${
                 isSigningOut ? "scale-95 opacity-60" : "scale-100 opacity-100"
               }`}>
-              {/* Header: icon + title side-by-side */}
-
               <div className="mb-4 flex flex-row items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 p-2.5 text-rose-600">
                   <LogOut size={20} />
                 </div>
-
                 <h2 className="text-[17px] font-semibold text-ink">
                   Confirm Sign Out
                 </h2>
               </div>
-
-              {/* Description */}
-
               <p className="mt-0 text-[13px] text-steel">
                 Are you sure you want to end your current session?
               </p>
-
-              {/* Buttons */}
-
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={closeSignOutModal}
@@ -596,7 +560,6 @@ export default function DashboardLayout() {
                   className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition disabled:cursor-not-allowed disabled:opacity-50">
                   Cancel
                 </button>
-
                 <button
                   onClick={confirmSignOut}
                   disabled={isSigningOut}
@@ -620,7 +583,6 @@ export default function DashboardLayout() {
       )}
 
       {/* Notification Dropdown */}
-
       <NotificationDropdown
         open={dropdownOpen}
         onClose={closeDropdown}
@@ -628,9 +590,7 @@ export default function DashboardLayout() {
       />
 
       {/* Main content */}
-
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top Header Bar */}
         <header className="h-16 bg-white border-b border-slate-200 px-6 hidden md:flex items-center justify-between shrink-0 shadow-xs">
           <div className="flex flex-col min-w-0">
             <h1 className="text-[17px] font-semibold text-ink leading-tight">
