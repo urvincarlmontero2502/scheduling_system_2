@@ -142,17 +142,21 @@ class ResourceController extends Controller
             'images.*' => ['image', 'max:5120'],
         ]);
 
-        $imagePaths = $this->storeResourceImages($request, $validated['type']);
-
-        // Create the parent resource record
+        // Create the parent resource record first so we have the resource_id
         $resource = Resource::create([
             'name' => $validated['name'],
             'type' => $validated['type'],
             'description' => $validated['description'] ?? null,
             'buffer_minutes' => $validated['buffer_minutes'] ?? 30,
+            'image' => null,
+            'images' => null,
+            'status' => 'available',
+        ]);
+
+        $imagePaths = $this->storeResourceImages($request, $validated['type'], $resource->resource_id);
+        $resource->update([
             'image' => $imagePaths[0] ?? null,
             'images' => $imagePaths,
-            'status' => 'available',
         ]);
 
         // Create the corresponding details row based on resource type
@@ -202,8 +206,9 @@ class ResourceController extends Controller
         $imagePath = $resource->image;
         $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
         if ($request->hasFile('images') || $request->hasFile('image')) {
+            $newImagePaths = $this->storeResourceImages($request, $validated['type'], $resource->resource_id);
             Storage::disk('assets')->delete(array_unique($imagePaths));
-            $imagePaths = $this->storeResourceImages($request, $validated['type']);
+            $imagePaths = $newImagePaths;
             $imagePath = $imagePaths[0] ?? null;
         }
 
@@ -284,7 +289,7 @@ class ResourceController extends Controller
         return response()->json(['message' => 'Resource deleted successfully']);
     }
 
-    private function storeResourceImages(Request $request, string $type): array
+    private function storeResourceImages(Request $request, string $type, ?int $resourceId = null): array
     {
         $files = $request->file('images', []);
         if (! is_array($files)) {
@@ -294,12 +299,13 @@ class ResourceController extends Controller
             $files = [$request->file('image')];
         }
 
-        $subdir = $type === 'facility' ? 'facilities' : 'vehicles';
+        $folder = $type === 'facility' ? 'facilities' : 'vehicles';
+        $prefix = $resourceId ? "{$folder}/{$resourceId}" : $folder;
 
-        return array_map(function ($file) use ($subdir) {
+        return array_map(function ($file) use ($prefix) {
             $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
 
-            return $file->storeAs($subdir, $filename, 'assets');
+            return $file->storeAs($prefix, $filename, 'assets');
         }, $files);
     }
 
