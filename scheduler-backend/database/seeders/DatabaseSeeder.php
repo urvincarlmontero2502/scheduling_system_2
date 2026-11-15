@@ -9,7 +9,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Run user accounts seeder first
         $this->call(BarangayAndAdminSeeder::class);
 
         // 2. Insert resources (Facilities & Vehicles)
@@ -22,14 +21,13 @@ class DatabaseSeeder extends Seeder
                 'status' => 'available',
                 'image' => null,
             ],
-                        [
+            [
                 'name' => 'Multi-Purpose Hall',
                 'type' => 'facility',
                 'description' => 'Large hall for community events, assemblies, and sports activities.',
                 'status' => 'available',
-                                'image' => null,
+                'image' => null,
             ],
-
 
             // --- Vehicles & Heavy Equipment ---
             // 3 Dumptrucks
