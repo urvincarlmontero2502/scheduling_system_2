@@ -69,7 +69,7 @@ class BookingRequest extends Model
 
     public function resource()
     {
-        return $this->belongsTo(Resource::class, 'resource_id', 'resource_id');
+        return $this->belongsTo(Resource::class, 'resource_id', 'resource_id')->withTrashed();
     }
 
     public function approvals()

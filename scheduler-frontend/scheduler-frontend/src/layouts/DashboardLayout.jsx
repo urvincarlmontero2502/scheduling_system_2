@@ -15,6 +15,7 @@ import {
   X,
   Loader,
   Activity,
+  Trash2,
   PanelLeftClose,
   UserCheck,
 } from "lucide-react";
@@ -55,6 +56,12 @@ const NAV_GROUPS = [
         label: "Requests",
         icon: UserCheck,
         roles: ["admin", "barangay_admin"],
+      },
+      {
+        to: "/trash",
+        label: "Trash Bin",
+        icon: Trash2,
+        roles: ["admin"],
       },
       {
         to: "/activity-logs",

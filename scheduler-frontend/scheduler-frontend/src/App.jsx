@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ToastProvider } from "./components/Toast";
@@ -14,6 +20,7 @@ import AccountSettings from "./pages/AccountSettings";
 import SystemSettings from "./pages/SystemSettings";
 import ActivityLogs from "./pages/ActivityLogs";
 import Requests from "./pages/Requests";
+import Trash from "./pages/Trash";
 import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
@@ -42,31 +49,47 @@ export default function App() {
       <AuthProvider>
         <NotificationProvider>
           <ToastProvider>
-          <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={<LandingOrDashboard />}>
-            <Route index element={<Overview />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="bookings" element={<Bookings />} />
-            <Route path="booking-history" element={<BookingHistory />} />{" "}
-            {/* 2. Add the route here */}
-            <Route path="resources" element={<Resources />} />
-            <Route path="requests" element={<Requests />} />
-            <Route path="registration-requests" element={<Navigate to="/requests?section=registration" replace />} />
-            <Route path="account-settings" element={<AccountSettings />} />
-            <Route path="system-settings" element={<SystemSettings />} />
-            <Route path="activity-logs" element={<ActivityLogs />} />
-            <Route path="booking-removal-requests" element={<Navigate to="/requests?section=removal" replace />} />
-          </Route>
-          {/* Public routes */}
-          <Route path="/verify-email-change" element={<VerifyEmailChange />} />
-          <Route path="/auth/google/callback" element={<GoogleCallback />} />
-          <Route path="/barangay-setup" element={<BarangaySetup />} />
-          <Route path="/register/barangay" element={<BarangaySetup />} />
-          <Route path="/registration-status" element={<RegistrationStatus />} />
-          </Routes>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<LandingOrDashboard />}>
+                <Route index element={<Overview />} />
+                <Route path="calendar" element={<Calendar />} />
+                <Route path="bookings" element={<Bookings />} />
+                <Route path="booking-history" element={<BookingHistory />} />
+                {/* 2. Add the route here */}
+                <Route path="resources" element={<Resources />} />
+                <Route path="requests" element={<Requests />} />
+                <Route path="trash" element={<Trash />} />
+                <Route
+                  path="registration-requests"
+                  element={
+                    <Navigate to="/requests?section=registration" replace />
+                  }
+                />
+                <Route path="account-settings" element={<AccountSettings />} />
+                <Route path="system-settings" element={<SystemSettings />} />
+                <Route path="activity-logs" element={<ActivityLogs />} />
+                <Route
+                  path="booking-removal-requests"
+                  element={<Navigate to="/requests?section=removal" replace />}
+                />
+              </Route>
+              {/* Public routes */}
+              <Route
+                path="/verify-email-change"
+                element={<VerifyEmailChange />}
+              />
+              <Route
+                path="/auth/google/callback"
+                element={<GoogleCallback />}
+              />
+              <Route path="/barangay-setup" element={<BarangaySetup />} />
+              <Route path="/register/barangay" element={<BarangaySetup />} />
+              <Route
+                path="/registration-status"
+                element={<RegistrationStatus />}
+              />
+            </Routes>
           </ToastProvider>
         </NotificationProvider>
       </AuthProvider>

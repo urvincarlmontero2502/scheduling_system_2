@@ -220,6 +220,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Resources
     Route::get('/resources', [ResourceController::class, 'index']);
+    Route::get('/resources/trashed', [ResourceController::class, 'trashed'])
+        ->middleware('admin');
 
     Route::post('/resources', [ResourceController::class, 'store'])
         ->middleware('admin');
@@ -228,6 +230,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('admin');
 
     Route::delete('/resources/{resource}', [ResourceController::class, 'destroy'])
+        ->middleware('admin');
+
+    Route::post('/resources/{id}/restore', [ResourceController::class, 'restore'])
+        ->middleware('admin');
+
+    Route::delete('/resources/{id}/force', [ResourceController::class, 'forceDelete'])
         ->middleware('admin');
 
     // Maintenance toggle
@@ -240,6 +248,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::get('/bookings/removed', [BookingController::class, 'removed']);
     Route::post('/bookings/{id}/restore', [BookingController::class, 'restore']);
+    Route::delete('/bookings/{id}/force', [BookingController::class, 'forceDelete'])
+        ->middleware('admin');
     Route::post('/bookings', [BookingController::class, 'store']);
 
     // Availability suggestions endpoint

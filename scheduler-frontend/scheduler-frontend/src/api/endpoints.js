@@ -7,11 +7,16 @@ const CACHE_TTL = 1000 * 60 * 2;
 
 // --- Auth -------------------------------------------------------------
 export const login = (credentials) => client.post("/login", credentials);
-export const forgotPassword = (email) => client.post("/forgot-password", { email });
+export const forgotPassword = (email) =>
+  client.post("/forgot-password", { email });
 export const getGoogleRedirect = () => client.get("/auth/google");
-export const googleCallback = (code) => client.post("/auth/google/callback", { code });
+export const googleCallback = (code) =>
+  client.post("/auth/google/callback", { code });
 export const completeGoogleRegistration = (tempToken, barangay) =>
-  client.post("/auth/google/complete-registration", { temporary_token: tempToken, barangay });
+  client.post("/auth/google/complete-registration", {
+    temporary_token: tempToken,
+    barangay,
+  });
 
 // --- System Settings (admin only) ------------------------------------
 export const fetchBookingReminderSettings = () =>
@@ -33,9 +38,12 @@ export const rejectBookingRemovalRequest = (id) =>
   client.post(`/booking-removal-requests/${id}/reject`);
 
 // --- Registration Requests (admin approval workflow) ------------------------
-export const fetchRegistrationRequests = () => client.get("/registration-requests");
-export const fetchProcessedRegistrationRequests = () => client.get("/registration-requests/processed");
-export const fetchRegistrationRequest = (id) => client.get(`/registration-requests/${id}`);
+export const fetchRegistrationRequests = () =>
+  client.get("/registration-requests");
+export const fetchProcessedRegistrationRequests = () =>
+  client.get("/registration-requests/processed");
+export const fetchRegistrationRequest = (id) =>
+  client.get(`/registration-requests/${id}`);
 export const approveRegistration = (id) => {
   invalidateCache(CACHE_KEYS.REGISTRATIONS_PENDING);
   invalidateCache(CACHE_KEYS.REGISTRATIONS_PROCESSED);
@@ -54,8 +62,10 @@ export const updateUser = (payload) => client.put("/user", payload);
 export const updateProfileImage = (formData) =>
   client.post("/user/profile-image", formData);
 export const changeEmail = (payload) => client.put("/user/email", payload);
-export const verifyEmailChange = (token) => client.post("/verify-email-change", { token });
-export const updatePassword = (payload) => client.put("/user/password", payload);
+export const verifyEmailChange = (token) =>
+  client.post("/verify-email-change", { token });
+export const updatePassword = (payload) =>
+  client.put("/user/password", payload);
 
 // --- Assets / Media ---------------------------------------------------
 export const uploadAsset = (file, assetType) => {
@@ -75,7 +85,8 @@ export const getAssetUrl = (path) => {
     return path;
   }
   // Resolve relative path against backend storage
-  const baseUrl = import.meta.env.VITE_API_URL || "http://scheduler-backend.test";
+  const baseUrl =
+    import.meta.env.VITE_API_URL || "http://scheduler-backend.test";
   return `${baseUrl}/storage/uploads/${path}`;
 };
 
@@ -141,12 +152,14 @@ export const createBooking = (payload) => {
   invalidateCache(CACHE_KEYS.BOOKINGS);
   return client.post("/bookings", payload);
 };
-export const checkAvailability = (params) => client.get("/bookings/availability", { params });
+export const checkAvailability = (params) =>
+  client.get("/bookings/availability", { params });
 export const updateBookingStatus = (id, status, extra = {}) =>
   client.patch(`/bookings/${id}/status`, { status, ...extra });
 
 // Invalidate booking cache after mutation
-export const invalidateBookingsCache = () => invalidateCache(CACHE_KEYS.BOOKINGS);
+export const invalidateBookingsCache = () =>
+  invalidateCache(CACHE_KEYS.BOOKINGS);
 
 // Delete a booking
 export const deleteBooking = (id) => {
@@ -167,7 +180,9 @@ const extractArray = (res) => {
 };
 
 export const fetchResources = (type) => {
-  const cacheKey = type ? `${CACHE_KEYS.RESOURCES}_${type}` : CACHE_KEYS.RESOURCES;
+  const cacheKey = type
+    ? `${CACHE_KEYS.RESOURCES}_${type}`
+    : CACHE_KEYS.RESOURCES;
   const cached = readCache(cacheKey, CACHE_TTL);
   if (cached) {
     // Don't serve empty arrays from cache — force a fresh fetch
@@ -185,6 +200,18 @@ export const fetchResources = (type) => {
     }
     return { data };
   });
+};
+
+export const fetchTrashedResources = () => client.get("/resources/trashed");
+
+export const restoreResource = (id) => {
+  invalidateCache(CACHE_KEYS.RESOURCES);
+  return client.post(`/resources/${id}/restore`);
+};
+
+export const forceDeleteResource = (id) => {
+  invalidateCache(CACHE_KEYS.RESOURCES);
+  return client.delete(`/resources/${id}/force`);
 };
 
 export const createResource = (payload) => {
@@ -215,4 +242,5 @@ export const setResourceAvailable = (id) => {
 
 export const checkHealth = () => client.get("/health");
 export const getBarangays = () => client.get("/barangays");
-export const deleteAccount = () => client.put("/user", { delete_account: true });
+export const deleteAccount = () =>
+  client.put("/user", { delete_account: true });

@@ -277,26 +277,86 @@ class ResourceController extends Controller
         $resourceName = $resource->name;
         $resourceType = $resource->type;
 
-        $imagePaths = $resource->images ?: ($resource->image ? [$resource->image] : []);
-        Storage::disk('assets')->delete(array_unique($imagePaths));
-
-        // Cascade deletes child details automatically if configured in DB,
-        // otherwise delete them explicitly:
-        $resource->facilityDetails()->delete();
-        $resource->vehicleDetails()->delete();
-
+        // Soft delete the resource
         $resource->delete();
 
         app(ActivityLogger::class)->record(
             $request->user(),
             'resource.deleted',
-            sprintf('Deleted resource "%s".', $resourceName),
+            sprintf('Soft-deleted resource "%s".', $resourceName),
             'resource',
             $id,
             ['resource_name' => $resourceName, 'resource_type' => $resourceType]
         );
 
-        return response()->json(['message' => 'Resource deleted successfully']);
+        return response()->json(['message' => 'Resource moved to trash.']);
+    }
+
+    public function trashed(Request $request)
+    {
+        $resources = Resource::onlyTrashed()->get()->map(function ($r) {
+            return $this->formatResource($r);
+        });
+
+        return response()->json($resources);
+    }
+
+    public function restore(Request $request, $id)
+    {
+        $resource = Resource::onlyTrashed()->findOrFail($id);
+
+        // Conflict check: Check if another active resource has the same name
+        $conflict = Resource::where('name', $resource->name)->exists();
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Cannot restore resource because another active resource with the same name already exists.',
+            ], 409);
+        }
+
+        $resource->restore();
+
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.restored',
+            sprintf('Restored resource "%s".', $resource->name),
+            'resource',
+            $resource->resource_id,
+            ['resource_name' => $resource->name]
+        );
+
+        return response()->json([
+            'message' => 'Resource restored successfully.',
+            'resource' => $this->formatResource($resource),
+        ]);
+    }
+
+    public function forceDelete(Request $request, $id)
+    {
+        $resource = Resource::withTrashed()->findOrFail($id);
+        $resourceName = $resource->name;
+
+        // Permanently delete images
+        $imagePaths = is_array($resource->images) ? $resource->images : ($resource->image ? [$resource->image] : []);
+        if (!empty($imagePaths)) {
+            Storage::disk('assets')->delete(array_unique($imagePaths));
+        }
+
+        // Cascading permanent delete for details
+        $resource->facilityDetails()->forceDelete();
+        $resource->vehicleDetails()->forceDelete();
+
+        $resource->forceDelete();
+
+        app(ActivityLogger::class)->record(
+            $request->user(),
+            'resource.permanently_deleted',
+            sprintf('Permanently deleted resource "%s".', $resourceName),
+            'resource',
+            $id,
+            ['resource_name' => $resourceName]
+        );
+
+        return response()->json(['message' => 'Resource permanently deleted.']);
     }
 
     private function storeResourceImages(Request $request, string $type, ?int $resourceId = null): array
