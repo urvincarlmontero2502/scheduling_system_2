@@ -193,6 +193,10 @@ Route::get('/diagnostics/oauth-tokens', function () {
 // Public: get barangays list (no auth required — needed during registration flow)
 Route::get('/barangays', [AuthController::class, 'getBarangays']);
 
+// Public: submit a staff registration request for approval
+Route::post('/registration-requests', [RegistrationController::class, 'store'])
+    ->middleware('throttle:5,1');
+
 // Public: check registration request status by email
 Route::get('/registration-lookup', [RegistrationController::class, 'lookup']);
 

@@ -18,7 +18,7 @@
     </p>
 
     <p style="color: #374151; font-size: 15px; line-height: 1.6; margin-bottom: 32px;">
-      You can now log in to the Facility & Vehicle Scheduler system using your email address. Your default password is set — you may change it after logging in.
+      You can now sign in to the Scheduling System for Facility and Utility Vehicle Coordination using the sign-in method associated with your registration.
     </p>
 
     <div style="text-align: center; margin-bottom: 32px;">

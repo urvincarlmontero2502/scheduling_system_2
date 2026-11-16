@@ -17,6 +17,8 @@ export const completeGoogleRegistration = (tempToken, barangay) =>
     temporary_token: tempToken,
     barangay,
   });
+export const registerStaff = (payload) =>
+  client.post("/registration-requests", payload);
 
 // --- System Settings (admin only) ------------------------------------
 export const fetchBookingReminderSettings = () =>
