@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -16,6 +17,7 @@ class GoogleRegistrationSqliteTest extends TestCase
         Schema::dropIfExists('google_oauth_temp_tokens');
         Schema::dropIfExists('registration_requests');
         Schema::dropIfExists('notifications');
+        Schema::dropIfExists('barangays');
         Schema::dropIfExists('users');
 
         Schema::create('users', function (Blueprint $table) {
@@ -55,6 +57,12 @@ class GoogleRegistrationSqliteTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('barangays', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+        });
+        DB::table('barangays')->insert(['name' => 'Poblacion']);
+
         DB::table('google_oauth_temp_tokens')->insert([
             'token' => 'sqlite-google-registration-token',
             'email' => 'new-user@example.test',
@@ -81,6 +89,67 @@ class GoogleRegistrationSqliteTest extends TestCase
             'barangay' => 'Poblacion',
             'status' => 'pending',
         ]);
+    }
+
+    public function test_password_registration_creates_a_hashed_pending_staff_request(): void
+    {
+        $this->postJson('/api/registration-requests', [
+            'first_name' => 'Alex',
+            'middle_name' => 'Maria',
+            'last_name' => 'Rivers',
+            'email' => 'ALEX.RIVERS@example.test',
+            'password' => 'StrongPassword123!',
+            'password_confirmation' => 'StrongPassword123!',
+            'barangay' => 'Poblacion',
+            'role' => 'admin',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('status', 'pending');
+
+        $registration = DB::table('registration_requests')
+            ->where('email', 'alex.rivers@example.test')
+            ->first();
+
+        $this->assertNotNull($registration);
+        $this->assertSame('Alex Maria Rivers', $registration->full_name);
+        $this->assertSame('staff', $registration->role);
+        $this->assertSame('pending', $registration->status);
+        $this->assertTrue(Hash::check('StrongPassword123!', $registration->password_hash));
+        $this->assertNotSame('StrongPassword123!', $registration->password_hash);
+    }
+
+    public function test_password_registration_rejects_duplicate_pending_requests(): void
+    {
+        $payload = [
+            'first_name' => 'Alex',
+            'last_name' => 'Rivers',
+            'email' => 'alex.rivers@example.test',
+            'password' => 'StrongPassword123!',
+            'password_confirmation' => 'StrongPassword123!',
+            'barangay' => 'Poblacion',
+        ];
+
+        $this->postJson('/api/registration-requests', $payload)->assertCreated();
+        $this->postJson('/api/registration-requests', $payload)
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'message',
+                'A registration request for this email is already pending approval.'
+            );
+    }
+
+    public function test_password_registration_validates_password_confirmation(): void
+    {
+        $this->postJson('/api/registration-requests', [
+            'first_name' => 'Alex',
+            'last_name' => 'Rivers',
+            'email' => 'alex.rivers@example.test',
+            'password' => 'StrongPassword123!',
+            'password_confirmation' => 'DifferentPassword123!',
+            'barangay' => 'Poblacion',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
     }
 
     public function test_notification_booking_id_migration_allows_null_on_sqlite(): void

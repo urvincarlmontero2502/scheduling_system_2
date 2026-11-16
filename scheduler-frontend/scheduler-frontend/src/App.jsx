@@ -25,7 +25,6 @@ import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
 import RegistrationStatus from "./pages/RegistrationStatus";
-import LandingPage from "./pages/LandingPage";
 import { useAuth } from "./context/AuthContext";
 
 function LandingOrDashboard() {
@@ -33,7 +32,7 @@ function LandingOrDashboard() {
   const location = useLocation();
 
   if (location.pathname === "/" && !loading && !user) {
-    return <LandingPage />;
+    return <Navigate to="/login" replace />;
   }
 
   return (

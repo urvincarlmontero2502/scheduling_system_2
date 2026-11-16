@@ -8,12 +8,131 @@ use App\Models\Notification;
 use App\Models\RegistrationRequest;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class RegistrationController extends Controller
 {
+    /**
+     * Submit a staff registration request for admin approval.
+     */
+    public function store(Request $request)
+    {
+        $request->merge([
+            'email' => mb_strtolower(trim((string) $request->input('email'))),
+        ]);
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'string', 'min:8', 'max:128', 'confirmed'],
+            'barangay' => ['required', 'string', 'max:255', 'exists:barangays,name'],
+        ]);
+
+        $email = $validated['email'];
+        $existingUser = User::whereRaw('LOWER(email) = ?', [$email])->exists();
+        if ($existingUser) {
+            return response()->json([
+                'message' => 'An account with this email already exists. Please sign in instead.',
+            ], 409);
+        }
+
+        $existingRequest = RegistrationRequest::whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($existingRequest && $existingRequest->status !== 'rejected') {
+            return response()->json([
+                'message' => $existingRequest->status === 'pending'
+                    ? 'A registration request for this email is already pending approval.'
+                    : 'A registration request for this email has already been approved.',
+            ], 409);
+        }
+
+        $fullName = implode(' ', array_filter(array_map('trim', [
+            $validated['first_name'],
+            $validated['middle_name'] ?? '',
+            $validated['last_name'],
+        ]), fn ($part) => $part !== ''));
+
+        try {
+            $registrationRequest = DB::transaction(function () use ($validated, $email, $fullName, $existingRequest) {
+                $data = [
+                    'full_name' => $fullName,
+                    'email' => $email,
+                    'password_hash' => Hash::make($validated['password']),
+                    'google_id' => null,
+                    'avatar' => null,
+                    'barangay' => $validated['barangay'],
+                    'department' => null,
+                    'role' => 'staff',
+                    'status' => 'pending',
+                    'reject_reason' => null,
+                    'reviewed_by' => null,
+                    'reviewed_at' => null,
+                ];
+
+                $registrationRequest = $existingRequest ?? new RegistrationRequest;
+                $registrationRequest->fill($data);
+                $registrationRequest->save();
+
+                if (Schema::hasTable('notifications')) {
+                    $message = "New registration request from {$fullName} ({$email}) for Brgy. {$validated['barangay']}.";
+                    $adminEmail = RegistrationRequest::getAdminEmail($validated['barangay']);
+                    $barangayAdmin = $adminEmail
+                        ? User::where('email', $adminEmail)
+                            ->whereIn('role', ['admin', 'barangay_admin'])
+                            ->first()
+                        : null;
+
+                    if ($barangayAdmin) {
+                        DB::table('notifications')->insert([
+                            'user_id' => $barangayAdmin->user_id,
+                            'booking_id' => null,
+                            'message' => $message,
+                            'type' => 'registration_request',
+                            'title' => 'New Registration Request',
+                            'is_read' => false,
+                            'created_at' => now(),
+                        ]);
+                    }
+
+                    $mainAdmin = User::where('role', 'admin')->first();
+                    if ($mainAdmin && $mainAdmin->user_id !== ($barangayAdmin->user_id ?? null)) {
+                        DB::table('notifications')->insert([
+                            'user_id' => $mainAdmin->user_id,
+                            'booking_id' => null,
+                            'message' => $message,
+                            'type' => 'registration_request',
+                            'title' => 'New Registration Request',
+                            'is_read' => false,
+                            'created_at' => now(),
+                        ]);
+                    }
+                }
+
+                return $registrationRequest;
+            });
+        } catch (QueryException $e) {
+            if (in_array((string) $e->getCode(), ['23000', '23505'], true)) {
+                return response()->json([
+                    'message' => 'A registration request for this email already exists.',
+                ], 409);
+            }
+
+            throw $e;
+        }
+
+        return response()->json([
+            'message' => 'Your registration request has been submitted for approval. You will be notified once an admin reviews your request.',
+            'registration_request_id' => $registrationRequest->request_id,
+            'status' => 'pending',
+        ], 201);
+    }
+
     /**
      * Public lookup: Get registration request details by email.
      * No authentication required - returns request status if found.
@@ -22,7 +141,7 @@ class RegistrationController extends Controller
     {
         $email = $request->query('email');
 
-        if (!$email) {
+        if (! $email) {
             return response()->json(['message' => 'Email parameter is required.'], 400);
         }
 
