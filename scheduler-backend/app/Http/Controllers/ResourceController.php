@@ -36,6 +36,13 @@ class ResourceController extends Controller
             'is_maintenance' => $resource->status === 'maintenance',
             'description' => $resource->description ?? null,
             'buffer_minutes' => $resource->buffer_minutes ?? 30,
+            'price_per_day' => $resource->price_per_day === null
+                ? null
+                : (float) $resource->price_per_day,
+            'price_per_hour' => $resource->price_per_hour === null
+                ? null
+                : (float) $resource->price_per_hour,
+            'inclusions' => $resource->inclusions ?? null,
             'capacity' => $resource->type === 'facility' && $resource->facilityDetails
                 ? $resource->facilityDetails->capacity.' pax'
                 : null,
@@ -49,7 +56,8 @@ class ResourceController extends Controller
     {
         try {
             // Select only necessary columns to minimize payload:
-            // resource_id, name, type, status, image, description, buffer_minutes
+            // resource_id, name, type, status, image, description, buffer_minutes,
+            // price_per_day, price_per_hour, inclusions
             // Use explicit table prefix on resource_id to avoid ambiguity when
             // joining facility_details and vehicle_details (both have resource_id)
             $columns = [
@@ -61,6 +69,16 @@ class ResourceController extends Controller
                 'resources.images',
                 'resources.buffer_minutes',
             ];
+
+            if (Schema::hasColumn('resources', 'price_per_day')) {
+                $columns[] = 'resources.price_per_day';
+            }
+            if (Schema::hasColumn('resources', 'price_per_hour')) {
+                $columns[] = 'resources.price_per_hour';
+            }
+            if (Schema::hasColumn('resources', 'inclusions')) {
+                $columns[] = 'resources.inclusions';
+            }
 
             // Check if description column exists before selecting it
             if (Schema::hasColumn('resources', 'description')) {
@@ -110,6 +128,13 @@ class ResourceController extends Controller
                     'is_maintenance' => $r->status === 'maintenance',
                     'description' => $r->description ?? null,
                     'buffer_minutes' => $r->buffer_minutes ?? 30,
+                    'price_per_day' => $r->price_per_day === null
+                        ? null
+                        : (float) $r->price_per_day,
+                    'price_per_hour' => $r->price_per_hour === null
+                        ? null
+                        : (float) $r->price_per_hour,
+                    'inclusions' => $r->inclusions ?? null,
                     'capacity' => $r->type === 'facility' && $r->facility_capacity
                         ? $r->facility_capacity.' pax'
                         : null,
@@ -135,6 +160,9 @@ class ResourceController extends Controller
             'type' => ['required', 'in:facility,vehicle'],
             'description' => ['nullable', 'string'],
             'buffer_minutes' => ['required', 'integer', 'min:0'],
+            'price_per_day' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            'price_per_hour' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            'inclusions' => ['nullable', 'string'],
             'capacity' => ['nullable', 'integer'], // Specific to facilities
             'unit_name' => ['nullable', 'string'], // Specific to vehicles
             'image' => ['nullable', 'image', 'max:10240'], // Optional image upload validation
@@ -148,6 +176,13 @@ class ResourceController extends Controller
             'type' => $validated['type'],
             'description' => $validated['description'] ?? null,
             'buffer_minutes' => $validated['buffer_minutes'] ?? 30,
+            'price_per_day' => $validated['type'] === 'facility'
+                ? ($validated['price_per_day'] ?? null)
+                : null,
+            'price_per_hour' => $validated['type'] === 'vehicle'
+                ? ($validated['price_per_hour'] ?? null)
+                : null,
+            'inclusions' => $validated['inclusions'] ?? null,
             'image' => null,
             'images' => null,
             'status' => 'available',
@@ -195,6 +230,9 @@ class ResourceController extends Controller
             'type' => ['required', 'in:facility,vehicle'],
             'description' => ['nullable', 'string'],
             'buffer_minutes' => ['required', 'integer', 'min:0'],
+            'price_per_day' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            'price_per_hour' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2'],
+            'inclusions' => ['nullable', 'string'],
             'capacity' => ['nullable', 'string'],
             'unit_name' => ['nullable', 'string'],
             'status' => ['nullable', 'in:available,unavailable,maintenance'],
@@ -229,6 +267,20 @@ class ResourceController extends Controller
             'image' => $imagePath,
             'images' => $imagePaths,
         ];
+
+        if ($validated['type'] === 'facility' && array_key_exists('price_per_day', $validated)) {
+            $updateData['price_per_day'] = $validated['price_per_day'];
+        } elseif ($validated['type'] === 'vehicle') {
+            $updateData['price_per_day'] = null;
+        }
+        if ($validated['type'] === 'vehicle' && array_key_exists('price_per_hour', $validated)) {
+            $updateData['price_per_hour'] = $validated['price_per_hour'];
+        } elseif ($validated['type'] === 'facility') {
+            $updateData['price_per_hour'] = null;
+        }
+        if (array_key_exists('inclusions', $validated)) {
+            $updateData['inclusions'] = $validated['inclusions'];
+        }
 
         $updateData['buffer_minutes'] = $validated['buffer_minutes'];
 

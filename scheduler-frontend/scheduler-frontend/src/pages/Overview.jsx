@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { isSpecialEvent } from "../utils/specialEvents";
+import { formatResourcePrice } from "../utils/resourcePricing";
 import { useAuth } from "../context/AuthContext";
 import { useCachedData } from "../hooks/useCachedData";
 import { useTabUrlSync } from "../hooks/useTabUrlSync";
@@ -402,6 +403,9 @@ export default function Overview() {
                                 ? "Maintenance"
                                 : "Unavailable"}
                           </span>
+                          <span className="absolute top-2 left-2 z-10 rounded-full border border-blue-100 bg-white/95 px-2 py-1 text-[10px] font-semibold text-blue-800 shadow-sm">
+                            {formatResourcePrice(item.price_per_day)} / day
+                          </span>
                           {item.image && item.image.trim() !== "" ? (
                             <img
                               src={item.image}
@@ -542,6 +546,9 @@ export default function Overview() {
                                   item.status === "maintenance"
                                 ? "Maintenance"
                                 : "Unavailable"}
+                          </span>
+                          <span className="absolute top-2 left-2 z-10 rounded-full border border-blue-100 bg-white/95 px-2 py-1 text-[10px] font-semibold text-blue-800 shadow-sm">
+                            {formatResourcePrice(item.price_per_hour)} / hour
                           </span>
                           {item.image && item.image.trim() !== "" ? (
                             <img

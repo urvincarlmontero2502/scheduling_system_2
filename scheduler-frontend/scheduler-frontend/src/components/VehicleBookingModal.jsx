@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import * as api from "../api/endpoints";
 import { getTodayDateInManila } from "../utils/bookingDates";
 import {
+  calculateHourlyRentalEstimate,
+  formatResourcePrice,
+  parseResourceInclusions,
+} from "../utils/resourcePricing";
+import {
   X,
   Calendar as CalendarIcon,
   MapPin,
@@ -16,6 +21,7 @@ import {
   Loader2,
   Clock,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 
 // Helper: robustly extract date parts from various formats
@@ -100,6 +106,9 @@ export default function VehicleBookingModal({
     : selectedVehicle?.image
       ? [selectedVehicle.image]
       : [];
+  const vehicleInclusions = parseResourceInclusions(
+    selectedVehicle?.inclusions,
+  );
   const visibleImageIndex = Math.min(
     currentImageIndex,
     Math.max(resourceImages.length - 1, 0),
@@ -239,6 +248,18 @@ export default function VehicleBookingModal({
     formData.end_time,
     true,
   );
+  const rentalEstimate = calculateHourlyRentalEstimate(
+    requestedStart,
+    requestedEnd,
+    selectedVehicle.price_per_hour,
+  );
+  const bookingDurationLabel = rentalEstimate
+    ? `${Math.floor(rentalEstimate.durationMinutes / 60)}h${
+        rentalEstimate.durationMinutes % 60
+          ? ` ${rentalEstimate.durationMinutes % 60}m`
+          : ""
+      }`
+    : null;
   const conflict =
     formData.start_date && formData.end_date
       ? bookings.find((b) => {
@@ -449,6 +470,7 @@ export default function VehicleBookingModal({
     formData.start_date >= minimumBookingDate &&
     formData.end_date &&
     formData.end_date >= minimumBookingDate &&
+    rentalEstimate &&
     formData.purpose.trim() &&
     (formData.first_name.trim() || formData.last_name.trim()) &&
     formData.cell_number.length === 11 &&
@@ -558,6 +580,71 @@ export default function VehicleBookingModal({
                   </>
                 )}
               </div>
+              <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                  Price Per Hour
+                </p>
+                <p className="mt-0.5 text-lg font-bold text-blue-900">
+                  {formatResourcePrice(selectedVehicle.price_per_hour)}
+                  <span className="ml-1 text-[12px] font-medium text-blue-700">
+                    / hour
+                  </span>
+                </p>
+                <div className="mt-2 border-t border-blue-100 pt-2 text-[11px] text-blue-900">
+                  {rentalEstimate?.total !== null &&
+                  rentalEstimate?.total !== undefined ? (
+                    <>
+                      <p>
+                        Duration:{" "}
+                        <span className="font-semibold">
+                          {bookingDurationLabel}
+                        </span>
+                      </p>
+                      <p>
+                        Billable hours:{" "}
+                        <span className="font-semibold">
+                          {rentalEstimate.billableHours}
+                        </span>
+                        {" "}
+                        <span className="text-blue-700">
+                          (partial hours round up)
+                        </span>
+                      </p>
+                      <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-1.5 text-[12px]">
+                        <span className="font-semibold">Estimated total</span>
+                        <span className="text-sm font-bold">
+                          {formatResourcePrice(rentalEstimate.total)}
+                        </span>
+                      </p>
+                    </>
+                  ) : rentalEstimate ? (
+                    <p>Set an hourly rate to calculate the estimated total.</p>
+                  ) : (
+                    <p>Select a valid date and time range to estimate the total.</p>
+                  )}
+                </div>
+              </div>
+              {vehicleInclusions.length > 0 && (
+                <div className="rounded-lg border border-line bg-white p-3">
+                  <h3 className="mb-2 text-[12px] font-semibold text-ink">
+                    What's Included
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {vehicleInclusions.map((inclusion, index) => (
+                      <li
+                        key={`${inclusion}-${index}`}
+                        className="flex items-start gap-2 text-[11.5px] text-steel">
+                        <CheckCircle2
+                          size={14}
+                          className="mt-0.5 shrink-0 text-emerald-600"
+                          aria-hidden="true"
+                        />
+                        <span>{inclusion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="space-y-1.5 rounded-lg border border-line bg-paper/50 p-3">
                 <h3 className="text-[13px] font-semibold text-ink">
                   {selectedVehicle.name}
@@ -655,12 +742,22 @@ export default function VehicleBookingModal({
                     />
                   </div>
                 </div>
+                {formData.start_date &&
+                  formData.end_date &&
+                  !rentalEstimate && (
+                    <p className="mt-1 text-[10.5px] text-rose-600">
+                      The end date and time must be after the start date and time.
+                    </p>
+                  )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                      <User size={13} className="text-brand" /> First Name
+                    <label className="mb-1 flex items-center gap-1 text-[11px] font-medium text-ink">
+                      <User size={13} className="text-brand" />
+                      <span className="whitespace-nowrap">
+                        First Name <span className="text-red-500">*</span>
+                      </span>
                     </label>
                     <input
                       type="text"
@@ -685,7 +782,7 @@ export default function VehicleBookingModal({
                   </div>
                   <div>
                     <label className="mb-1 block text-[12px] font-medium text-ink">
-                      Last Name
+                      Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -698,8 +795,11 @@ export default function VehicleBookingModal({
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                    <Phone size={13} className="text-brand" /> Cell Number
+                  <label className="mb-1 flex items-center gap-1 text-[12px] font-medium text-ink">
+                    <Phone size={13} className="text-brand" />
+                    <span className="whitespace-nowrap">
+                      Cell Number <span className="text-red-500">*</span>
+                    </span>
                   </label>
                   <input
                     type="tel"
@@ -731,7 +831,10 @@ export default function VehicleBookingModal({
                 </div>
                 <div>
                   <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                    <Home size={13} className="text-brand" /> Address
+                    <Home size={13} className="text-brand" />
+                    <span className="whitespace-nowrap">
+                      Address <span className="text-red-500">*</span>
+                    </span>
                   </label>
                   <input
                     type="text"

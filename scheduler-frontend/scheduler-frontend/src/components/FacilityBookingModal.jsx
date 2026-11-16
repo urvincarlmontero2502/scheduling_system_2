@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import * as api from "../api/endpoints";
 import { getTodayDateInManila } from "../utils/bookingDates";
 import {
+  formatResourcePrice,
+  parseResourceInclusions,
+} from "../utils/resourcePricing";
+import {
   X,
   Calendar as CalendarIcon,
   MapPin,
@@ -15,6 +19,7 @@ import {
   Loader2,
   Clock,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 
 // Helper: robustly extract date parts from various formats
@@ -99,6 +104,9 @@ export default function FacilityBookingModal({
     : selectedFacility?.image
       ? [selectedFacility.image]
       : [];
+  const facilityInclusions = parseResourceInclusions(
+    selectedFacility?.inclusions,
+  );
   const visibleImageIndex = Math.min(
     currentImageIndex,
     Math.max(resourceImages.length - 1, 0),
@@ -575,6 +583,17 @@ export default function FacilityBookingModal({
                   </>
                 )}
               </div>
+              <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                  Price Per Day
+                </p>
+                <p className="mt-0.5 text-lg font-bold text-blue-900">
+                  {formatResourcePrice(selectedFacility.price_per_day)}
+                  <span className="ml-1 text-[12px] font-medium text-blue-700">
+                    / day
+                  </span>
+                </p>
+              </div>
               <div className="space-y-1.5 rounded-lg border border-line bg-paper/50 p-3">
                 <h3 className="text-[13px] font-semibold text-ink">
                   {selectedFacility.name}
@@ -591,6 +610,27 @@ export default function FacilityBookingModal({
                   </p>
                 )}
               </div>
+              {facilityInclusions.length > 0 && (
+                <div className="rounded-lg border border-line bg-white p-3">
+                  <h3 className="mb-2 text-[12px] font-semibold text-ink">
+                    What's Included
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {facilityInclusions.map((inclusion, index) => (
+                      <li
+                        key={`${inclusion}-${index}`}
+                        className="flex items-start gap-2 text-[11.5px] text-steel">
+                        <CheckCircle2
+                          size={14}
+                          className="mt-0.5 shrink-0 text-emerald-600"
+                          aria-hidden="true"
+                        />
+                        <span>{inclusion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
                   <MapPin size={13} className="text-brand" /> Purpose
@@ -659,8 +699,11 @@ export default function FacilityBookingModal({
               <div className="grid grid-cols-2 gap-2">
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                      <User size={13} className="text-brand" /> First Name
+                    <label className="mb-1 flex items-center gap-1 text-[11px] font-medium text-ink">
+                      <User size={13} className="text-brand" />
+                      <span className="whitespace-nowrap">
+                        First Name <span className="text-red-500">*</span>
+                      </span>
                     </label>
                     <input
                       type="text"
@@ -685,7 +728,7 @@ export default function FacilityBookingModal({
                   </div>
                   <div>
                     <label className="mb-1 block text-[12px] font-medium text-ink">
-                      Last Name
+                      Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -698,8 +741,11 @@ export default function FacilityBookingModal({
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                    <Phone size={13} className="text-brand" /> Cell Number
+                  <label className="mb-1 flex items-center gap-1 text-[12px] font-medium text-ink">
+                    <Phone size={13} className="text-brand" />
+                    <span className="whitespace-nowrap">
+                      Cell Number <span className="text-red-500">*</span>
+                    </span>
                   </label>
                   <input
                     type="tel"
@@ -731,7 +777,10 @@ export default function FacilityBookingModal({
                 </div>
                 <div>
                   <label className="mb-1 flex items-center gap-1.5 text-[12px] font-medium text-ink">
-                    <Home size={13} className="text-brand" /> Address
+                    <Home size={13} className="text-brand" />
+                    <span className="whitespace-nowrap">
+                      Address <span className="text-red-500">*</span>
+                    </span>
                   </label>
                   <input
                     type="text"

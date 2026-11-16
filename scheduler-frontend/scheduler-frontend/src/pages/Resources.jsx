@@ -17,6 +17,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import { useCachedData } from "../hooks/useCachedData";
 import { useTabUrlSync } from "../hooks/useTabUrlSync";
+import { formatResourcePrice } from "../utils/resourcePricing";
 import {
   readCache,
   writeCache,
@@ -64,6 +65,7 @@ export default function Resources() {
   const { user } = useAuth();
   const toast = useToast();
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isSuperAdmin = user?.role === "admin";
 
   // Cached data hook — data persists across page switches
   const {
@@ -95,6 +97,9 @@ export default function Resources() {
     description: "",
     capacity: "",
     buffer_minutes: 30,
+    price_per_day: "",
+    price_per_hour: "",
+    inclusions: "",
     images: [],
   });
 
@@ -109,6 +114,9 @@ export default function Resources() {
           ? resource.capacity.replace(" pax", "")
           : "",
         buffer_minutes: resource.buffer_minutes ?? 30,
+        price_per_day: resource.price_per_day ?? "",
+        price_per_hour: resource.price_per_hour ?? "",
+        inclusions: resource.inclusions || "",
         images: [],
       });
     } else {
@@ -119,6 +127,9 @@ export default function Resources() {
         description: "",
         capacity: "",
         buffer_minutes: 30,
+        price_per_day: "",
+        price_per_hour: "",
+        inclusions: "",
         images: [],
       });
     }
@@ -383,6 +394,12 @@ export default function Resources() {
     data.append("type", formData.type);
     data.append("description", formData.description || "");
     data.append("buffer_minutes", formData.buffer_minutes);
+    if (formData.type === "facility") {
+      data.append("price_per_day", formData.price_per_day);
+    } else if (isSuperAdmin) {
+      data.append("price_per_hour", formData.price_per_hour);
+    }
+    data.append("inclusions", formData.inclusions || "");
 
     if (formData.type === "facility") {
       data.append("capacity", formData.capacity || "");
@@ -556,6 +573,11 @@ export default function Resources() {
           <span
             className={`absolute top-2 right-2 z-10 px-2.5 py-0.5 text-[11px] font-medium rounded-full border ${statusConfig.className}`}>
             {statusConfig.label}
+          </span>
+          <span className="absolute top-2 left-2 z-10 rounded-full border border-blue-100 bg-white/95 px-2 py-1 text-[10px] font-semibold text-blue-800 shadow-sm">
+            {resourceType === "vehicle"
+              ? `${formatResourcePrice(item.price_per_hour)} / hour`
+              : `${formatResourcePrice(item.price_per_day)} / day`}
           </span>
         </div>
 
@@ -854,7 +876,7 @@ export default function Resources() {
       {/* Add / Edit Resource Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
             <h2 className="text-base font-semibold mb-4">
               {editingResource ? "Edit Resource" : "Add New Resource"}
             </h2>
@@ -936,6 +958,64 @@ export default function Resources() {
                 />
               </div>
 
+              {formData.type === "facility" && (
+                <div>
+                  <label
+                    htmlFor="resource-price-per-day"
+                    className="block text-xs font-medium text-slate-700 mb-1">
+                    Price Per Day
+                  </label>
+                  <div className="flex items-center rounded-md border border-slate-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-500/20">
+                    <span className="pl-3 text-xs text-slate-500">₱</span>
+                    <input
+                      id="resource-price-per-day"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={formData.price_per_day}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_per_day: e.target.value,
+                        })
+                      }
+                      className="w-full rounded-r-md border-0 px-2 py-2 text-xs focus:outline-none focus:ring-0"
+                      placeholder="--"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.type === "vehicle" && isSuperAdmin && (
+                <div>
+                  <label
+                    htmlFor="resource-price-per-hour"
+                    className="block text-xs font-medium text-slate-700 mb-1">
+                    Price Per Hour
+                  </label>
+                  <div className="flex items-center rounded-md border border-slate-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-500/20">
+                    <span className="pl-3 text-xs text-slate-500">₱</span>
+                    <input
+                      id="resource-price-per-hour"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={formData.price_per_hour}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_per_hour: e.target.value,
+                        })
+                      }
+                      className="w-full rounded-r-md border-0 px-2 py-2 text-xs focus:outline-none focus:ring-0"
+                      placeholder="--"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Description
@@ -949,6 +1029,34 @@ export default function Resources() {
                   className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   placeholder="Brief details about this resource..."
                 />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="resource-inclusions"
+                  className="block text-xs font-medium text-slate-700 mb-1">
+                  What's Included
+                </label>
+                <textarea
+                  id="resource-inclusions"
+                  rows="3"
+                  value={formData.inclusions}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      inclusions: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  placeholder={
+                    formData.type === "facility"
+                      ? "e.g., Tables, chairs, and audio system"
+                      : "e.g., Driver and fuel"
+                  }
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Separate items with commas or new lines.
+                </p>
               </div>
 
               <div>
