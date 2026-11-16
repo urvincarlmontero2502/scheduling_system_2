@@ -21,6 +21,9 @@ class Resource extends Model
         'images',
         'description',
         'buffer_minutes',
+        'price_per_day',
+        'price_per_hour',
+        'inclusions',
     ];
 
     protected function casts(): array
@@ -28,6 +31,8 @@ class Resource extends Model
         return [
             'buffer_minutes' => 'integer',
             'images' => 'array',
+            'price_per_day' => 'decimal:2',
+            'price_per_hour' => 'decimal:2',
         ];
     }
 
