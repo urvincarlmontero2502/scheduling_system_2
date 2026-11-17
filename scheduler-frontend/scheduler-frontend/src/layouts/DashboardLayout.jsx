@@ -620,6 +620,7 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/activity-logs") &&
                 "Activity Logs"}
               {location.pathname.startsWith("/reports") && "Resource Reports"}
+              {location.pathname.startsWith("/trash") && "Trash Bin"}
               {location.pathname === "/" && "Dashboard Overview"}
             </h1>
             <p className="text-[11px] text-steel leading-tight truncate">
@@ -639,6 +640,8 @@ export default function DashboardLayout() {
                 "Review system activity from the past year"}
               {location.pathname.startsWith("/reports") &&
                 "Booking activity, resource utilization, and assessed estimates in one place."}
+              {location.pathname.startsWith("/trash") &&
+                "View and restore recently deleted resources and booking requests."}
               {location.pathname === "/" &&
                 "Overview of municipal operations and quick stats"}
             </p>
