@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import * as api from "../api/endpoints";
 import { getTodayDateInManila } from "../utils/bookingDates";
 import {
+  calculateDailyBookingEstimate,
   formatResourcePrice,
   parseResourceInclusions,
 } from "../utils/resourcePricing";
@@ -106,6 +107,11 @@ export default function FacilityBookingModal({
       : [];
   const facilityInclusions = parseResourceInclusions(
     selectedFacility?.inclusions,
+  );
+  const dailyEstimate = calculateDailyBookingEstimate(
+    formData.start_date,
+    formData.end_date,
+    selectedFacility?.price_per_day,
   );
   const visibleImageIndex = Math.min(
     currentImageIndex,
@@ -585,14 +591,41 @@ export default function FacilityBookingModal({
               </div>
               <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">
-                  Price Per Day
+                  Daily Rate
                 </p>
-                <p className="mt-0.5 text-lg font-bold text-blue-900">
-                  {formatResourcePrice(selectedFacility.price_per_day)}
-                  <span className="ml-1 text-[12px] font-medium text-blue-700">
-                    / day
-                  </span>
+                <p className="mt-0.5 text-[11px] text-blue-900">
+                  {selectedFacility.name}:{" "}
+                  <strong className="text-sm">
+                    {formatResourcePrice(selectedFacility.price_per_day)}
+                  </strong>
+                  {" "}/ day
                 </p>
+                <div className="mt-2 border-t border-blue-100 pt-2 text-[11px] text-blue-900">
+                  {dailyEstimate ? (
+                    <>
+                      <p>
+                        Duration:{" "}
+                        <span className="font-semibold">
+                          {dailyEstimate.billableDays} calendar{" "}
+                          {dailyEstimate.billableDays === 1 ? "day" : "days"}
+                        </span>
+                      </p>
+                      <p className="text-blue-700">
+                        Start and end dates are both counted.
+                      </p>
+                      <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-1.5 text-[12px]">
+                        <span className="font-semibold">Estimated total</span>
+                        <span className="text-sm font-bold">
+                          {dailyEstimate.total === null
+                            ? "For assessment"
+                            : formatResourcePrice(dailyEstimate.total)}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p>Select a valid date range to estimate the total.</p>
+                  )}
+                </div>
               </div>
               <div className="space-y-1.5 rounded-lg border border-line bg-paper/50 p-3">
                 <h3 className="text-[13px] font-semibold text-ink">
