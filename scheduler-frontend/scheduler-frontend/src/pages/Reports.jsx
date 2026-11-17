@@ -1,11 +1,43 @@
 import { useState } from "react";
-import { BarChart3, Download, FileText, Printer } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  CalendarDays,
+  CarFront,
+  Download,
+  FileText,
+  Info,
+  Layers3,
+  Printer,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
 import { useCachedData } from "../hooks/useCachedData";
+import ReportDropdown from "../components/ReportDropdown";
 import "./Reports.css";
 
 const REPORT_ROLES = ["admin", "barangay_admin", "staff"];
+const PERIOD_GROUPS = [
+  {
+    label: "Quick ranges",
+    options: [
+      { value: "week", label: "This Week", icon: CalendarDays },
+      { value: "month", label: "This Month", icon: CalendarDays },
+      { value: "year", label: "This Year", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Date range",
+    options: [
+      {
+        value: "custom",
+        label: "Custom Date Range",
+        detail: "Choose your own start and end dates",
+        icon: CalendarDays,
+      },
+    ],
+  },
+];
 
 function formatCurrency(value) {
   if (value == null || value === "" || !Number.isFinite(Number(value))) {
@@ -81,6 +113,53 @@ export default function Reports() {
   const vehicles = (resources || []).filter(
     (resource) => resource.type?.toLowerCase() === "vehicle",
   );
+  const resourceGroups = [
+    {
+      label: "Report scope",
+      options: [
+        {
+          value: "all",
+          label: "All Resources",
+          detail: "Facilities and utility vehicles",
+          icon: Layers3,
+        },
+        {
+          value: "vehicles",
+          label: "All Utility Vehicles",
+          detail: "Municipal vehicle fleet only",
+          icon: CarFront,
+        },
+      ],
+    },
+    ...(facilities.length
+      ? [
+          {
+            label: "Facilities",
+            count: facilities.length,
+            options: facilities.map((resource) => ({
+              value: `resource:${resource.resource_id}`,
+              label: resource.name,
+              detail: "Facility",
+              icon: Building2,
+            })),
+          },
+        ]
+      : []),
+    ...(vehicles.length
+      ? [
+          {
+            label: "Utility Vehicles",
+            count: vehicles.length,
+            options: vehicles.map((resource) => ({
+              value: `resource:${resource.resource_id}`,
+              label: resource.name,
+              detail: "Utility vehicle",
+              icon: CarFront,
+            })),
+          },
+        ]
+      : []),
+  ];
 
   const generateReport = async (event) => {
     event.preventDefault();
@@ -247,115 +326,109 @@ export default function Reports() {
     : [];
 
   return (
-    <main className="resource-reports-page p-4 md:p-6">
-      <div className="no-print mb-6 flex items-start gap-3">
-        <div className="rounded-xl bg-blue-50 p-2.5 text-blue-700">
-          <BarChart3 size={22} />
+    <main className="resource-reports-page mx-auto w-full max-w-[1680px] p-4 md:p-6 xl:p-8">
+      <header className="no-print mb-7 flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 ring-1 ring-blue-200/70">
+          <BarChart3 size={23} strokeWidth={2.2} />
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700">
+            Reporting &amp; analytics
+          </p>
+          <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">
             Resource Reports
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Review booking activity, resource usage, and estimated/assessed
-            amounts.
+            Booking activity, resource utilization, and assessed estimates in
+            one place.
           </p>
         </div>
-      </div>
+      </header>
 
       <form
         onSubmit={generateReport}
-        className="no-print mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        className="no-print relative z-20 mb-6 overflow-visible rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/[0.03] sm:p-5 lg:p-6"
       >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="text-sm font-medium text-slate-700">
-            Resource
-            <select
-              value={resourceSelection}
-              onChange={(event) => setResourceSelection(event.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="all">All Resources</option>
-              <option value="vehicles">All Utility Vehicles</option>
-              {facilities.length > 0 && (
-                <optgroup label="Facilities">
-                  {facilities.map((resource) => (
-                    <option
-                      key={resource.resource_id}
-                      value={`resource:${resource.resource_id}`}
-                    >
-                      {resource.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              {vehicles.length > 0 && (
-                <optgroup label="Utility Vehicles">
-                  {vehicles.map((resource) => (
-                    <option
-                      key={resource.resource_id}
-                      value={`resource:${resource.resource_id}`}
-                    >
-                      {resource.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </label>
+        <div className="mb-5 flex flex-col gap-1 border-b border-slate-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">
+              Configure your report
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Select a resource and reporting period to get started.
+            </p>
+          </div>
+          <span className="hidden items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500 sm:inline-flex">
+            <CalendarDays size={13} />
+            Dates use the booking start date
+          </span>
+        </div>
 
-          <label className="text-sm font-medium text-slate-700">
-            Period
-            <select
-              value={period}
-              onChange={(event) => setPeriod(event.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
-              <option value="custom">Custom Date Range</option>
-            </select>
-          </label>
+        <div
+          className={`grid gap-4 ${
+            period === "custom"
+              ? "md:grid-cols-2 xl:grid-cols-4"
+              : "md:grid-cols-2"
+          }`}
+        >
+          <ReportDropdown
+            label="Resource"
+            value={resourceSelection}
+            onChange={setResourceSelection}
+            groups={resourceGroups}
+            searchable
+            searchPlaceholder="Search facilities or vehicles"
+            disabled={resourcesLoading}
+          />
+          <ReportDropdown
+            label="Period"
+            value={period}
+            onChange={setPeriod}
+            groups={PERIOD_GROUPS}
+          />
 
-          {period === "custom" ? (
+          {period === "custom" && (
             <>
-              <label className="text-sm font-medium text-slate-700">
-                Start Date
+              <label className="block min-w-0 text-sm font-semibold text-slate-700">
+                Start date
                 <input
                   type="date"
                   value={startDate}
                   onChange={(event) => setStartDate(event.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  className="mt-1.5 min-h-[50px] w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </label>
-              <label className="text-sm font-medium text-slate-700">
-                End Date
+              <label className="block min-w-0 text-sm font-semibold text-slate-700">
+                End date
                 <input
                   type="date"
                   value={endDate}
                   min={startDate || undefined}
                   onChange={(event) => setEndDate(event.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  className="mt-1.5 min-h-[50px] w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </label>
             </>
-          ) : (
-            <div className="flex items-end text-xs text-slate-500">
-              Dates are based on the booking start date.
-            </div>
           )}
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-2xl text-xs text-slate-500">
-            Multi-vehicle requests count once as a booking; each selected
-            vehicle counts as a separate resource assignment. Staff reports are
-            limited to their own bookings.
-          </p>
+
+        <div className="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex max-w-3xl items-start gap-2.5 text-xs leading-relaxed text-slate-500">
+            <Info
+              size={16}
+              className="mt-0.5 shrink-0 text-blue-600"
+              aria-hidden="true"
+            />
+            <p>
+              Multi-vehicle requests count once as a booking, with one
+              assignment per vehicle. Staff reports are limited to their own
+              bookings.
+            </p>
+          </div>
           <button
             type="submit"
             disabled={loading || resourcesLoading || !customRangeValid}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-900/10 transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileText size={16} />
             {loading ? "Generating..." : "Generate Report"}
@@ -364,7 +437,7 @@ export default function Reports() {
         {error && (
           <p
             role="alert"
-            className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+            className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700"
           >
             {error}
           </p>
@@ -372,17 +445,29 @@ export default function Reports() {
       </form>
 
       {!report && !loading && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <FileText className="mx-auto mb-3 text-slate-400" size={30} />
-          <p className="font-medium text-slate-700">
-            Choose a resource and period to generate a report.
-          </p>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50/70 via-white to-white px-5 py-10 text-center sm:flex-row sm:text-left">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+            <FileText size={22} />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-800">
+              Your report will appear here
+            </h2>
+            <p className="mt-1 max-w-xl text-sm text-slate-500">
+              Choose a resource and period above, then generate a report to see
+              booking totals, utilization, and estimated amounts.
+            </p>
+          </div>
         </div>
       )}
 
       {loading && (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-          Generating report…
+        <div
+          role="status"
+          className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-12 text-sm font-medium text-slate-500 shadow-sm"
+        >
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-100 border-t-blue-700" />
+          Generating your report…
         </div>
       )}
 
@@ -437,7 +522,7 @@ export default function Reports() {
             </button>
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
             {stats.map((stat) => (
               <div
                 key={stat.label}
