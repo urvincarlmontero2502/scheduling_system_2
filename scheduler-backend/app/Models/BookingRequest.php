@@ -20,6 +20,7 @@ class BookingRequest extends Model
         'resource_id',
         'full_name', // <-- Add this here so it saves properly!
         'purpose',
+        'destination',
         'start_date',
         'end_date',
         'start_time',

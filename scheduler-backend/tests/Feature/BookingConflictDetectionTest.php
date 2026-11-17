@@ -25,6 +25,7 @@ class BookingConflictDetectionTest extends TestCase
 
         Schema::dropIfExists('booking_request');
         Schema::dropIfExists('activity_logs');
+        Schema::dropIfExists('facility_details');
         Schema::dropIfExists('resources');
         Schema::dropIfExists('users');
         Schema::create('users', function (Blueprint $table) {
@@ -41,6 +42,11 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('status');
             $table->unsignedInteger('buffer_minutes')->default(30);
             $table->json('images')->nullable();
+            $table->timestamp('deleted_at')->nullable();
+        });
+        Schema::create('facility_details', function (Blueprint $table) {
+            $table->unsignedBigInteger('resource_id')->primary();
+            $table->unsignedInteger('capacity')->nullable();
         });
         Schema::create('booking_request', function (Blueprint $table) {
             $table->id('booking_id');
@@ -49,6 +55,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('reference_id')->nullable();
             $table->string('full_name')->nullable();
             $table->string('purpose')->nullable();
+            $table->text('destination')->nullable();
             $table->date('start_date');
             $table->date('end_date');
             $table->string('start_time')->nullable();
@@ -127,6 +134,48 @@ class BookingConflictDetectionTest extends TestCase
             'action' => 'booking.requested',
             'subject_type' => 'booking',
         ]);
+    }
+
+    public function test_booking_details_preserve_the_values_submitted_from_booking_modal(): void
+    {
+        $payload = array_merge(
+            $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '11:00'),
+            [
+                'full_name' => $this->user->full_name,
+                'purpose' => 'Deliver materials',
+                'destination' => 'Barangay Hall',
+                'cell_number' => '09123456789',
+                'email' => 'booking-test@example.test',
+                'address' => '123 Main Street',
+                'attendees' => 25,
+                'priority' => 'high',
+            ],
+        );
+
+        $this->postJson('/api/bookings', $payload)
+            ->assertCreated()
+            ->assertJsonPath('full_name', $this->user->full_name)
+            ->assertJsonPath('purpose', 'Deliver materials')
+            ->assertJsonPath('destination', 'Barangay Hall')
+            ->assertJsonPath('attendees', 25)
+            ->assertJsonPath('priority', 'high');
+
+        $this->assertDatabaseHas('booking_request', [
+            'destination' => 'Barangay Hall',
+            'purpose' => 'Deliver materials',
+            'attendees' => 25,
+            'priority' => 'high',
+        ]);
+
+        $this->getJson('/api/bookings')
+            ->assertOk()
+            ->assertJsonPath('0.full_name', $this->user->full_name)
+            ->assertJsonPath('0.resource_type', 'facility')
+            ->assertJsonPath('0.destination', 'Barangay Hall')
+            ->assertJsonPath('0.cell_number', '09123456789')
+            ->assertJsonPath('0.address', '123 Main Street')
+            ->assertJsonPath('0.attendees', 25)
+            ->assertJsonPath('0.priority', 'high');
     }
 
     public function test_conflicting_full_day_booking_returns_next_day_suggestion(): void
