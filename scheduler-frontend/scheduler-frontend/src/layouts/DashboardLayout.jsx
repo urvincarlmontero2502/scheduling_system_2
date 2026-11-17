@@ -619,6 +619,7 @@ export default function DashboardLayout() {
                 "Account Settings"}
               {location.pathname.startsWith("/activity-logs") &&
                 "Activity Logs"}
+              {location.pathname.startsWith("/reports") && "Resource Reports"}
               {location.pathname === "/" && "Dashboard Overview"}
             </h1>
             <p className="text-[11px] text-steel leading-tight truncate">
@@ -636,6 +637,8 @@ export default function DashboardLayout() {
                 "Manage your profile and security credentials"}
               {location.pathname.startsWith("/activity-logs") &&
                 "Review system activity from the past year"}
+              {location.pathname.startsWith("/reports") &&
+                "Booking activity, resource utilization, and assessed estimates in one place."}
               {location.pathname === "/" &&
                 "Overview of municipal operations and quick stats"}
             </p>
