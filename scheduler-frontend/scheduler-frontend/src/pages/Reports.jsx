@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  BarChart3,
   Building2,
   CalendarDays,
   CarFront,
@@ -326,25 +325,7 @@ export default function Reports() {
     : [];
 
   return (
-    <main className="resource-reports-page mx-auto w-full max-w-[1680px] p-4 md:p-6 xl:p-8">
-      <header className="no-print mb-7 flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 ring-1 ring-blue-200/70">
-          <BarChart3 size={23} strokeWidth={2.2} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700">
-            Reporting &amp; analytics
-          </p>
-          <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">
-            Resource Reports
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Booking activity, resource utilization, and assessed estimates in
-            one place.
-          </p>
-        </div>
-      </header>
-
+    <main className="resource-reports-page mx-auto w-full max-w-[1680px] p-4 md:p-6">
       <form
         onSubmit={generateReport}
         className="no-print relative z-20 mb-6 overflow-visible rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/[0.03] sm:p-5 lg:p-6"
