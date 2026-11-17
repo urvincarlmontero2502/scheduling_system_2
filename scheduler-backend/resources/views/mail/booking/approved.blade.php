@@ -3,64 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking Approved</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
-        .header { background: #22c55e; color: white; padding: 24px; text-align: center; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
-        .content { padding: 24px; }
-        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f1f1; }
-        .detail-label { color: #6b7280; font-size: 14px; }
-        .detail-value { font-weight: 500; font-size: 14px; }
-        .footer { background: #f9fafb; padding: 16px 24px; text-align: center; color: #9ca3af; font-size: 12px; }
-        .badge { display: inline-block; background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
-    </style>
+    <title>Booking approved</title>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>✅ Booking Approved</h1>
-        </div>
-        <div class="content">
-            <p style="margin: 0 0 16px; font-size: 16px; color: #374151;">Hello {{ $user->full_name ?? $user->name ?? 'User' }},</p>
-            <p style="margin: 0 0 20px; font-size: 14px; color: #4b5563;">
-                Your booking request has been officially <span class="badge">Approved</span>.
-            </p>
-
-            <div class="detail-row">
-                <span class="detail-label">Resource</span>
-                <span class="detail-value">{{ $resourceName }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Booking ID</span>
-                <span class="detail-value">#{{ $booking->booking_id }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Start Date</span>
-                <span class="detail-value">{{ \Carbon\Carbon::parse($booking->start_date)->format('M d, Y') }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">End Date</span>
-                <span class="detail-value">{{ \Carbon\Carbon::parse($booking->end_date)->format('M d, Y') }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Time</span>
-                <span class="detail-value">{{ $booking->start_time ?? 'All Day' }} - {{ $booking->end_time ?? '' }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Purpose</span>
-                <span class="detail-value">{{ $booking->purpose ?? 'Not specified' }}</span>
-            </div>
-
-            <p style="margin: 20px 0 0; font-size: 14px; color: #4b5563;">
-                You can view and manage all your bookings in the application.
-                Thank you for using our scheduling system.
-            </p>
-        </div>
-        <div class="footer">
-            This email was sent automatically. Please do not reply.
-        </div>
-    </div>
+<body style="margin:0; padding:24px 12px; background:#f1f5f9; color:#172033; font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:620px; border-collapse:separate; background:#ffffff; border:1px solid #dbe3ee; border-radius:12px; overflow:hidden;">
+                    <tr>
+                        <td style="padding:22px 30px; background:#163b68; color:#ffffff;">
+                            <p style="margin:0; font-size:11px; font-weight:bold; letter-spacing:1.4px;">JABONGA SCHEDULING SYSTEM</p>
+                            <h1 style="margin:10px 0 0; font-size:23px; line-height:1.3;">Booking approved</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:28px 30px 12px;">
+                            <p style="margin:0 0 14px; font-size:16px;">Hello {{ $user->full_name ?? $user->name ?? 'Requestor' }},</p>
+                            <p style="margin:0; color:#475569; font-size:14px; line-height:1.7;">
+                                Your booking request for <strong style="color:#172033;">{{ $soa['resource_name'] }}</strong> has been approved.
+                                Your Statement of Account (SOA) is attached as a PDF. Download or print it to bring to the municipal office for payment—you do not need to visit the barangay to obtain the SOA.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:18px 30px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;">
+                                <tr>
+                                    <td style="padding:14px 16px;">
+                                        <p style="margin:0 0 5px; color:#475569; font-size:11px; font-weight:bold; letter-spacing:1px;">PAYMENT REFERENCE</p>
+                                        <p style="margin:0; color:#1e40af; font-size:20px; font-weight:bold;">{{ $soa['reference_number'] }}</p>
+                                    </td>
+                                    <td align="right" style="padding:14px 16px;">
+                                        <p style="margin:0 0 5px; color:#475569; font-size:11px; font-weight:bold; letter-spacing:1px;">AMOUNT DUE</p>
+                                        <p style="margin:0; color:#172033; font-size:18px; font-weight:bold;">
+                                            {{ $soa['amount_formatted'] ?? 'For assessment at the municipal office' }}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px 30px 10px;">
+                            <h2 style="margin:0 0 10px; color:#334155; font-size:13px; letter-spacing:.8px; text-transform:uppercase;">Booking details</h2>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse; border:1px solid #e2e8f0;">
+                                <tr>
+                                    <td width="34%" style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Resource</td>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px; font-weight:bold;">{{ $soa['resource_name'] }} ({{ $soa['resource_type'] }})</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Booking ID</td>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px;">#{{ $soa['booking_id'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Schedule</td>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px;">{{ $soa['start_date'] }}@if($soa['end_date'] !== $soa['start_date']) – {{ $soa['end_date'] }}@endif; {{ $soa['time'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">{{ $soa['rate_label'] }}</td>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px;">
+                                        @if($soa['rate'] !== null)
+                                            ₱{{ number_format($soa['rate'], 2) }} per {{ $soa['resource_type'] === 'Vehicle' ? 'hour' : 'day' }}
+                                        @else
+                                            To be assessed at the municipal office
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 12px; background:#f8fafc; color:#64748b; font-size:12px;">Charge basis</td>
+                                    <td style="padding:10px 12px; color:#172033; font-size:13px;">
+                                        @if($soa['duration'])
+                                            {{ $soa['duration'] }} duration; {{ $soa['quantity_label'] }}
+                                        @else
+                                            {{ $soa['quantity_label'] }}
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:18px 30px 26px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse; border-top:1px solid #e2e8f0;">
+                                <tr>
+                                    <td style="padding-top:16px; color:#475569; font-size:12px; line-height:1.7;">
+                                        The attached SOA is not an official receipt. Present it and quote the payment reference at the municipal office. An official receipt will be provided after payment.
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:16px 24px; background:#f8fafc; color:#64748b; font-size:11px; line-height:1.6;">
+                            This is an automated message from the Jabonga Scheduling System. Please do not reply to this email.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

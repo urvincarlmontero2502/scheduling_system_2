@@ -15,20 +15,25 @@ class BookingRejected extends Mailable
     use Queueable, SerializesModels;
 
     public $booking;
+
     public $user;
+
     public $resourceName;
 
-    public function __construct(BookingRequest $booking, User $user)
+    public $remarks;
+
+    public function __construct(BookingRequest $booking, User $user, ?string $remarks = null)
     {
         $this->booking = $booking;
         $this->user = $user;
         $this->resourceName = $booking->resource ? $booking->resource->name : 'Unknown Resource';
+        $this->remarks = $remarks;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Booking Rejected — ' . $this->resourceName,
+            subject: 'Booking update | Request declined | #'.$this->booking->booking_id,
         );
     }
 

@@ -7,10 +7,11 @@ use App\Mail\BookingRejected;
 use App\Models\BookingRequest;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\BookingStatementOfAccount;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -244,6 +245,63 @@ class BookingConflictDetectionTest extends TestCase
         $this->getJson('/api/bookings')
             ->assertOk()
             ->assertJsonPath('0.price_per_day', '1500.00');
+    }
+
+    public function test_approved_email_contains_the_soa_and_attaches_a_pdf(): void
+    {
+        $this->resource->update(['price_per_day' => 1500]);
+        $booking = $this->createBooking('approved', '2026-11-02', '2026-11-03', '08:00', '17:00');
+        $booking->update([
+            'price_per_day' => 1500,
+            'reference_id' => 'JBG-2026-0001',
+        ]);
+        $mail = new BookingApproved($booking, $this->user);
+
+        $this->assertSame(3000.0, $mail->soa['amount']);
+        $this->assertStringContainsString('JBG-2026-0001', $mail->render());
+        $this->assertStringContainsString(
+            'Your Statement of Account (SOA) is attached as a PDF.',
+            $mail->render()
+        );
+
+        $attachment = $mail->attachments()[0];
+        $pdf = $attachment->attachWith(
+            fn () => null,
+            fn ($data) => $data()
+        );
+
+        $this->assertSame('SOA-JBG-2026-0001.pdf', $attachment->as);
+        $this->assertStringStartsWith('%PDF-', $pdf);
+    }
+
+    public function test_booking_soa_uses_the_saved_vehicle_hourly_rate_and_rounds_up(): void
+    {
+        $vehicle = Resource::create([
+            'name' => 'Backhoe',
+            'type' => 'vehicle',
+            'status' => 'available',
+            'price_per_hour' => 200,
+        ]);
+        $booking = $this->createBooking('approved', '2026-11-02', '2026-11-02', '08:00', '09:01');
+        $booking->update([
+            'resource_id' => $vehicle->resource_id,
+            'price_per_hour' => 200,
+            'reference_id' => 'JBG-2026-0002',
+        ]);
+
+        $soa = app(BookingStatementOfAccount::class)->build($booking);
+
+        $this->assertSame('2 billable hours', $soa['quantity_label']);
+        $this->assertSame(400.0, $soa['amount']);
+    }
+
+    public function test_rejection_email_renders_the_reason_provided(): void
+    {
+        $booking = $this->createBooking('rejected', '2026-11-02', '2026-11-02', '08:00', '10:00');
+        $mail = new BookingRejected($booking, $this->user, 'Resource unavailable for maintenance.');
+
+        $this->assertStringContainsString('Booking request update', $mail->render());
+        $this->assertStringContainsString('Resource unavailable for maintenance.', $mail->render());
     }
 
     public function test_approval_email_is_sent_to_the_email_entered_for_the_booking(): void
