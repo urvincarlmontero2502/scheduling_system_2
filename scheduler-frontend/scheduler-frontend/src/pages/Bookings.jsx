@@ -75,6 +75,7 @@ function calculateVehicleBookingEstimate(booking) {
   const vehicles = Array.isArray(booking.vehicles) && booking.vehicles.length
     ? booking.vehicles
     : [{ price_per_hour: booking.price_per_hour }];
+  const resourceNames = getBookingResourceNames(booking);
   const estimates = vehicles.map((vehicle) =>
     calculateBookingHourlyEstimate({
       ...booking,
@@ -94,6 +95,14 @@ function calculateVehicleBookingEstimate(booking) {
     total: estimates.every((estimate) => Number.isFinite(estimate?.total))
       ? estimates.reduce((total, estimate) => total + estimate.total, 0)
       : null,
+    resourceEstimates: vehicles.map((vehicle, index) => ({
+      name:
+        vehicle.name ||
+        vehicle.resource_name ||
+        resourceNames[index] ||
+        `Resource ${index + 1}`,
+      total: estimates[index]?.total ?? null,
+    })),
   };
 }
 
@@ -870,7 +879,8 @@ export default function Bookings() {
           // Card View
           <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">{filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
-              const resourceName = getBookingResourceNames(b).join(", ");
+              const resourceNames = getBookingResourceNames(b);
+              const resourceName = resourceNames.join(", ");
               const barangayName =
                 b.barangay ||
                 b.user?.barangay ||
@@ -892,6 +902,11 @@ export default function Bookings() {
                 b.description ||
                 b.details ||
                 "No purpose provided";
+              const purposeDisplay = ["n/a", "na", "none"].includes(
+                String(purposeValue).trim().toLowerCase(),
+              )
+                ? "Not provided"
+                : purposeValue;
               const destination = b.destination || b.travel_destination || "";
               const attendees = b.attendees;
               const priority = b.priority || "normal";
@@ -941,133 +956,188 @@ export default function Bookings() {
                 <div
                   key={bookingId}
                   onClick={() => setSelectedBooking(b)}
-                  className="flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
                 >
-                  <div className="relative mb-3 h-36 w-full overflow-hidden bg-blue-50/70">
+                  <div className="relative h-40 w-full shrink-0 overflow-hidden bg-slate-100">
                     {resourceImage ? (
                       <img
                         src={resourceImage}
                         alt={resourceName}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                       />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
                         <ImageIcon
-                          size={32}
+                          size={30}
                           strokeWidth={1.5}
                           className="mb-1 opacity-60"
                         />
-                        <span className="text-xs">No image provided</span>
+                        <span className="text-[11px]">No image provided</span>
                       </div>
                     )}
-                    <span className={`absolute right-2 top-2 z-10 rounded-full border px-3 py-1 text-xs font-medium shadow-sm backdrop-blur-xs ${statusBadgeClasses}`}>
+                    <span className={`absolute right-3 top-3 z-10 rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize shadow-sm backdrop-blur-sm ${statusBadgeClasses}`}>
                       {b.status || "PENDING"}
                     </span>
+                    {resourceNames.length > 1 && (
+                      <span className="absolute bottom-3 left-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-700 shadow-sm backdrop-blur-sm">
+                        {resourceNames.length} resources
+                      </span>
+                    )}
                   </div>
 
-                  <div className="mb-3 px-4">
-                    <h3 className="text-lg font-bold text-slate-800">
-                      {resourceName}
-                    </h3>
-                  </div>
-
-                  <div className="mb-3 flex flex-wrap items-center gap-2 px-4">
-                    <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                      <Calendar size={10} />
-                      {dateValue}
-                    </span>
-                    <span className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                      <Clock size={10} />
-                      {timeValue}
-                    </span>
-                  </div>
-
-                  {hourlyEstimate && (
-                    <div className="mx-4 mb-3 space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-xs text-blue-900">
-                      <p>
-                        <strong>Duration:</strong>{" "}
-                        {formatRentalDuration(hourlyEstimate.durationMinutes)}
-                      </p>
-                      <p>
-                        <strong>Billable hours:</strong>{" "}
-                        {hourlyEstimate.billableHours} (partial hours round up)
-                      </p>
-                      <p className="flex items-center justify-between border-t border-blue-100 pt-1.5">
-                        <strong>Estimated total</strong>
-                        <strong>{formatResourcePrice(hourlyEstimate.total)}</strong>
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mx-4 my-3 space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 text-xs text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <User size={12} className="shrink-0 text-slate-400" />
-                      <span className="break-words">
-                        <strong className="text-slate-700">Requester:</strong>{" "}
-                        {fullName}
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700">
+                          Booking request
+                        </p>
+                        <h3
+                          className="mt-1 line-clamp-2 text-base font-bold leading-snug text-slate-900"
+                          title={resourceName}
+                        >
+                          {resourceName}
+                        </h3>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                          priority === "high"
+                            ? "bg-rose-50 text-rose-700"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {priority === "high" ? "High priority" : "Normal"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Building2 size={12} className="shrink-0 text-slate-400" />
-                      <span className="break-words">
-                        <strong className="text-slate-700">Barangay:</strong>{" "}
-                        {barangayName}
-                      </span>
+
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div className="flex min-w-0 items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
+                        <Calendar size={14} className="mt-0.5 shrink-0 text-slate-500" />
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                            Date
+                          </p>
+                          <p className="mt-0.5 break-words text-[11px] font-medium leading-snug text-slate-700">
+                            {dateValue}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex min-w-0 items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
+                        <Clock size={14} className="mt-0.5 shrink-0 text-slate-500" />
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                            Time
+                          </p>
+                          <p className="mt-0.5 break-words text-[11px] font-medium leading-snug text-slate-700">
+                            {timeValue}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Phone size={12} className="shrink-0 text-slate-400" />
-                      <span className="break-all font-mono">
-                        <strong className="text-slate-700">Contact:</strong>{" "}
-                        {cellNumber}
-                      </span>
-                    </div>
-                    {destination && (
-                      <div className="flex items-start gap-1.5">
-                        <MapPin size={12} className="mt-0.5 shrink-0 text-slate-400" />
-                        <span className="break-words">
-                          <strong className="text-slate-700">Destination:</strong>{" "}
-                          {destination}
-                        </span>
+
+                    {hourlyEstimate && (
+                      <div className="mt-3 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/70 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-blue-700">
+                              Estimated total
+                            </p>
+                            <p className="mt-1 text-lg font-bold leading-none text-blue-950">
+                              {formatResourcePrice(hourlyEstimate.total)}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-100 bg-white/80 px-2 py-1 text-[10px] font-semibold text-blue-800">
+                            {hourlyEstimate.billableHours} billable{" "}
+                            {hourlyEstimate.billableHours === 1 ? "hour" : "hours"}
+                          </span>
+                        </div>
+                        <p className="mt-2 border-t border-blue-100 pt-2 text-[10px] text-blue-800">
+                          <strong>Duration:</strong>{" "}
+                          {formatRentalDuration(hourlyEstimate.durationMinutes)}
+                          <span className="mx-1.5 text-blue-300">·</span>
+                          Partial hours round up
+                        </p>
+                        {hourlyEstimate.resourceEstimates.length > 1 && (
+                          <div className="mt-2 border-t border-blue-100 pt-2">
+                            <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-blue-700">
+                              Resource breakdown
+                            </p>
+                            <div className="space-y-1.5">
+                              {hourlyEstimate.resourceEstimates.map(
+                                (resource, index) => (
+                                  <div
+                                    key={`${resource.name}-${index}`}
+                                    className="flex items-start justify-between gap-2 text-[10px] text-blue-900"
+                                  >
+                                    <span className="min-w-0 break-words">
+                                      {resource.name}
+                                    </span>
+                                    <strong className="shrink-0">
+                                      {formatResourcePrice(resource.total)}
+                                    </strong>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                    <div className="flex items-start gap-1.5">
-                      <FileText
-                        size={12}
-                        className="mt-0.5 shrink-0 text-slate-400"
-                      />
-                      <span className="break-words whitespace-pre-wrap">
-                        <strong className="text-slate-700">Purpose:</strong>{" "}
-                        {purposeValue}
-                      </span>
-                    </div>
-                    {attendees !== null && attendees !== undefined && attendees !== "" && (
-                      <div className="flex items-start gap-1.5">
-                        <User size={12} className="mt-0.5 shrink-0 text-slate-400" />
-                        <span>
-                          <strong className="text-slate-700">Attendees:</strong>{" "}
-                          {attendees}
-                        </span>
+
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                        Requester details
+                      </p>
+                      <div className="space-y-2 text-[11px] text-slate-600">
+                        <div className="flex min-w-0 items-start gap-2">
+                          <User size={13} className="mt-0.5 shrink-0 text-slate-400" />
+                          <p className="min-w-0 break-words">
+                            <strong className="text-slate-800">{fullName}</strong>
+                            <span className="mx-1 text-slate-300">·</span>
+                            {barangayName}
+                          </p>
+                        </div>
+                        <div className="flex min-w-0 items-start gap-2">
+                          <Phone size={13} className="mt-0.5 shrink-0 text-slate-400" />
+                          <p className="min-w-0 break-all font-mono">{cellNumber}</p>
+                        </div>
+                        {destination && (
+                          <div className="flex min-w-0 items-start gap-2">
+                            <MapPin size={13} className="mt-0.5 shrink-0 text-slate-400" />
+                            <p className="min-w-0 break-words">
+                              <span className="font-semibold text-slate-700">Destination:</span>{" "}
+                              {destination}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex min-w-0 items-start gap-2">
+                          <FileText size={13} className="mt-0.5 shrink-0 text-slate-400" />
+                          <p className="min-w-0 break-words whitespace-pre-wrap">
+                            <span className="font-semibold text-slate-700">Purpose:</span>{" "}
+                            {purposeDisplay}
+                          </p>
+                        </div>
+                        {attendees !== null && attendees !== undefined && attendees !== "" && (
+                          <div className="flex items-center gap-2">
+                            <User size={13} className="shrink-0 text-slate-400" />
+                            <span>
+                              <span className="font-semibold text-slate-700">Attendees:</span>{" "}
+                              {attendees}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="flex items-start gap-1.5">
-                      <FileText size={12} className="mt-0.5 shrink-0 text-slate-400" />
-                      <span>
-                        <strong className="text-slate-700">Priority:</strong>{" "}
-                        {priority === "high" ? "High Priority" : "Normal"}
-                      </span>
                     </div>
-                  </div>
 
                   {canModerate && isPendingItem && (
-                    <div className="mt-2 grid grid-cols-2 gap-3 px-4 pb-4">
+                    <div className="mt-auto grid grid-cols-2 gap-2.5 pt-4">
                       <button
                         onClick={(event) => {
                           event.stopPropagation();
                           handleStatusChange(bookingId, "approved");
                         }}
-                        className="flex items-center justify-center gap-1 rounded-lg bg-blue-600 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                        className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
                       >
-                        <Check size={12} /> Approve
+                        <Check size={14} /> Approve
                       </button>
                       <button
                         onClick={(event) => {
@@ -1075,12 +1145,13 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex items-center justify-center gap-1 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100"
+                        className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100"
                       >
-                        <X size={12} /> Reject
+                        <X size={14} /> Reject
                       </button>
                     </div>
                   )}
+                  </div>
                 </div>
               );
             })}
