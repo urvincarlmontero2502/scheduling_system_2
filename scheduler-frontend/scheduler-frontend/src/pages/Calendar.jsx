@@ -15,12 +15,14 @@ import { useTabUrlSync } from "../hooks/useTabUrlSync";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import BookingDetailModal from "../components/BookingDetailModal";
+import CalendarBookingGroupModal from "../components/CalendarBookingGroupModal";
 import { invalidateCache, CACHE_KEYS } from "../utils/cache";
 import {
   isRecurringSpecialEventDate,
   isSpecialEvent,
 } from "../utils/specialEvents";
 import { getBookingResourceNames } from "../utils/bookingResources";
+import { groupCalendarBookings } from "../utils/calendarEventGroups";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -207,6 +209,7 @@ export default function CalendarView() {
   const { data: bookings, loading } = useCachedData("bookings", api.fetchBookings);
     const { data: resources } = useCachedData("resources", api.fetchResources);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedBookingGroup, setSelectedBookingGroup] = useState(null);
 
     // Extract and group special events from bookings
         const specialEventsGrouped = useMemo(() => {
@@ -715,8 +718,16 @@ export default function CalendarView() {
                     return bookingOnDate(b, day.fullDateStr);
                   });
 
+                  const bookingGroups = groupCalendarBookings(colBookings);
                   const laidOut = layoutOverlaps(
-                    colBookings.map((b) => ({ b, ...blockBox(b) })),
+                    bookingGroups.map((group) => {
+                      const booking = group.bookings[0];
+                      return {
+                        b: booking,
+                        group,
+                        ...blockBox(booking),
+                      };
+                    }),
                   );
 
                   return (
@@ -731,18 +742,32 @@ export default function CalendarView() {
                         />
                       ))}
 
-                      {laidOut.map(({ b, top, height, col, cols }) => {
+                      {laidOut.map(({ b, group, top, height, col, cols }) => {
                                               const status = (b.status || "").toLowerCase();
                                               const isApproved = status.includes("approv");
                                               const isSpecial = isSpecialEvent(b);
 
-                                              const resourceName = getBookingResourceNames(b).join(", ");
+                                              const resourceName = group.resourceNames.join(", ");
+                                              const eventName = group.isSpecial
+                                                ? group.eventName
+                                                : resourceName;
                                               const requesterName =
-                                                b.requester ||
-                                                b.full_name ||
-                                                b.name ||
-                                                b.user_name ||
-                                                "Representative";
+                                                group.bookings.length > 1
+                                                  ? `${group.bookings.length} related booking requests`
+                                                  : b.requester ||
+                                                    b.full_name ||
+                                                    b.name ||
+                                                    b.user_name ||
+                                                    "Representative";
+                                              const openBooking = () => {
+                                                if (group.bookings.length > 1) {
+                                                  setSelectedBooking(null);
+                                                  setSelectedBookingGroup(group);
+                                                } else {
+                                                  setSelectedBookingGroup(null);
+                                                  setSelectedBooking(b);
+                                                }
+                                              };
 
                                               const rawStart = b.start_time || b.time || "07:00";
                                               const rawEnd = b.end_time || "17:00";
@@ -752,19 +777,19 @@ export default function CalendarView() {
 
                                               return (
                                                 <div
-                                                  key={b.id || b.booking_id}
-                                                  title={`${resourceName} - ${b.status || ""} - ${requesterName}${isSpecial ? " ⭐ Special Event" : ""}`}
+                                                  key={group.key}
+                                                  title={`${eventName} - ${resourceName}${group.bookings.length > 1 ? ` - ${group.bookings.length} related booking requests` : ""} - ${b.status || ""}${isSpecial ? " ⭐ Special Event" : ""}`}
                                                   role="button"
                                                   tabIndex={0}
-                                                  aria-label={`View ${b.status || "booking"} for ${resourceName}, requested by ${requesterName}`}
+                                                  aria-label={`View ${eventName}, ${group.resourceNames.length} ${group.resourceNames.length === 1 ? "resource" : "resources"}${group.bookings.length > 1 ? ` across ${group.bookings.length} related booking requests` : ""}, ${b.status || "booking"}`}
                                                   onClick={(event) => {
                                                     event.stopPropagation();
-                                                    setSelectedBooking(b);
+                                                    openBooking();
                                                   }}
                                                   onKeyDown={(event) => {
                                                     if (event.key === "Enter" || event.key === " ") {
                                                       event.preventDefault();
-                                                      setSelectedBooking(b);
+                                                      openBooking();
                                                     }
                                                   }}
                                                   className={`absolute p-0.5 sm:p-1 hover:z-10 rounded shadow-xs text-[9px] flex flex-col justify-between overflow-hidden transition-all cursor-pointer ${
@@ -784,9 +809,25 @@ export default function CalendarView() {
                                                     <div className="flex items-center justify-between gap-0.5">
                                                       <span className="font-bold text-[9px] leading-tight truncate flex items-center gap-1">
                                                         {isSpecial && <Star className="h-3 w-3" />}
-                                                        {resourceName}
+                                                        {eventName}
                                                       </span>
                                                     </div>
+                                                    {group.resourceNames.length > 1 && (
+                                                      <div className="text-[7px] font-semibold opacity-95 truncate">
+                                                        {group.resourceNames.length} resources
+                                                      </div>
+                                                    )}
+                                                    {group.resourceNames.length > 1 && (
+                                                      <div
+                                                        className="text-[7px] opacity-90 truncate"
+                                                        title={resourceName}
+                                                      >
+                                                        {group.resourceNames.slice(0, 2).join(", ")}
+                                                        {group.resourceNames.length > 2
+                                                          ? ` +${group.resourceNames.length - 2} more`
+                                                          : ""}
+                                                      </div>
+                                                    )}
                                                     <div className="text-[8px] opacity-90 truncate">
                                                       {startTime}
                                                     </div>
@@ -981,6 +1022,16 @@ export default function CalendarView() {
                     </div>
         </div>
       </div>
+      {selectedBookingGroup && (
+        <CalendarBookingGroupModal
+          group={selectedBookingGroup}
+          onClose={() => setSelectedBookingGroup(null)}
+          onSelectBooking={(booking) => {
+            setSelectedBookingGroup(null);
+            setSelectedBooking(booking);
+          }}
+        />
+      )}
       {selectedBooking && (
         <BookingDetailModal
                     booking={selectedBooking}
