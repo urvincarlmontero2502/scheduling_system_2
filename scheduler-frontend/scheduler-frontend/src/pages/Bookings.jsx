@@ -877,7 +877,7 @@ export default function Bookings() {
           </div>
         ) : (
           // Card View
-          <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">{filteredBookings.map((b) => {
+          <div className="grid grid-cols-1 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">{filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
               const resourceNames = getBookingResourceNames(b);
               const resourceName = resourceNames.join(", ");
@@ -958,7 +958,7 @@ export default function Bookings() {
                   onClick={() => setSelectedBooking(b)}
                   className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
                 >
-                  <div className="relative h-40 w-full shrink-0 overflow-hidden bg-slate-100">
+                  <div className="relative h-32 w-full shrink-0 overflow-hidden bg-slate-100">
                     {resourceImage ? (
                       <img
                         src={resourceImage}
@@ -985,14 +985,11 @@ export default function Bookings() {
                     )}
                   </div>
 
-                  <div className="flex flex-1 flex-col p-4">
+                  <div className="flex flex-1 flex-col p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700">
-                          Booking request
-                        </p>
                         <h3
-                          className="mt-1 line-clamp-2 text-base font-bold leading-snug text-slate-900"
+                          className="line-clamp-2 text-sm font-bold leading-snug text-slate-900"
                           title={resourceName}
                         >
                           {resourceName}
@@ -1009,69 +1006,52 @@ export default function Bookings() {
                       </span>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      <div className="flex min-w-0 items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
-                        <Calendar size={14} className="mt-0.5 shrink-0 text-slate-500" />
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            Date
-                          </p>
-                          <p className="mt-0.5 break-words text-[11px] font-medium leading-snug text-slate-700">
-                            {dateValue}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex min-w-0 items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
-                        <Clock size={14} className="mt-0.5 shrink-0 text-slate-500" />
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            Time
-                          </p>
-                          <p className="mt-0.5 break-words text-[11px] font-medium leading-snug text-slate-700">
-                            {timeValue}
-                          </p>
-                        </div>
-                      </div>
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-medium text-slate-600">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Calendar size={13} className="shrink-0 text-slate-400" />
+                        {dateValue}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock size={13} className="shrink-0 text-slate-400" />
+                        {timeValue}
+                      </span>
                     </div>
 
                     {hourlyEstimate && (
-                      <div className="mt-3 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/70 p-3">
+                      <div className="mt-2.5 rounded-xl border border-blue-100 bg-blue-50/70 p-2.5">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-blue-700">
+                            <p className="text-[9px] font-semibold uppercase tracking-wide text-blue-700">
                               Estimated total
                             </p>
-                            <p className="mt-1 text-lg font-bold leading-none text-blue-950">
+                            <p className="mt-0.5 text-base font-bold leading-tight text-blue-950">
                               {formatResourcePrice(hourlyEstimate.total)}
                             </p>
                           </div>
-                          <span className="rounded-full border border-blue-100 bg-white/80 px-2 py-1 text-[10px] font-semibold text-blue-800">
-                            {hourlyEstimate.billableHours} billable{" "}
-                            {hourlyEstimate.billableHours === 1 ? "hour" : "hours"}
+                          <span className="rounded-full border border-blue-100 bg-white px-2 py-1 text-[9px] font-semibold text-blue-800">
+                            {hourlyEstimate.billableHours}{" "}
+                            {hourlyEstimate.billableHours === 1 ? "billable hr" : "billable hrs"}
                           </span>
                         </div>
-                        <p className="mt-2 border-t border-blue-100 pt-2 text-[10px] text-blue-800">
+                        <p className="mt-1.5 text-[10px] text-blue-800">
                           <strong>Duration:</strong>{" "}
                           {formatRentalDuration(hourlyEstimate.durationMinutes)}
                           <span className="mx-1.5 text-blue-300">·</span>
                           Partial hours round up
                         </p>
                         {hourlyEstimate.resourceEstimates.length > 1 && (
-                          <div className="mt-2 border-t border-blue-100 pt-2">
-                            <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wide text-blue-700">
-                              Resource breakdown
-                            </p>
-                            <div className="space-y-1.5">
+                          <div className="mt-2 border-t border-blue-100 pt-1.5">
+                            <div className="grid grid-cols-1 gap-x-3 gap-y-1 sm:grid-cols-2">
                               {hourlyEstimate.resourceEstimates.map(
                                 (resource, index) => (
                                   <div
                                     key={`${resource.name}-${index}`}
-                                    className="flex items-start justify-between gap-2 text-[10px] text-blue-900"
+                                    className="flex min-w-0 items-center justify-between gap-2 text-[9px] text-blue-900"
                                   >
-                                    <span className="min-w-0 break-words">
+                                    <span className="min-w-0 truncate">
                                       {resource.name}
                                     </span>
-                                    <strong className="shrink-0">
+                                    <strong className="shrink-0 text-right">
                                       {formatResourcePrice(resource.total)}
                                     </strong>
                                   </div>
@@ -1083,44 +1063,38 @@ export default function Bookings() {
                       </div>
                     )}
 
-                    <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                        Requester details
-                      </p>
-                      <div className="space-y-2 text-[11px] text-slate-600">
-                        <div className="flex min-w-0 items-start gap-2">
-                          <User size={13} className="mt-0.5 shrink-0 text-slate-400" />
-                          <p className="min-w-0 break-words">
-                            <strong className="text-slate-800">{fullName}</strong>
-                            <span className="mx-1 text-slate-300">·</span>
-                            {barangayName}
-                          </p>
-                        </div>
-                        <div className="flex min-w-0 items-start gap-2">
-                          <Phone size={13} className="mt-0.5 shrink-0 text-slate-400" />
-                          <p className="min-w-0 break-all font-mono">{cellNumber}</p>
+                    <div className="mt-2.5 rounded-xl border border-slate-200 bg-white p-2.5">
+                      <div className="flex min-w-0 items-center gap-2 text-[10px]">
+                        <User size={13} className="shrink-0 text-slate-400" />
+                        <p className="min-w-0 truncate text-slate-700">
+                          <strong className="text-slate-800">{fullName}</strong>
+                          <span className="mx-1 text-slate-300">·</span>
+                          {barangayName}
+                        </p>
+                      </div>
+                      <div className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1.5 text-[10px] text-slate-600 sm:grid-cols-2">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <Phone size={12} className="shrink-0 text-slate-400" />
+                          <span className="truncate font-mono">{cellNumber}</span>
                         </div>
                         {destination && (
-                          <div className="flex min-w-0 items-start gap-2">
-                            <MapPin size={13} className="mt-0.5 shrink-0 text-slate-400" />
-                            <p className="min-w-0 break-words">
-                              <span className="font-semibold text-slate-700">Destination:</span>{" "}
-                              {destination}
-                            </p>
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <MapPin size={12} className="shrink-0 text-slate-400" />
+                            <span className="truncate">{destination}</span>
                           </div>
                         )}
-                        <div className="flex min-w-0 items-start gap-2">
-                          <FileText size={13} className="mt-0.5 shrink-0 text-slate-400" />
-                          <p className="min-w-0 break-words whitespace-pre-wrap">
-                            <span className="font-semibold text-slate-700">Purpose:</span>{" "}
+                        <div className="flex min-w-0 items-center gap-1.5 sm:col-span-2">
+                          <FileText size={12} className="shrink-0 text-slate-400" />
+                          <span className="min-w-0 truncate">
+                            <strong className="text-slate-700">Purpose:</strong>{" "}
                             {purposeDisplay}
-                          </p>
+                          </span>
                         </div>
                         {attendees !== null && attendees !== undefined && attendees !== "" && (
-                          <div className="flex items-center gap-2">
-                            <User size={13} className="shrink-0 text-slate-400" />
+                          <div className="flex items-center gap-1.5 sm:col-span-2">
+                            <User size={12} className="shrink-0 text-slate-400" />
                             <span>
-                              <span className="font-semibold text-slate-700">Attendees:</span>{" "}
+                              <strong className="text-slate-700">Attendees:</strong>{" "}
                               {attendees}
                             </span>
                           </div>
@@ -1129,13 +1103,13 @@ export default function Bookings() {
                     </div>
 
                   {canModerate && isPendingItem && (
-                    <div className="mt-auto grid grid-cols-2 gap-2.5 pt-4">
+                    <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
                       <button
                         onClick={(event) => {
                           event.stopPropagation();
                           handleStatusChange(bookingId, "approved");
                         }}
-                        className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
                       >
                         <Check size={14} /> Approve
                       </button>
@@ -1145,7 +1119,7 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100"
                       >
                         <X size={14} /> Reject
                       </button>
