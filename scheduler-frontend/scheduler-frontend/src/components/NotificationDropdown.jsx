@@ -77,16 +77,16 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
     }
   }, [open, isDesktop, reposition])
 
-  // Handle clicking a notification item: mark as read, close, navigate to bookings
-  const handleNotificationClick = async (id, bookingId, regRequestId, type) => {
+  // Handle clicking a notification item: mark as read, close, and navigate to its destination
+  const handleNotificationClick = async (id, bookingId, type) => {
     await handleMarkAsRead(id)
     onClose()
     if (type?.startsWith("BOOKING_REMOVAL_")) {
       navigate("/requests?section=removal")
+    } else if (type?.toLowerCase() === "registration_request") {
+      navigate("/requests?section=registration&tab=pending")
     } else if (bookingId) {
       navigate(`/bookings?bookingId=${bookingId}`)
-    } else if (regRequestId) {
-      navigate("/requests?section=registration")
     } else {
       navigate("/bookings")
     }
@@ -191,7 +191,7 @@ export default function NotificationDropdown({ open, onClose, anchorEl }) {
                 <li
                   key={id}
                   onClick={() =>
-                    handleNotificationClick(id, notif.booking_id, null, notif.type)
+                    handleNotificationClick(id, notif.booking_id, notif.type)
                   }
                   className={`group cursor-pointer px-4 py-3 transition-colors hover:bg-slate-50 ${
                     isUnread ? "bg-brand-light/40" : ""
