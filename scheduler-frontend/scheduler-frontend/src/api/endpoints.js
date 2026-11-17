@@ -152,6 +152,10 @@ export const restoreBooking = (id) => {
   invalidateCache(CACHE_KEYS.BOOKINGS);
   return client.post(`/bookings/${id}/restore`);
 };
+export const forceDeleteBooking = (id) => {
+  invalidateCache(CACHE_KEYS.BOOKINGS);
+  return client.delete(`/bookings/${id}/force`);
+};
 export const createBooking = async (payload) => {
   const response = await client.post("/bookings", payload);
   invalidateCache(CACHE_KEYS.BOOKINGS);
