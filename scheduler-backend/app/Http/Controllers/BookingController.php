@@ -84,6 +84,7 @@ class BookingController extends Controller
                     'resource_id' => $b->resource_id,
                     'resource' => $b->resource?->name ?? 'Unknown Resource',
                     'resource_type' => $b->resource?->type,
+                    'price_per_day' => $b->price_per_day ?? $b->resource?->price_per_day,
                     'price_per_hour' => $b->price_per_hour ?? $b->resource?->price_per_hour,
                     'buffer_minutes' => $b->resource?->buffer_minutes ?? 30,
                     'resource_image' => ($b->resource && $b->resource->image) ? Storage::disk('assets')->url($b->resource->image) : null,
@@ -450,6 +451,9 @@ class BookingController extends Controller
                 'full_name' => $validated['full_name'] ?? $user->full_name,
                 'purpose' => $validated['purpose'] ?? null,
                 'destination' => $validated['destination'] ?? null,
+                'price_per_day' => $resource?->type === 'facility'
+                    ? $resource->price_per_day
+                    : null,
                 'price_per_hour' => $resource?->type === 'vehicle'
                     ? $resource->price_per_hour
                     : null,

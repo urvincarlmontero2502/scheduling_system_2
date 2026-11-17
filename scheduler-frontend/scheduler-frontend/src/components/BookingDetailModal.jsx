@@ -4,10 +4,21 @@ import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapP
 import ConfirmModal from "./ConfirmModal";
 import * as api from "../api/endpoints";
 import {
+  calculateDailyBookingEstimate,
   calculateBookingHourlyEstimate,
   formatRentalDuration,
   formatResourcePrice,
 } from "../utils/resourcePricing";
+
+function escapeHtml(value) {
+  return String(value ?? "—").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
 
 // Helper to format date
 function formatDate(dateStr) {
@@ -117,6 +128,14 @@ export default function BookingDetailModal({
   const priority = booking.priority || "normal";
   const hourlyEstimate =
     resourceType === "Vehicle" ? calculateBookingHourlyEstimate(booking) : null;
+  const dailyEstimate =
+    resourceType === "Facility"
+      ? calculateDailyBookingEstimate(
+          booking.start_date,
+          booking.end_date || booking.start_date,
+          booking.price_per_day,
+        )
+      : null;
   const purposeValue =
     booking.purpose || booking.reason || booking.description || booking.details || "No purpose provided";
   const remarks = booking.remarks || booking.admin_remarks || "";
@@ -163,6 +182,110 @@ export default function BookingDetailModal({
   const handleCancelReject = () => {
     setShowRejectInput(false);
     setRejectionReason("");
+  };
+
+  const handleGenerateSOA = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow pop-ups to generate the SOA.");
+      return;
+    }
+
+    const referenceNumber = booking.reference_id || `#${bookingId}`;
+    const amount =
+      resourceType === "Vehicle" ? hourlyEstimate?.total : dailyEstimate?.total;
+    const hasAmount = Number.isFinite(amount);
+    const chargeBasis =
+      resourceType === "Vehicle"
+        ? `${formatRentalDuration(hourlyEstimate?.durationMinutes || 0)}; ${
+            hourlyEstimate?.billableHours ?? "—"
+          } billable hours at ${formatResourcePrice(booking.price_per_hour)} per hour`
+        : `${dailyEstimate?.billableDays ?? "—"} booked calendar days at ${
+            dailyEstimate?.dailyRate == null
+              ? "rate to be assessed"
+              : `${formatResourcePrice(dailyEstimate.dailyRate)} per day`
+          }`;
+    const destinationRow = destination
+      ? `<tr><th>Destination</th><td>${escapeHtml(destination)}</td></tr>`
+      : "";
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Statement of Account - ${escapeHtml(referenceNumber)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; padding: 32px; color: #172033; font: 14px Arial, Helvetica, sans-serif; }
+          .document { max-width: 760px; margin: 0 auto; }
+          header { text-align: center; padding-bottom: 18px; border-bottom: 2px solid #172033; }
+          header h1 { margin: 0; font-size: 19px; }
+          header h2 { margin: 6px 0 0; font-size: 16px; }
+          header p { margin: 4px 0 0; color: #526174; font-size: 12px; }
+          h3 { margin: 24px 0 16px; text-align: center; font-size: 20px; letter-spacing: .04em; }
+          .reference { display: flex; justify-content: space-between; gap: 20px; margin: 18px 0; padding: 14px; border: 1px solid #cbd5e1; background: #f8fafc; }
+          .reference span, .amount span { display: block; margin-bottom: 5px; color: #526174; font-size: 11px; text-transform: uppercase; }
+          .reference strong { font-size: 15px; }
+          table { width: 100%; margin-top: 16px; border-collapse: collapse; }
+          th, td { padding: 10px 12px; border: 1px solid #cbd5e1; text-align: left; vertical-align: top; }
+          th { width: 30%; background: #f8fafc; }
+          .amount { margin-top: 18px; padding: 16px; border: 1px solid #bfdbfe; background: #eff6ff; text-align: right; }
+          .amount strong { color: #1e40af; font-size: 22px; }
+          .note { margin-top: 18px; padding: 12px; border-left: 3px solid #2563eb; background: #f8fafc; line-height: 1.5; }
+          .signature { display: flex; justify-content: space-between; gap: 48px; margin-top: 70px; }
+          .signature div { width: 50%; padding-top: 8px; border-top: 1px solid #64748b; text-align: center; font-size: 12px; }
+          footer { margin-top: 28px; color: #64748b; text-align: center; font-size: 11px; }
+          @media print { body { padding: 16px; } }
+        </style>
+      </head>
+      <body>
+        <main class="document">
+          <header>
+            <h1>REPUBLIC OF THE PHILIPPINES</h1>
+            <h2>MUNICIPALITY OF JABONGA</h2>
+            <p>AGUSAN DEL NORTE</p>
+          </header>
+          <h3>STATEMENT OF ACCOUNT</h3>
+          <div class="reference">
+            <div><span>Reference Number</span><strong>${escapeHtml(referenceNumber)}</strong></div>
+            <div><span>Booking ID</span><strong>#${escapeHtml(bookingId)}</strong></div>
+            <div><span>Date Issued</span><strong>${escapeHtml(new Date().toLocaleDateString("en-PH"))}</strong></div>
+          </div>
+          <table>
+            <tbody>
+              <tr><th>Client</th><td>${escapeHtml(fullName)}</td></tr>
+              <tr><th>Barangay</th><td>${escapeHtml(barangayName)}</td></tr>
+              <tr><th>Contact Number</th><td>${escapeHtml(cellNumber)}</td></tr>
+              <tr><th>Resource</th><td>${escapeHtml(resourceName)} (${escapeHtml(resourceType)})</td></tr>
+              <tr><th>Booking Date</th><td>${escapeHtml(dateValue)}</td></tr>
+              <tr><th>Time</th><td>${escapeHtml(timeValue)}</td></tr>
+              <tr><th>Charge Basis</th><td>${escapeHtml(chargeBasis)}</td></tr>
+              ${destinationRow}
+              <tr><th>Purpose</th><td>${escapeHtml(purposeValue)}</td></tr>
+            </tbody>
+          </table>
+          <div class="amount">
+            <span>Amount Due</span>
+            <strong>${hasAmount ? escapeHtml(formatResourcePrice(amount)) : "For assessment at the municipal office"}</strong>
+          </div>
+          <p class="note">
+            This SOA is for the approved booking shown above and is not an official receipt.
+            Bring this statement to the municipal office and quote the reference number to make payment.
+            ${hasAmount ? "The amount is subject to verification by the municipal office." : "The payable amount will be assessed by the municipal office."}
+          </p>
+          <div class="signature">
+            <div>Client / Authorized Representative</div>
+            <div>Office Verification</div>
+          </div>
+          <footer>Generated by the Web-Based Real-Time Scheduling System</footer>
+        </main>
+        <script>window.onload = function () { window.print(); };</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return createPortal(
@@ -402,11 +525,20 @@ export default function BookingDetailModal({
                   <FileText size={14} /> Request removal
                 </button>
               )
-            ) : canModerate ? (
+            ) : null}
+            {status === "approved" && (
+              <button
+                onClick={handleGenerateSOA}
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto"
+              >
+                <FileText size={14} /> Generate SOA
+              </button>
+            )}
+            {canModerate && !["pending", "approved"].includes(status) && (
               <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-4 text-sm font-medium text-slate-500 sm:w-auto">
                 <FileText size={14} /> No actions available
               </span>
-            ) : null}
+            )}
           </div>
         </div>
 
