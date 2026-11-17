@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Mail\BookingApproved;
+use App\Mail\BookingRejected;
 use App\Models\BookingRequest;
 use App\Models\Resource;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -24,6 +27,8 @@ class BookingConflictDetectionTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Asia/Manila'));
 
         Schema::dropIfExists('booking_request');
+        Schema::dropIfExists('approval');
+        Schema::dropIfExists('notifications');
         Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('facility_details');
         Schema::dropIfExists('resources');
@@ -72,6 +77,23 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('priority')->nullable();
             $table->boolean('is_special_event')->default(false);
             $table->timestamp('deleted_at')->nullable();
+        });
+        Schema::create('approval', function (Blueprint $table) {
+            $table->id('log_id');
+            $table->unsignedBigInteger('booking_id');
+            $table->unsignedBigInteger('admin_id');
+            $table->string('action');
+            $table->text('remarks')->nullable();
+        });
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->id('notif_id');
+            $table->unsignedBigInteger('booking_id')->nullable();
+            $table->unsignedBigInteger('user_id');
+            $table->text('message');
+            $table->boolean('is_read')->default(false);
+            $table->string('type');
+            $table->string('title');
+            $table->timestamp('created_at')->nullable();
         });
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->bigIncrements('activity_log_id');
@@ -224,6 +246,73 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('0.price_per_day', '1500.00');
     }
 
+    public function test_approval_email_is_sent_to_the_email_entered_for_the_booking(): void
+    {
+        $booking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '10:00');
+        $booking->update(['email' => 'requestor@gmail.com']);
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
+        config(['mail.default' => 'brevo']);
+        Mail::fake();
+
+        $this->patchJson("/api/bookings/{$booking->booking_id}/status", [
+            'status' => 'approved',
+        ])->assertOk()->assertJsonPath('email_notification_sent', true);
+
+        Mail::assertSent(BookingApproved::class, fn (BookingApproved $mail) => $mail->hasTo('requestor@gmail.com'));
+    }
+
+    public function test_rejection_email_is_sent_to_the_email_entered_for_the_booking(): void
+    {
+        $booking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '10:00');
+        $booking->update(['email' => 'requestor@gmail.com']);
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
+        config(['mail.default' => 'brevo']);
+        Mail::fake();
+
+        $this->patchJson("/api/bookings/{$booking->booking_id}/status", [
+            'status' => 'rejected',
+        ])->assertOk()->assertJsonPath('email_notification_sent', true);
+
+        Mail::assertSent(BookingRejected::class, fn (BookingRejected $mail) => $mail->hasTo('requestor@gmail.com'));
+    }
+
+    public function test_booking_status_email_falls_back_to_the_account_email(): void
+    {
+        $booking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '10:00');
+        $booking->update(['email' => null]);
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
+        config(['mail.default' => 'brevo']);
+        Mail::fake();
+
+        $this->patchJson("/api/bookings/{$booking->booking_id}/status", [
+            'status' => 'approved',
+        ])->assertOk()->assertJsonPath('email_notification_sent', true);
+
+        Mail::assertSent(BookingApproved::class, fn (BookingApproved $mail) => $mail->hasTo($this->user->email));
+    }
+
+    public function test_missing_brevo_key_reports_that_status_email_was_not_sent(): void
+    {
+        $booking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '10:00');
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
+        config(['services.brevo.key' => null]);
+        Mail::purge('brevo');
+
+        $this->patchJson("/api/bookings/{$booking->booking_id}/status", [
+            'status' => 'approved',
+        ])
+            ->assertOk()
+            ->assertJsonPath('email_notification_sent', false)
+            ->assertJsonPath(
+                'email_notification_message',
+                'The booking status changed, but its email notification could not be sent. Check the backend mail configuration.'
+            );
+    }
+
     public function test_conflicting_full_day_booking_returns_next_day_suggestion(): void
     {
         $this->createBooking('approved', '2026-11-02', '2026-11-02', '08:00', '17:00');
@@ -333,6 +422,16 @@ class BookingConflictDetectionTest extends TestCase
             'start_time' => $startTime,
             'end_time' => $endTime,
             'status' => $status,
+        ]);
+    }
+
+    private function createAdmin(): User
+    {
+        return User::create([
+            'full_name' => 'Booking Test Admin',
+            'email' => 'booking-admin@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'admin',
         ]);
     }
 
