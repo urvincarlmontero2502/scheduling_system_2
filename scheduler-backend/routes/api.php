@@ -7,6 +7,7 @@ use App\Http\Controllers\BookingRemovalRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\ResourceReportController;
 use App\Http\Controllers\SystemSettingsController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\DB;
@@ -212,6 +213,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::get('/dashboard/stats', [BookingController::class, 'stats']);
+    Route::get('/reports', [ResourceReportController::class, 'index']);
 
     // System-wide admin settings
     Route::get('/admin/activity-logs', [ActivityLogController::class, 'index']);

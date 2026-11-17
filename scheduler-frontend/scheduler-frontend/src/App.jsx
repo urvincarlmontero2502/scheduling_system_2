@@ -16,6 +16,7 @@ import Calendar from "./pages/Calendar";
 import Bookings from "./pages/Bookings";
 import BookingHistory from "./pages/BookingHistory"; // 1. Import it here
 import Resources from "./pages/Resources";
+import Reports from "./pages/Reports";
 import AccountSettings from "./pages/AccountSettings";
 import SystemSettings from "./pages/SystemSettings";
 import ActivityLogs from "./pages/ActivityLogs";
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="booking-history" element={<BookingHistory />} />
                 {/* 2. Add the route here */}
                 <Route path="resources" element={<Resources />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="requests" element={<Requests />} />
                 <Route path="trash" element={<Trash />} />
                 <Route

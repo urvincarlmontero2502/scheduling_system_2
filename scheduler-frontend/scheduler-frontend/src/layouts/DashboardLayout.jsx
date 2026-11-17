@@ -18,6 +18,7 @@ import {
   Trash2,
   PanelLeftClose,
   UserCheck,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
@@ -33,6 +34,12 @@ const NAV_GROUPS = [
       { to: "/", label: "Overview", icon: LayoutGrid, end: true },
       { to: "/calendar", label: "Calendar", icon: CalendarClock },
       { to: "/bookings", label: "Bookings", icon: ClipboardList },
+      {
+        to: "/reports",
+        label: "Reports",
+        icon: FileText,
+        roles: ["admin", "barangay_admin", "staff"],
+      },
       {
         to: "/booking-history",
         label: "Booking History",
