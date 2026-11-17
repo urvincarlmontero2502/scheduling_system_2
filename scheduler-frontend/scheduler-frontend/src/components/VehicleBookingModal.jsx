@@ -3,6 +3,8 @@ import * as api from "../api/endpoints";
 import { getTodayDateInManila } from "../utils/bookingDates";
 import {
   calculateHourlyRentalEstimate,
+  dateTimeToMinutes,
+  formatRentalDuration,
   formatResourcePrice,
   parseResourceInclusions,
 } from "../utils/resourcePricing";
@@ -221,29 +223,11 @@ export default function VehicleBookingModal({
     0,
     Number(selectedVehicle.buffer_minutes ?? 30),
   );
-  const toMins = (t) => {
-    const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-    if (!m) return null;
-    let h = Number(m[1]);
-    const ap = (m[3] || "").toUpperCase();
-    if (ap === "PM" && h < 12) h += 12;
-    if (ap === "AM" && h === 12) h = 0;
-    return h * 60 + Number(m[2]);
-  };
-  const toDateTimeMins = (date, time, isEnd = false) => {
-    const datePart = String(date || "").split("T")[0];
-    const dayStart = Date.parse(`${datePart}T00:00:00Z`);
-    if (!Number.isFinite(dayStart)) return null;
-    return (
-      dayStart / 60000 +
-      (toMins(time) ?? (isEnd ? 24 * 60 : 0))
-    );
-  };
-  const requestedStart = toDateTimeMins(
+  const requestedStart = dateTimeToMinutes(
     formData.start_date,
     formData.start_time,
   );
-  const requestedEnd = toDateTimeMins(
+  const requestedEnd = dateTimeToMinutes(
     formData.end_date,
     formData.end_time,
     true,
@@ -254,19 +238,15 @@ export default function VehicleBookingModal({
     selectedVehicle.price_per_hour,
   );
   const bookingDurationLabel = rentalEstimate
-    ? `${Math.floor(rentalEstimate.durationMinutes / 60)}h${
-        rentalEstimate.durationMinutes % 60
-          ? ` ${rentalEstimate.durationMinutes % 60}m`
-          : ""
-      }`
+    ? formatRentalDuration(rentalEstimate.durationMinutes)
     : null;
   const conflict =
     formData.start_date && formData.end_date
       ? bookings.find((b) => {
           if (!isApprovedStatus(b.status)) return false;
           if (!isMatch(b, resourceId)) return false;
-          const bookingStart = toDateTimeMins(b.start_date, b.start_time);
-          const bookingEnd = toDateTimeMins(
+          const bookingStart = dateTimeToMinutes(b.start_date, b.start_time);
+          const bookingEnd = dateTimeToMinutes(
             b.end_date || b.start_date,
             b.end_time,
             true,

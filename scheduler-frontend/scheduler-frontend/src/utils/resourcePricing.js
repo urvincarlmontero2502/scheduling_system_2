@@ -36,6 +36,42 @@ export function calculateHourlyRentalEstimate(startMinute, endMinute, rate) {
   };
 }
 
+export function dateTimeToMinutes(date, time, isEnd = false) {
+  const datePart = String(date || "").split("T")[0];
+  const dayStart = Date.parse(`${datePart}T00:00:00Z`);
+  if (!Number.isFinite(dayStart)) return null;
+
+  const match = String(time || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  let minuteOfDay = isEnd ? 24 * 60 : 0;
+  if (match) {
+    let hours = Number(match[1]);
+    const period = (match[3] || "").toUpperCase();
+    if (period === "PM" && hours < 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+    minuteOfDay = hours * 60 + Number(match[2]);
+  }
+
+  return dayStart / 60000 + minuteOfDay;
+}
+
+export function calculateBookingHourlyEstimate(booking) {
+  return calculateHourlyRentalEstimate(
+    dateTimeToMinutes(booking?.start_date, booking?.start_time),
+    dateTimeToMinutes(
+      booking?.end_date || booking?.start_date,
+      booking?.end_time,
+      true,
+    ),
+    booking?.price_per_hour,
+  );
+}
+
+export function formatRentalDuration(durationMinutes) {
+  return `${Math.floor(durationMinutes / 60)}h${
+    durationMinutes % 60 ? ` ${durationMinutes % 60}m` : ""
+  }`;
+}
+
 export function parseResourceInclusions(value) {
   if (typeof value !== "string" || !value.trim()) return [];
 
