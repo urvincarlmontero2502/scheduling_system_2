@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import * as api from "../api/endpoints";
 import { getTodayDateInManila } from "../utils/bookingDates";
+import { getBookingResourceIds } from "../utils/bookingResources";
 import {
   calculateHourlyRentalEstimate,
   dateTimeToMinutes,
@@ -24,6 +25,8 @@ import {
   Clock,
   Sparkles,
   CheckCircle2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 // Helper: robustly extract date parts from various formats
@@ -39,16 +42,7 @@ const parseDate = (dateStr) => {
 
 // Helper: match booking to resource ID
 const isMatch = (booking, resourceId) => {
-  const bookingResourceId =
-    booking.resource_id ??
-    booking.item_id ??
-    booking.resourceId ??
-    booking.resource ??
-    null;
-  if (bookingResourceId != null) {
-    return String(bookingResourceId) === String(resourceId);
-  }
-  return false;
+  return getBookingResourceIds(booking).includes(String(resourceId));
 };
 
 // Helper: determine if status is approved
@@ -75,6 +69,7 @@ export default function VehicleBookingModal({
   onClose,
   onSubmit,
   selectedVehicle,
+  availableVehicles = [],
   isDirectUse = false,
 }) {
   const [formData, setFormData] = useState({
@@ -101,6 +96,9 @@ export default function VehicleBookingModal({
   const [submitError, setSubmitError] = useState(null);
   const [submitAlternatives, setSubmitAlternatives] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedVehicles, setSelectedVehicles] = useState([]);
+  const [showVehiclePicker, setShowVehiclePicker] = useState(false);
+  const [vehicleToAdd, setVehicleToAdd] = useState("");
   const minimumBookingDate = getTodayDateInManila();
 
   const resourceImages = selectedVehicle?.images?.length
@@ -118,6 +116,13 @@ export default function VehicleBookingModal({
 
   useEffect(() => {
     setCurrentImageIndex(0);
+  }, [isOpen, selectedVehicle?.resource_id, selectedVehicle?.id]);
+
+  useEffect(() => {
+    if (!isOpen || !selectedVehicle) return;
+    setSelectedVehicles([selectedVehicle]);
+    setShowVehiclePicker(false);
+    setVehicleToAdd("");
   }, [isOpen, selectedVehicle?.resource_id, selectedVehicle?.id]);
 
   useEffect(() => {
@@ -188,17 +193,23 @@ export default function VehicleBookingModal({
   // EARLY RETURN — after ALL hooks to prevent React error #310
   if (!isOpen || !selectedVehicle) return null;
 
-  // Days of this resource that have approved / pending bookings
-  const dayStatus = {};
+  const vehiclesInRequest = selectedVehicles.length
+    ? selectedVehicles
+    : [selectedVehicle];
+  const selectedVehicleIds = vehiclesInRequest.map(
+    (vehicle) => vehicle.resource_id || vehicle.id,
+  );
   const resourceId = selectedVehicle.resource_id || selectedVehicle.id;
+
+  // Days occupied by any selected vehicle.
+  const dayStatus = {};
 
   bookings.forEach((b) => {
     const isApproved = isApprovedStatus(b.status);
     const isPending = isPendingStatus(b.status);
     if (!isApproved && !isPending) return;
 
-    const sameResource = isMatch(b, resourceId);
-    if (!sameResource) return;
+    if (!selectedVehicleIds.some((id) => isMatch(b, id))) return;
 
     const startParts = parseDate(b.start_date);
     const endParts = parseDate(b.end_date || b.start_date);
@@ -218,11 +229,6 @@ export default function VehicleBookingModal({
     }
   });
 
-  // Approved bookings are blocked by this resource's turnaround buffer.
-  const BUFFER_MINUTES = Math.max(
-    0,
-    Number(selectedVehicle.buffer_minutes ?? 30),
-  );
   const requestedStart = dateTimeToMinutes(
     formData.start_date,
     formData.start_time,
@@ -237,33 +243,71 @@ export default function VehicleBookingModal({
     requestedEnd,
     selectedVehicle.price_per_hour,
   );
+  const vehicleEstimates = vehiclesInRequest.map((vehicle) => ({
+    vehicle,
+    estimate: calculateHourlyRentalEstimate(
+      requestedStart,
+      requestedEnd,
+      vehicle.price_per_hour,
+    ),
+  }));
+  const totalEstimate =
+    vehicleEstimates.length > 0 &&
+    vehicleEstimates.every(({ estimate }) => Number.isFinite(estimate?.total))
+      ? vehicleEstimates.reduce((total, { estimate }) => total + estimate.total, 0)
+      : null;
   const bookingDurationLabel = rentalEstimate
     ? formatRentalDuration(rentalEstimate.durationMinutes)
     : null;
-  const conflict =
-    formData.start_date && formData.end_date
-      ? bookings.find((b) => {
-          if (!isApprovedStatus(b.status)) return false;
-          if (!isMatch(b, resourceId)) return false;
-          const bookingStart = dateTimeToMinutes(b.start_date, b.start_time);
-          const bookingEnd = dateTimeToMinutes(
-            b.end_date || b.start_date,
-            b.end_time,
-            true,
-          );
-          if (
-            [requestedStart, requestedEnd, bookingStart, bookingEnd].some(
-              (v) => v === null,
-            )
-          ) {
-            return true;
-          }
-          return (
-            Math.max(requestedStart, bookingStart - BUFFER_MINUTES) <
-            Math.min(requestedEnd, bookingEnd + BUFFER_MINUTES)
-          );
-        })
-      : null;
+  const findVehicleConflict = (vehicle) => {
+    if (
+      !formData.start_date ||
+      !formData.end_date ||
+      requestedStart === null ||
+      requestedEnd === null
+    ) {
+      return null;
+    }
+
+    const bufferMinutes = Math.max(0, Number(vehicle.buffer_minutes ?? 30));
+    const vehicleId = vehicle.resource_id || vehicle.id;
+    return bookings.find((booking) => {
+      if (!isApprovedStatus(booking.status) && !isPendingStatus(booking.status)) {
+        return false;
+      }
+      if (!isMatch(booking, vehicleId)) return false;
+
+      const bookingStart = dateTimeToMinutes(booking.start_date, booking.start_time);
+      const bookingEnd = dateTimeToMinutes(
+        booking.end_date || booking.start_date,
+        booking.end_time,
+        true,
+      );
+      if ([bookingStart, bookingEnd].some((value) => value === null)) return true;
+
+      return (
+        Math.max(requestedStart, bookingStart - bufferMinutes) <
+        Math.min(requestedEnd, bookingEnd + bufferMinutes)
+      );
+    });
+  };
+  const vehicleConflicts = vehiclesInRequest
+    .map((vehicle) => ({
+      vehicle,
+      booking: findVehicleConflict(vehicle),
+    }))
+    .filter(({ booking }) => booking);
+
+  const availableVehiclesForSelection = availableVehicles.filter((vehicle) => {
+    const vehicleId = vehicle.resource_id || vehicle.id;
+    return (
+      vehicleId != null &&
+      vehicle.type?.toLowerCase() === "vehicle" &&
+      String(vehicle.status || "").toLowerCase() !== "maintenance" &&
+      !selectedVehicleIds.some((id) => String(id) === String(vehicleId)) &&
+      !findVehicleConflict(vehicle)
+    );
+  });
 
   const update = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -456,7 +500,27 @@ export default function VehicleBookingModal({
     formData.cell_number.length === 11 &&
     formData.email &&
     formData.address.trim() &&
-    !conflict;
+    vehicleConflicts.length === 0;
+
+  const handleAddVehicle = (id) => {
+    const vehicle = availableVehiclesForSelection.find(
+      (item) => String(item.resource_id || item.id) === String(id),
+    );
+    if (!vehicle) return;
+
+    setSelectedVehicles((current) => [...current, vehicle]);
+    setVehicleToAdd("");
+    setShowVehiclePicker(false);
+  };
+
+  const handleRemoveVehicle = (id) => {
+    setSelectedVehicles((current) =>
+      current.filter(
+        (vehicle) =>
+          String(vehicle.resource_id || vehicle.id) !== String(id),
+      ),
+    );
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -467,6 +531,7 @@ export default function VehicleBookingModal({
 
     const payload = {
       item_id: selectedVehicle.resource_id || selectedVehicle.id,
+      resource_ids: selectedVehicleIds,
       type: "vehicle",
       ...formData,
       full_name: `${formData.first_name}${formData.middle_name ? " " + formData.middle_name : ""} ${formData.last_name}`.trim(),
@@ -562,17 +627,18 @@ export default function VehicleBookingModal({
               </div>
               <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">
-                  Price Per Hour
+                  Hourly Rates
                 </p>
-                <p className="mt-0.5 text-lg font-bold text-blue-900">
-                  {formatResourcePrice(selectedVehicle.price_per_hour)}
-                  <span className="ml-1 text-[12px] font-medium text-blue-700">
-                    / hour
-                  </span>
-                </p>
+                <div className="mt-1 space-y-0.5 text-[11px] text-blue-900">
+                  {vehicleEstimates.map(({ vehicle }) => (
+                    <p key={vehicle.resource_id || vehicle.id}>
+                      {vehicle.name}:{" "}
+                      <strong>{formatResourcePrice(vehicle.price_per_hour)}</strong> / hour
+                    </p>
+                  ))}
+                </div>
                 <div className="mt-2 border-t border-blue-100 pt-2 text-[11px] text-blue-900">
-                  {rentalEstimate?.total !== null &&
-                  rentalEstimate?.total !== undefined ? (
+                  {rentalEstimate ? (
                     <>
                       <p>
                         Duration:{" "}
@@ -593,12 +659,12 @@ export default function VehicleBookingModal({
                       <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-1.5 text-[12px]">
                         <span className="font-semibold">Estimated total</span>
                         <span className="text-sm font-bold">
-                          {formatResourcePrice(rentalEstimate.total)}
+                          {totalEstimate === null
+                            ? "For assessment"
+                            : formatResourcePrice(totalEstimate)}
                         </span>
                       </p>
                     </>
-                  ) : rentalEstimate ? (
-                    <p>Set an hourly rate to calculate the estimated total.</p>
                   ) : (
                     <p>Select a valid date and time range to estimate the total.</p>
                   )}
@@ -625,6 +691,84 @@ export default function VehicleBookingModal({
                   </ul>
                 </div>
               )}
+              <div className="space-y-2 rounded-lg border border-line bg-paper/50 p-3">
+                <h3 className="text-[13px] font-semibold text-ink">Selected Vehicles</h3>
+                <ul className="space-y-1.5">
+                  {vehiclesInRequest.map((vehicle, index) => {
+                    const vehicleId = vehicle.resource_id || vehicle.id;
+                    return (
+                      <li
+                        key={vehicleId}
+                        className="flex items-center justify-between gap-2 rounded-md border border-line bg-white px-2.5 py-2 text-[12px]"
+                      >
+                        <span className="min-w-0 truncate font-medium text-ink">
+                          {vehicle.name}
+                          {index === 0 && (
+                            <span className="ml-1.5 text-[10px] font-normal text-steel">
+                              Primary
+                            </span>
+                          )}
+                        </span>
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            aria-label={`Remove ${vehicle.name}`}
+                            onClick={() => handleRemoveVehicle(vehicleId)}
+                            className="flex shrink-0 items-center gap-1 text-[11px] text-rose-600 hover:text-rose-800"
+                          >
+                            <Trash2 size={12} />
+                            Remove
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button
+                  type="button"
+                  disabled={
+                    !formData.start_date ||
+                    !formData.end_date ||
+                    !formData.start_time ||
+                    !formData.end_time ||
+                    !rentalEstimate ||
+                    availableVehiclesForSelection.length === 0
+                  }
+                  onClick={() => setShowVehiclePicker((visible) => !visible)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-brand/30 bg-white px-3 py-2 text-[11.5px] font-semibold text-brand transition hover:border-brand hover:bg-brand/5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus size={14} />
+                  Add Another Vehicle
+                </button>
+                {showVehiclePicker && (
+                  <select
+                    autoFocus
+                    value={vehicleToAdd}
+                    onChange={(event) => handleAddVehicle(event.target.value)}
+                    className="w-full rounded-md border border-line bg-white px-2.5 py-2 text-[11.5px] outline-none focus:border-brand"
+                    aria-label="Select an available utility vehicle"
+                  >
+                    <option value="">Select an available vehicle</option>
+                    {availableVehiclesForSelection.map((vehicle) => (
+                      <option
+                        key={vehicle.resource_id || vehicle.id}
+                        value={vehicle.resource_id || vehicle.id}
+                      >
+                        {vehicle.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {!formData.start_date || !formData.end_date ? (
+                  <p className="text-[10.5px] text-steel">
+                    Choose a date and time to see available vehicles.
+                  </p>
+                ) : availableVehiclesForSelection.length === 0 ? (
+                  <p className="text-[10.5px] text-steel">
+                    No other vehicles are available for this schedule.
+                  </p>
+                ) : null}
+              </div>
               <div className="space-y-1.5 rounded-lg border border-line bg-paper/50 p-3">
                 <h3 className="text-[13px] font-semibold text-ink">
                   {selectedVehicle.name}
@@ -832,35 +976,32 @@ export default function VehicleBookingModal({
           {/* Close grid, open fixed footer */}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-white z-10">
-            {conflict && (
+            {vehicleConflicts.length > 0 && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <div className="rounded-lg border border-status-rejected/30 bg-status-rejected/5 px-3 py-2.5">
                   <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-status-rejected">
                     <Clock size={13} />
-                    Resource Unavailable
+                    {vehicleConflicts.length === 1
+                      ? "Vehicle Unavailable"
+                      : "Vehicles Unavailable"}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-steel">
-                    An approved request holds this resource from{" "}
-                    <span className="font-medium text-ink">{conflict.start_date}</span> to{" "}
-                    <span className="font-medium text-ink">{conflict.end_date}</span>
-                    {conflict.start_time && conflict.end_time && (
-                      <span className="block">
-                        ({formatSlotLabel(conflict.start_time, conflict.end_time)})
-                      </span>
-                    )}
+                  <ul className="mt-1 space-y-1 text-[11px] text-steel">
+                    {vehicleConflicts.map(({ vehicle, booking }) => (
+                      <li key={vehicle.resource_id || vehicle.id}>
+                        <strong className="text-ink">{vehicle.name}</strong> has an
+                        overlapping reservation from{" "}
+                        <span className="font-medium text-ink">{booking.start_date}</span>
+                        {" "}to{" "}
+                        <span className="font-medium text-ink">{booking.end_date}</span>
+                        {booking.start_time && booking.end_time
+                          ? ` (${formatSlotLabel(booking.start_time, booking.end_time)})`
+                          : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1 text-[10.5px] text-steel">
+                    Each vehicle's configured turnaround buffer is enforced.
                   </p>
-                  <p className="mt-0.5 text-[10.5px] text-steel">
-                    A {BUFFER_MINUTES}-minute buffer is enforced around each
-                    booking for turnaround and preparation.
-                  </p>
-                  {(conflict.purpose || conflict.full_name) && (
-                    <p className="mt-0.5 text-[10.5px] text-steel">
-                      {conflict.full_name && <span>Booked by: {conflict.full_name}</span>}
-                      {conflict.purpose && (
-                        <span className="block">Purpose: {conflict.purpose}</span>
-                      )}
-                    </p>
-                  )}
                 </div>
               </div>
             )}

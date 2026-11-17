@@ -39,7 +39,9 @@ class BookingRemovalRequestController extends Controller
             return response()->json(['message' => 'A removal request for this booking is already pending.'], 422);
         }
 
-        $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+        $booking->loadMissing(['resource', 'vehicles']);
+        $resourceName = $booking->vehicles->pluck('name')->implode(', ')
+            ?: ($booking->resource?->name ?? 'Unknown Resource');
         $requestRecord = BookingRemovalRequest::create([
             'booking_id' => $booking->booking_id,
             'requested_by' => $user->user_id,
@@ -142,7 +144,7 @@ class BookingRemovalRequestController extends Controller
             'review_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $removalRequest->loadMissing(['booking.user', 'booking.resource']);
+        $removalRequest->loadMissing(['booking.user', 'booking.resource', 'booking.vehicles']);
         $booking = $removalRequest->booking;
         if (! $booking || $removalRequest->status !== 'pending') {
             return response()->json(['message' => 'This removal request is no longer pending.'], 422);
@@ -155,7 +157,8 @@ class BookingRemovalRequestController extends Controller
         }
 
         DB::transaction(function () use ($removalRequest, $booking, $reviewer, $decision, $validated) {
-            $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+            $resourceName = $booking->vehicles->pluck('name')->implode(', ')
+                ?: ($booking->resource?->name ?? 'Unknown Resource');
             $bookingId = $booking->booking_id;
             if ($decision === 'approved') {
                 $booking->delete();

@@ -58,7 +58,7 @@
     <div class="section-title">BOOKING INFORMATION</div>
     <table>
         <tr><th>Booking ID</th><td>#{{ $soa['booking_id'] }}</td></tr>
-        <tr><th>Resource</th><td>{{ $soa['resource_name'] }} ({{ $soa['resource_type'] }})</td></tr>
+        <tr><th>{{ $soa['resource_type'] === 'Vehicle' ? 'Requested vehicles' : 'Resource' }}</th><td>{{ $soa['resource_name'] }}</td></tr>
         <tr><th>Schedule</th><td>{{ $soa['start_date'] }}@if($soa['end_date'] !== $soa['start_date']) – {{ $soa['end_date'] }}@endif; {{ $soa['time'] }}</td></tr>
         @if($soa['destination'])
             <tr><th>Destination</th><td>{{ $soa['destination'] }}</td></tr>
@@ -74,12 +74,14 @@
             <th>Rate</th>
             <th>Amount</th>
         </tr>
-        <tr>
-            <td>{{ $soa['charge_title'] }}@if($soa['duration']) ({{ $soa['duration'] }})@endif</td>
-            <td>{{ $soa['quantity_label'] }}</td>
-            <td>{{ $soa['rate'] === null ? 'For assessment' : '₱'.number_format($soa['rate'], 2) }}</td>
-            <td>{{ $soa['amount_formatted'] ?? 'For assessment' }}</td>
-        </tr>
+        @foreach($soa['charges'] as $charge)
+            <tr>
+                <td>{{ $soa['charge_title'] }} — {{ $charge['resource_name'] }}@if($soa['duration']) ({{ $soa['duration'] }})@endif</td>
+                <td>{{ $charge['quantity_label'] }}</td>
+                <td>{{ $charge['rate'] === null ? 'For assessment' : '₱'.number_format($charge['rate'], 2) }}</td>
+                <td>{{ $charge['amount_formatted'] ?? 'For assessment' }}</td>
+            </tr>
+        @endforeach
         <tr class="amount-row">
             <td colspan="3">TOTAL AMOUNT DUE</td>
             <td>{{ $soa['amount_formatted'] ?? 'To be assessed' }}</td>

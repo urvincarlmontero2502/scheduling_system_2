@@ -26,7 +26,10 @@ class BookingRejected extends Mailable
     {
         $this->booking = $booking;
         $this->user = $user;
-        $this->resourceName = $booking->resource ? $booking->resource->name : 'Unknown Resource';
+        $booking->loadMissing(['resource', 'vehicles']);
+        $resourceNames = $booking->vehicles->pluck('name')->all();
+        $this->resourceName = implode(', ', $resourceNames)
+            ?: ($booking->resource?->name ?? 'Unknown Resource');
         $this->remarks = $remarks;
     }
 

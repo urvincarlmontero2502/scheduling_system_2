@@ -28,6 +28,10 @@ import {
   formatRentalDuration,
   formatResourcePrice,
 } from "../utils/resourcePricing";
+import {
+  getBookingResourceIds,
+  getBookingResourceNames,
+} from "../utils/bookingResources";
 import StatusBadge from "../components/StatusBadge";
 import {
   SkeletonBookingCard,
@@ -40,6 +44,7 @@ function getResourceImage(booking, resources) {
   const directImage =
     booking.resource?.image_url ||
     booking.resource?.image ||
+    booking.vehicles?.[0]?.image_url ||
     booking.facility?.image_url ||
     booking.vehicle?.image_url ||
     booking.image_url;
@@ -64,6 +69,32 @@ function getResourceImage(booking, resources) {
 // Console log for debugging
 function logBookingDebug(booking) {
   console.log("Booking Card Payload:", booking);
+}
+
+function calculateVehicleBookingEstimate(booking) {
+  const vehicles = Array.isArray(booking.vehicles) && booking.vehicles.length
+    ? booking.vehicles
+    : [{ price_per_hour: booking.price_per_hour }];
+  const estimates = vehicles.map((vehicle) =>
+    calculateBookingHourlyEstimate({
+      ...booking,
+      price_per_hour:
+        vehicle.price_per_hour ??
+        vehicle.pivot?.price_per_hour ??
+        (String(vehicle.resource_id) === String(booking.resource_id)
+          ? booking.price_per_hour
+          : null),
+    }),
+  );
+  const firstEstimate = estimates[0];
+  if (!firstEstimate) return null;
+
+  return {
+    ...firstEstimate,
+    total: estimates.every((estimate) => Number.isFinite(estimate?.total))
+      ? estimates.reduce((total, estimate) => total + estimate.total, 0)
+      : null,
+  };
 }
 
 // Helper function to convert 24hr time (e.g., "17:00") to 12hr AM/PM format (e.g., "5:00 PM")
@@ -113,16 +144,9 @@ function dateTimeToMinutes(date, time, isEnd = false) {
 
 // Helper to check for date and time conflicts with existing approved bookings
 function hasTimeDateConflict(targetBooking, allBookings) {
-  const bufferMinutes = Math.max(
-    0,
-    Number(targetBooking.buffer_minutes ?? 30),
-  );
-  const targetResource = (
-    targetBooking.resource ||
-    targetBooking.resource_name ||
-    targetBooking.item_name ||
-    ""
-  )
+  const targetResourceIds = getBookingResourceIds(targetBooking);
+  const targetResource = getBookingResourceNames(targetBooking)
+    .join(", ")
     .trim()
     .toLowerCase();
   const targetStart = targetBooking.start_date || targetBooking.date;
@@ -144,14 +168,28 @@ function hasTimeDateConflict(targetBooking, allBookings) {
     if (bId === targetId) continue;
     if ((b.status || "").toLowerCase() !== "approved") continue;
 
-    const bResource = (b.resource || b.resource_name || b.item_name || "")
+    const bResource = getBookingResourceNames(b)
+      .join(", ")
       .trim()
       .toLowerCase();
-    if (b.resource_id != null && targetBooking.resource_id != null) {
-      if (String(b.resource_id) !== String(targetBooking.resource_id)) continue;
-    } else if (bResource !== targetResource) {
+    const matchingResourceIds = targetResourceIds.filter((id) =>
+      getBookingResourceIds(b).includes(id),
+    );
+    if (
+      matchingResourceIds.length === 0 &&
+      bResource !== targetResource
+    ) {
       continue;
     }
+    const bufferMinutes = Math.max(
+      0,
+      ...matchingResourceIds.map((id) => {
+        const vehicle = targetBooking.vehicles?.find(
+          (item) => String(item.resource_id || item.id) === id,
+        );
+        return Number(vehicle?.buffer_minutes ?? targetBooking.buffer_minutes ?? 30);
+      }),
+    );
 
     const bStart = b.start_date || b.date;
     const bEnd = b.end_date || b.date || bStart;
@@ -190,7 +228,7 @@ function RejectModal({ booking, onClose, onConfirm }) {
         <div className="border-b border-line px-5 py-4">
           <h2 className="text-[16px] font-semibold text-ink">Reject Booking</h2>
           <p className="text-[12px] text-steel mt-1">
-            Booking #{booking?.id || booking?.booking_id} — {booking?.resource || booking?.resource_name || "Resource"}
+            Booking #{booking?.id || booking?.booking_id} — {getBookingResourceNames(booking).join(", ")}
           </p>
         </div>
         <div className="p-5">
@@ -391,10 +429,7 @@ export default function Bookings() {
 
     const searchText = search.toLowerCase();
     if (searchText) {
-      const resource =
-        typeof b.resource === "object"
-          ? b.resource?.name || b.resource?.resource_name || b.resource_name || b.item_name || ""
-          : b.resource || b.resource_name || b.item_name || "";
+      const resource = getBookingResourceNames(b).join(", ");
       const fullName =
         b.full_name || b.requester || b.user_name || b.user?.full_name || "";
       const purpose = b.purpose || b.reason || b.description || "";
@@ -683,8 +718,7 @@ export default function Bookings() {
               <tbody className="divide-y divide-line">
                 {filteredBookings.map((b) => {
                   const bookingId = b.id || b.booking_id;
-                  const resourceName =
-                    b.resource || b.resource_name || b.item_name || "Resource";
+                  const resourceName = getBookingResourceNames(b).join(", ");
                   const barangayName =
                     b.barangay ||
                     b.user?.barangay ||
@@ -711,7 +745,7 @@ export default function Bookings() {
                   const priority = b.priority || "normal";
                   const hourlyEstimate =
                     String(b.resource_type || "").toLowerCase() === "vehicle"
-                      ? calculateBookingHourlyEstimate(b)
+                      ? calculateVehicleBookingEstimate(b)
                       : null;
 
                   const startDate = b.start_date || b.date;
@@ -836,8 +870,7 @@ export default function Bookings() {
           // Card View
           <div className="grid grid-cols-2 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">{filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
-              const resourceName =
-                b.resource || b.resource_name || b.item_name || "Resource";
+              const resourceName = getBookingResourceNames(b).join(", ");
               const barangayName =
                 b.barangay ||
                 b.user?.barangay ||
@@ -864,7 +897,7 @@ export default function Bookings() {
               const priority = b.priority || "normal";
               const hourlyEstimate =
                 String(b.resource_type || "").toLowerCase() === "vehicle"
-                  ? calculateBookingHourlyEstimate(b)
+                  ? calculateVehicleBookingEstimate(b)
                   : null;
 
               const startDate = b.start_date || b.date;

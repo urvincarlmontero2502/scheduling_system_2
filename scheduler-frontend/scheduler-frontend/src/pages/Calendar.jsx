@@ -20,6 +20,7 @@ import {
   isRecurringSpecialEventDate,
   isSpecialEvent,
 } from "../utils/specialEvents";
+import { getBookingResourceNames } from "../utils/bookingResources";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -227,9 +228,9 @@ export default function CalendarView() {
               };
             }
             groups[eventName].dates.add(dateStr);
-            if (b.resource) groups[eventName].resources.add(b.resource);
-            if (b.resource_name) groups[eventName].resources.add(b.resource_name);
-            if (b.item_name) groups[eventName].resources.add(b.item_name);
+            getBookingResourceNames(b).forEach((resourceName) =>
+              groups[eventName].resources.add(resourceName),
+            );
           });
 
           return Object.values(groups).map((g) => {
@@ -735,11 +736,7 @@ export default function CalendarView() {
                                               const isApproved = status.includes("approv");
                                               const isSpecial = isSpecialEvent(b);
 
-                                              const resourceName =
-                                                b.resource ||
-                                                b.resource_name ||
-                                                b.item_name ||
-                                                "Resource";
+                                              const resourceName = getBookingResourceNames(b).join(", ");
                                               const requesterName =
                                                 b.requester ||
                                                 b.full_name ||

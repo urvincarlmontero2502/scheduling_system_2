@@ -39,7 +39,7 @@ class SendBookingReminders extends Command
         $failed = false;
 
         BookingRequest::query()
-            ->with(['user', 'resource'])
+            ->with(['user', 'resource', 'vehicles'])
             ->where('status', 'approved')
             ->whereDate('start_date', '>', $today->toDateString())
             ->whereDate('start_date', '<=', $latestReminderDate)

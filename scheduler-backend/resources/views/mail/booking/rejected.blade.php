@@ -46,7 +46,7 @@
                             <h2 style="margin:0 0 10px; color:#334155; font-size:13px; letter-spacing:.8px; text-transform:uppercase;">Request details</h2>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse; border:1px solid #e2e8f0;">
                                 <tr>
-                                    <td width="34%" style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Resource</td>
+                                    <td width="34%" style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Resource(s)</td>
                                     <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px; font-weight:bold;">{{ $resourceName }}</td>
                                 </tr>
                                 <tr>

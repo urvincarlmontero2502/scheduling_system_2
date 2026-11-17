@@ -69,6 +69,7 @@ export default function Overview() {
   const handleBookingSubmit = (payload) => {
     const apiPayload = {
       resource_id: payload.item_id,
+      resource_ids: payload.resource_ids,
       start_date: payload.start_date,
       end_date: payload.end_date,
       start_time: payload.start_time,
@@ -625,6 +626,9 @@ export default function Overview() {
         onClose={() => setSelectedResource(null)}
         onSubmit={handleBookingSubmit}
         selectedVehicle={selectedResource}
+        availableVehicles={resources.filter(
+          (resource) => resource.type?.toLowerCase() === "vehicle",
+        )}
       />
     </div>
   );

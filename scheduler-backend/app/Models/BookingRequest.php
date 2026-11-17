@@ -77,6 +77,20 @@ class BookingRequest extends Model
         return $this->belongsTo(Resource::class, 'resource_id', 'resource_id')->withTrashed();
     }
 
+    public function vehicles()
+    {
+        return $this->belongsToMany(
+            Resource::class,
+            'booking_vehicles',
+            'booking_id',
+            'resource_id',
+            'booking_id',
+            'resource_id'
+        )
+            ->withPivot('price_per_hour')
+            ->withTrashed();
+    }
+
     public function approvals()
     {
         return $this->hasMany(Approval::class, 'booking_id', 'booking_id');

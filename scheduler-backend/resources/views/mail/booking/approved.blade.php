@@ -20,7 +20,7 @@
                         <td style="padding:28px 30px 12px;">
                             <p style="margin:0 0 14px; font-size:16px;">Hello {{ $user->full_name ?? $user->name ?? 'Requestor' }},</p>
                             <p style="margin:0; color:#475569; font-size:14px; line-height:1.7;">
-                                Your booking request for <strong style="color:#172033;">{{ $soa['resource_name'] }}</strong> has been approved.
+                                Your booking request for <strong style="color:#172033;">{{ implode(', ', $soa['resource_names']) }}</strong> has been approved.
                                 Your Statement of Account (SOA) is attached as a PDF. Download or print it to bring to the municipal office for payment—you do not need to visit the barangay to obtain the SOA.
                             </p>
                         </td>
@@ -48,8 +48,8 @@
                             <h2 style="margin:0 0 10px; color:#334155; font-size:13px; letter-spacing:.8px; text-transform:uppercase;">Booking details</h2>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse; border:1px solid #e2e8f0;">
                                 <tr>
-                                    <td width="34%" style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Resource</td>
-                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px; font-weight:bold;">{{ $soa['resource_name'] }} ({{ $soa['resource_type'] }})</td>
+                                    <td width="34%" style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">{{ $soa['resource_type'] === 'Vehicle' ? 'Requested vehicles' : 'Resource' }}</td>
+                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px; font-weight:bold;">{{ implode(', ', $soa['resource_names']) }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Booking ID</td>
@@ -58,16 +58,6 @@
                                 <tr>
                                     <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">Schedule</td>
                                     <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px;">{{ $soa['start_date'] }}@if($soa['end_date'] !== $soa['start_date']) – {{ $soa['end_date'] }}@endif; {{ $soa['time'] }}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">{{ $soa['rate_label'] }}</td>
-                                    <td style="padding:10px 12px; border-bottom:1px solid #e2e8f0; color:#172033; font-size:13px;">
-                                        @if($soa['rate'] !== null)
-                                            ₱{{ number_format($soa['rate'], 2) }} per {{ $soa['resource_type'] === 'Vehicle' ? 'hour' : 'day' }}
-                                        @else
-                                            To be assessed at the municipal office
-                                        @endif
-                                    </td>
                                 </tr>
                                 <tr>
                                     <td style="padding:10px 12px; background:#f8fafc; color:#64748b; font-size:12px;">Charge basis</td>
@@ -79,6 +69,15 @@
                                         @endif
                                     </td>
                                 </tr>
+                                @foreach($soa['charges'] as $charge)
+                                    <tr>
+                                        <td style="padding:10px 12px; border-top:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:12px;">{{ $charge['resource_name'] }}</td>
+                                        <td style="padding:10px 12px; border-top:1px solid #e2e8f0; color:#172033; font-size:13px;">
+                                            {{ $charge['rate'] === null ? 'Rate to be assessed' : '₱'.number_format($charge['rate'], 2).' per '.($soa['resource_type'] === 'Vehicle' ? 'hour' : 'day') }}
+                                            · {{ $charge['amount_formatted'] ?? 'Amount to be assessed' }}
+                                        </td>
+                                    </tr>
+                                @endforeach
                             </table>
                         </td>
                     </tr>
