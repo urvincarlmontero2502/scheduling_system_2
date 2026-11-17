@@ -195,8 +195,6 @@ export default function Resources() {
         : "Booking request submitted successfully!",
     );
 
-    window.dispatchEvent(new Event("bookingUpdated"));
-
     return api
       .createBooking(apiPayload)
       .then(() => {

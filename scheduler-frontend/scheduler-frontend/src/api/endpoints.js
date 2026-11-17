@@ -150,9 +150,10 @@ export const restoreBooking = (id) => {
   invalidateCache(CACHE_KEYS.BOOKINGS);
   return client.post(`/bookings/${id}/restore`);
 };
-export const createBooking = (payload) => {
+export const createBooking = async (payload) => {
+  const response = await client.post("/bookings", payload);
   invalidateCache(CACHE_KEYS.BOOKINGS);
-  return client.post("/bookings", payload);
+  return response;
 };
 export const checkAvailability = (params) =>
   client.get("/bookings/availability", { params });
