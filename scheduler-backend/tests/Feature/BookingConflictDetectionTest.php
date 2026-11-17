@@ -40,6 +40,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('name');
             $table->string('type');
             $table->string('status');
+            $table->decimal('price_per_hour', 10, 2)->nullable();
             $table->unsignedInteger('buffer_minutes')->default(30);
             $table->json('images')->nullable();
             $table->timestamp('deleted_at')->nullable();
@@ -56,6 +57,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('full_name')->nullable();
             $table->string('purpose')->nullable();
             $table->text('destination')->nullable();
+            $table->decimal('price_per_hour', 10, 2)->nullable();
             $table->date('start_date');
             $table->date('end_date');
             $table->string('start_time')->nullable();
@@ -176,6 +178,26 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('0.address', '123 Main Street')
             ->assertJsonPath('0.attendees', 25)
             ->assertJsonPath('0.priority', 'high');
+    }
+
+    public function test_vehicle_booking_details_include_the_hourly_rate_at_submission_time(): void
+    {
+        $vehicle = Resource::create([
+            'name' => 'Backhoe',
+            'type' => 'vehicle',
+            'status' => 'available',
+            'price_per_hour' => 2543,
+        ]);
+        $payload = $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '11:00');
+        $payload['resource_id'] = $vehicle->resource_id;
+
+        $this->postJson('/api/bookings', $payload)
+            ->assertCreated()
+            ->assertJsonPath('price_per_hour', '2543.00');
+
+        $this->getJson('/api/bookings')
+            ->assertOk()
+            ->assertJsonPath('0.price_per_hour', '2543.00');
     }
 
     public function test_conflicting_full_day_booking_returns_next_day_suggestion(): void

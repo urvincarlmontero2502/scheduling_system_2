@@ -3,6 +3,11 @@ import { createPortal } from "react-dom";
 import { X, Check, Calendar, Clock, User, Building2, Phone, FileText, Mail, MapPin, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import * as api from "../api/endpoints";
+import {
+  calculateBookingHourlyEstimate,
+  formatRentalDuration,
+  formatResourcePrice,
+} from "../utils/resourcePricing";
 
 // Helper to format date
 function formatDate(dateStr) {
@@ -106,6 +111,8 @@ export default function BookingDetailModal({
   const destination = booking.destination || booking.travel_destination || "";
   const attendees = booking.attendees;
   const priority = booking.priority || "normal";
+  const hourlyEstimate =
+    resourceType === "Vehicle" ? calculateBookingHourlyEstimate(booking) : null;
   const purposeValue =
     booking.purpose || booking.reason || booking.description || booking.details || "No purpose provided";
   const remarks = booking.remarks || booking.admin_remarks || "";
@@ -228,6 +235,28 @@ export default function BookingDetailModal({
               </div>
             </div>
           </section>
+
+          {hourlyEstimate && (
+            <section className="border-b border-slate-100 pb-5">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Hourly Cost Estimate
+              </h3>
+              <div className="space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-900">
+                <p>
+                  <strong>Duration:</strong>{" "}
+                  {formatRentalDuration(hourlyEstimate.durationMinutes)}
+                </p>
+                <p>
+                  <strong>Billable hours:</strong>{" "}
+                  {hourlyEstimate.billableHours} (partial hours round up)
+                </p>
+                <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-2">
+                  <strong>Estimated total</strong>
+                  <strong>{formatResourcePrice(hourlyEstimate.total)}</strong>
+                </p>
+              </div>
+            </section>
+          )}
 
           <section className="border-b border-slate-100 pb-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">

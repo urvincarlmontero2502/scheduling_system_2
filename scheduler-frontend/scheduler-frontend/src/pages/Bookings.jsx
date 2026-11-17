@@ -23,6 +23,11 @@ import {
   ImageIcon,
 } from "lucide-react";
 import * as api from "../api/endpoints";
+import {
+  calculateBookingHourlyEstimate,
+  formatRentalDuration,
+  formatResourcePrice,
+} from "../utils/resourcePricing";
 import StatusBadge from "../components/StatusBadge";
 import {
   SkeletonBookingCard,
@@ -696,6 +701,10 @@ export default function Bookings() {
                   const destination = b.destination || b.travel_destination || "";
                   const attendees = b.attendees;
                   const priority = b.priority || "normal";
+                  const hourlyEstimate =
+                    String(b.resource_type || "").toLowerCase() === "vehicle"
+                      ? calculateBookingHourlyEstimate(b)
+                      : null;
 
                   const startDate = b.start_date || b.date;
                   const endDate = b.end_date || b.date;
@@ -748,10 +757,26 @@ export default function Bookings() {
                           <span>{timeValue}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[13px] text-steel max-w-[200px] truncate">
+                      <td className="max-w-[280px] whitespace-normal px-4 py-3 text-[13px] text-steel">
                         <div>{purposeValue}</div>
                         {destination && (
                           <div className="mt-1 text-xs">Destination: {destination}</div>
+                        )}
+                        {hourlyEstimate && (
+                          <div className="mt-2 space-y-0.5 border-t border-line pt-2 text-xs text-blue-800">
+                            <p>
+                              <strong>Duration:</strong>{" "}
+                              {formatRentalDuration(hourlyEstimate.durationMinutes)}
+                            </p>
+                            <p>
+                              <strong>Billable hours:</strong>{" "}
+                              {hourlyEstimate.billableHours} (partial hours round up)
+                            </p>
+                            <p>
+                              <strong>Estimated total:</strong>{" "}
+                              {formatResourcePrice(hourlyEstimate.total)}
+                            </p>
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -829,6 +854,10 @@ export default function Bookings() {
               const destination = b.destination || b.travel_destination || "";
               const attendees = b.attendees;
               const priority = b.priority || "normal";
+              const hourlyEstimate =
+                String(b.resource_type || "").toLowerCase() === "vehicle"
+                  ? calculateBookingHourlyEstimate(b)
+                  : null;
 
               const startDate = b.start_date || b.date;
               const endDate = b.end_date || b.date;
@@ -911,6 +940,23 @@ export default function Bookings() {
                       {timeValue}
                     </span>
                   </div>
+
+                  {hourlyEstimate && (
+                    <div className="mx-4 mb-3 space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-xs text-blue-900">
+                      <p>
+                        <strong>Duration:</strong>{" "}
+                        {formatRentalDuration(hourlyEstimate.durationMinutes)}
+                      </p>
+                      <p>
+                        <strong>Billable hours:</strong>{" "}
+                        {hourlyEstimate.billableHours} (partial hours round up)
+                      </p>
+                      <p className="flex items-center justify-between border-t border-blue-100 pt-1.5">
+                        <strong>Estimated total</strong>
+                        <strong>{formatResourcePrice(hourlyEstimate.total)}</strong>
+                      </p>
+                    </div>
+                  )}
 
                   <div className="mx-4 my-3 space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 text-xs text-slate-600">
                     <div className="flex items-center gap-1.5">
