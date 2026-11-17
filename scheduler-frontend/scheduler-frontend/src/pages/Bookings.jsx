@@ -38,32 +38,74 @@ import {
   SkeletonBookingTableRow,
 } from "../components/Skeleton";
 
-// Helper to look up resource image by resource_id or name
-function getResourceImage(booking, resources) {
-  // Check all possible image keys on the booking object directly
-  const directImage =
-    booking.resource?.image_url ||
-    booking.resource?.image ||
-    booking.vehicles?.[0]?.image_url ||
-    booking.facility?.image_url ||
-    booking.vehicle?.image_url ||
-    booking.image_url;
+function getBookingResourceImages(booking, resources = []) {
+  const availableResources = Array.isArray(resources) ? resources : [];
+  const vehicles = Array.isArray(booking.vehicles) ? booking.vehicles : [];
+  const bookingResourceNames = getBookingResourceNames(booking);
+  const resourceValue =
+    typeof booking.resource === "object" ? booking.resource : null;
+  const items = vehicles.length
+    ? vehicles
+    : [
+        {
+          resource_id: booking.resource_id,
+          name:
+            resourceValue?.name ||
+            resourceValue?.resource_name ||
+            booking.resource ||
+            booking.resource_name ||
+            booking.item_name,
+          image_url:
+            resourceValue?.image_url ||
+            resourceValue?.image ||
+            booking.resource_image ||
+            booking.facility?.image_url ||
+            booking.vehicle?.image_url ||
+            booking.image_url,
+        },
+      ];
 
-  if (directImage) {
-    return directImage;
-  }
+  return items.map((item, index) => {
+    const itemValue =
+      typeof item.resource === "object" ? item.resource : null;
+    const resourceId = item.resource_id ?? item.id ?? itemValue?.resource_id;
+    const name =
+      item.name ||
+      item.resource_name ||
+      itemValue?.name ||
+      itemValue?.resource_name ||
+      (typeof item.resource === "string" ? item.resource : "") ||
+      bookingResourceNames[index] ||
+      `Resource ${index + 1}`;
+    const match =
+      (resourceId != null &&
+        availableResources.find(
+          (resource) =>
+            String(resource.resource_id ?? resource.id) === String(resourceId),
+        )) ||
+      availableResources.find((resource) => {
+        const resourceName =
+          resource.name || resource.resource_name || resource.item_name || "";
+        return resourceName.toLowerCase() === name.toLowerCase();
+      });
 
-  // Fallback: look up in resources array by ID or name
-  const rid = booking.resource_id;
-  const name = booking.resource || booking.resource_name || booking.item_name || "";
-  const match =
-    (rid != null && resources.find((r) => String(r.id || r.resource_id) === String(rid))) ||
-    resources.find((r) =>
-      (r.name || r.resource_name || r.item_name || "")
-        .toLowerCase() === name.toLowerCase()
-    );
-  // Check all possible image keys
-  return match?.image || match?.image_url || match?.photo_url || match?.photo || "";
+    return {
+      id: resourceId ?? name,
+      name,
+      image:
+        item.image_url ||
+        item.image ||
+        item.photo_url ||
+        item.photo ||
+        itemValue?.image_url ||
+        itemValue?.image ||
+        match?.image_url ||
+        match?.image ||
+        match?.photo_url ||
+        match?.photo ||
+        "",
+    };
+  });
 }
 
 // Console log for debugging
@@ -950,7 +992,11 @@ export default function Bookings() {
                     : normalizedStatus === "approved"
                       ? "border-blue-200 bg-blue-50/90 text-blue-700"
                       : "border-slate-200 bg-white/90 text-slate-600";
-              const resourceImage = getResourceImage(b, resources);
+              const resourceImages = getBookingResourceImages(b, resources);
+              const visibleResourceImages =
+                resourceImages.length > 4
+                  ? resourceImages.slice(0, 4)
+                  : resourceImages;
 
               return (
                 <div
@@ -959,27 +1005,65 @@ export default function Bookings() {
                   className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
                 >
                   <div className="relative h-32 w-full shrink-0 overflow-hidden bg-slate-100">
-                    {resourceImage ? (
-                      <img
-                        src={resourceImage}
-                        alt={resourceName}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
-                        <ImageIcon
-                          size={30}
-                          strokeWidth={1.5}
-                          className="mb-1 opacity-60"
-                        />
-                        <span className="text-[11px]">No image provided</span>
-                      </div>
-                    )}
+                    <div
+                      className={`grid h-full w-full ${
+                        resourceImages.length === 1
+                          ? "grid-cols-1"
+                          : "grid-cols-2"
+                      } ${resourceImages.length > 2 ? "grid-rows-2" : ""} gap-0.5`}
+                    >
+                      {visibleResourceImages.map((resource, index) => {
+                        const showOverflow =
+                          resourceImages.length > 4 && index === 3;
+                        const spanFinalTile =
+                          resourceImages.length === 3 && index === 2;
+
+                        return (
+                          <div
+                            key={`${resource.id}-${index}`}
+                            className={`relative min-h-0 overflow-hidden bg-slate-200 ${
+                              spanFinalTile ? "col-span-2" : ""
+                            }`}
+                          >
+                            {resource.image ? (
+                              <img
+                                src={resource.image}
+                                alt={resource.name}
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-center text-slate-500">
+                                <ImageIcon
+                                  size={20}
+                                  strokeWidth={1.5}
+                                  className="shrink-0 opacity-60"
+                                />
+                                <span className="line-clamp-2 text-[10px] font-medium">
+                                  {resource.name}
+                                </span>
+                              </div>
+                            )}
+                            {resource.image &&
+                              resourceImages.length > 1 &&
+                              !showOverflow && (
+                              <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-slate-950/75 to-transparent px-2 pb-1 pt-4 text-[9px] font-semibold text-white">
+                                {resource.name}
+                              </span>
+                            )}
+                            {showOverflow && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/65 text-lg font-bold text-white">
+                                +{resourceImages.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                     <span className={`absolute right-3 top-3 z-10 rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize shadow-sm backdrop-blur-sm ${statusBadgeClasses}`}>
                       {b.status || "PENDING"}
                     </span>
                     {resourceNames.length > 1 && (
-                      <span className="absolute bottom-3 left-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-700 shadow-sm backdrop-blur-sm">
+                      <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-700 shadow-sm backdrop-blur-sm">
                         {resourceNames.length} resources
                       </span>
                     )}
