@@ -623,7 +623,11 @@ class BookingController extends Controller
                     if ($validated['status'] === 'approved') {
                         Mail::mailer('brevo')->to($recipientEmail)->send(new BookingApproved($booking, $requester));
                     } else {
-                        Mail::mailer('brevo')->to($recipientEmail)->send(new BookingRejected($booking, $requester));
+                        Mail::mailer('brevo')->to($recipientEmail)->send(new BookingRejected(
+                            $booking,
+                            $requester,
+                            $validated['remarks'] ?? null
+                        ));
                     }
                     $emailNotificationSent = true;
                 } else {
