@@ -29,6 +29,7 @@ class BookingReminderTest extends TestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('booking_vehicles');
         Schema::dropIfExists('booking_request');
         Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('system_settings');
@@ -64,6 +65,12 @@ class BookingReminderTest extends TestCase
             $table->timestamp('reminder_sent_at')->nullable();
             $table->timestamp('reminder_sms_sent_at')->nullable();
             $table->timestamp('deleted_at')->nullable();
+        });
+        Schema::create('booking_vehicles', function (Blueprint $table) {
+            $table->unsignedBigInteger('booking_id');
+            $table->unsignedBigInteger('resource_id');
+            $table->decimal('price_per_hour', 10, 2)->nullable();
+            $table->primary(['booking_id', 'resource_id']);
         });
         Schema::create('system_settings', function (Blueprint $table) {
             $table->string('key')->primary();

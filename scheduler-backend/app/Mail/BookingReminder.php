@@ -17,7 +17,10 @@ class BookingReminder extends Mailable
 
     public function __construct(public BookingRequest $booking)
     {
-        $this->resourceName = $booking->resource?->name ?? 'Scheduled Resource';
+        $booking->loadMissing(['resource', 'vehicles']);
+        $resourceNames = $booking->vehicles->pluck('name')->all();
+        $this->resourceName = implode(', ', $resourceNames)
+            ?: ($booking->resource?->name ?? 'Scheduled Resource');
     }
 
     public function envelope(): Envelope

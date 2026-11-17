@@ -25,7 +25,7 @@ class BookingRemovalRequestTest extends TestCase
     {
         parent::setUp();
 
-        foreach (['notifications', 'booking_removal_requests', 'activity_logs', 'booking_request', 'resources', 'users'] as $table) {
+        foreach (['notifications', 'booking_removal_requests', 'activity_logs', 'booking_vehicles', 'booking_request', 'resources', 'users'] as $table) {
             Schema::dropIfExists($table);
         }
 
@@ -43,6 +43,7 @@ class BookingRemovalRequestTest extends TestCase
             $table->string('type')->default('facility');
             $table->string('status')->default('available');
             $table->unsignedInteger('buffer_minutes')->default(30);
+            $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('booking_request', function (Blueprint $table) {
             $table->id('booking_id');
@@ -55,6 +56,12 @@ class BookingRemovalRequestTest extends TestCase
             $table->string('end_time')->nullable();
             $table->boolean('is_special_event')->default(false);
             $table->timestamp('deleted_at')->nullable();
+        });
+        Schema::create('booking_vehicles', function (Blueprint $table) {
+            $table->unsignedBigInteger('booking_id');
+            $table->unsignedBigInteger('resource_id');
+            $table->decimal('price_per_hour', 10, 2)->nullable();
+            $table->primary(['booking_id', 'resource_id']);
         });
         Schema::create('booking_removal_requests', function (Blueprint $table) {
             $table->bigIncrements('removal_request_id');
@@ -251,7 +258,10 @@ class BookingRemovalRequestTest extends TestCase
 
         $this->postJson("/api/bookings/{$removed->booking_id}/restore")
             ->assertStatus(409)
-            ->assertJsonPath('message', 'This booking cannot be restored because it conflicts with another active booking.');
+            ->assertJsonPath(
+                'message',
+                'This booking cannot be restored because Conference Room conflicts with another active booking.'
+            );
 
         $this->assertNotNull($removed->fresh()->deleted_at);
     }

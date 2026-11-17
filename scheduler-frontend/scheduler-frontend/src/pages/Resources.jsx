@@ -163,6 +163,7 @@ export default function Resources() {
   const handleBookingSubmit = (payload) => {
     const apiPayload = {
       resource_id: payload.item_id,
+      resource_ids: payload.resource_ids,
       start_date: payload.start_date,
       end_date: payload.end_date,
       start_time: payload.start_time,
@@ -180,10 +181,13 @@ export default function Resources() {
 
     const cachedResources = readCache(CACHE_KEYS.RESOURCES) || [];
     const isDirectUse = payload.status === "approved";
+    const selectedResourceIds = payload.resource_ids || [payload.item_id];
 
     if (isDirectUse) {
       const updated = cachedResources.map((r) =>
-        String(r.resource_id || r.id) === String(payload.item_id)
+        selectedResourceIds.some(
+          (id) => String(r.resource_id || r.id) === String(id),
+        )
           ? { ...r, available: false, status: "booked" }
           : r,
       );
@@ -207,7 +211,9 @@ export default function Resources() {
       .catch((err) => {
         if (isDirectUse) {
           const restored = cachedResources.map((r) =>
-            String(r.resource_id || r.id) === String(payload.item_id)
+            selectedResourceIds.some(
+              (id) => String(r.resource_id || r.id) === String(id),
+            )
               ? { ...r, available: true, status: "available" }
               : r,
           );
@@ -852,6 +858,9 @@ export default function Resources() {
           })
         }
         selectedVehicle={selectedResource}
+        availableVehicles={resources.filter(
+          (resource) => resource.type?.toLowerCase() === "vehicle",
+        )}
         isDirectUse={isDirectUse}
       />
 

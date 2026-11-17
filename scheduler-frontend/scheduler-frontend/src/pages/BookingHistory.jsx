@@ -32,6 +32,7 @@ import {
   formatRentalDuration,
   formatResourcePrice,
 } from "../utils/resourcePricing";
+import { getBookingResourceNames } from "../utils/bookingResources";
 
 function getResourceRecord(booking, resources) {
   const rid = booking.resource_id;
@@ -50,6 +51,7 @@ function getResourceRecord(booking, resources) {
 function getResourceImage(booking, resources) {
   return (
     booking.resource_image ||
+    booking.vehicles?.[0]?.image_url ||
     (typeof booking.resource === "object" ? booking.resource?.image_url : "") ||
     getResourceRecord(booking, resources)?.image ||
     ""
@@ -220,14 +222,7 @@ export default function BookingHistory() {
   const filteredBookings = displayedBookings.filter((booking) => {
     const status = (booking.status || "").toLowerCase();
 
-    const resource =
-      typeof booking.resource === "object"
-        ? booking.resource?.name ||
-          booking.resource?.resource_name ||
-          booking.resource_name ||
-          booking.item_name ||
-          ""
-        : booking.resource || booking.resource_name || booking.item_name || "";
+    const resource = getBookingResourceNames(booking).join(", ");
 
     const requester =
       booking.full_name ||
@@ -259,6 +254,36 @@ export default function BookingHistory() {
   const selectedHourlyEstimate =
     selectedBooking && isSelectedVehicle
       ? calculateBookingHourlyEstimate(selectedBooking)
+      : null;
+  const selectedVehicleEstimates =
+    selectedBooking && isSelectedVehicle
+      ? (Array.isArray(selectedBooking.vehicles) && selectedBooking.vehicles.length
+          ? selectedBooking.vehicles
+          : [{
+              resource_id: selectedBooking.resource_id,
+              name: getBookingResourceNames(selectedBooking)[0],
+              price_per_hour: selectedBooking.price_per_hour,
+            }]).map((vehicle) => {
+              const rate =
+                vehicle.price_per_hour ??
+                vehicle.pivot?.price_per_hour ??
+                (String(vehicle.resource_id) === String(selectedBooking.resource_id)
+                  ? selectedBooking.price_per_hour
+                  : null);
+              return {
+                vehicle,
+                rate,
+                estimate: calculateBookingHourlyEstimate({
+                  ...selectedBooking,
+                  price_per_hour: rate,
+                }),
+              };
+            })
+      : [];
+  const selectedTotalEstimate =
+    selectedVehicleEstimates.length > 0 &&
+    selectedVehicleEstimates.every(({ estimate }) => Number.isFinite(estimate?.total))
+      ? selectedVehicleEstimates.reduce((total, { estimate }) => total + estimate.total, 0)
       : null;
   const selectedDailyEstimate =
     selectedBooking && selectedResourceType.includes("facility")
@@ -378,17 +403,7 @@ export default function BookingHistory() {
 
   function handlePrint(booking) {
     const bookingId = booking.id || booking.booking_id;
-    const resource =
-      typeof booking.resource === "object"
-        ? booking.resource?.name ||
-          booking.resource?.resource_name ||
-          booking.resource_name ||
-          booking.item_name ||
-          "Resource"
-        : booking.resource ||
-          booking.resource_name ||
-          booking.item_name ||
-          "Resource";
+    const resource = getBookingResourceNames(booking).join(", ");
     const requester =
       typeof booking.full_name === "string"
         ? booking.full_name
@@ -538,7 +553,7 @@ export default function BookingHistory() {
           b.user_name ||
           b.user?.full_name ||
           "Unknown";
-        const res = b.resource || b.resource_name || b.item_name || "Resource";
+        const res = getBookingResourceNames(b).join(", ");
         const date = getDateValue(b);
         const status = (b.status || "").toUpperCase();
 
@@ -849,16 +864,7 @@ export default function BookingHistory() {
                             : booking.user?.full_name || "Unknown";
 
                     const resource =
-                      typeof booking.resource === "object"
-                        ? booking.resource?.name ||
-                          booking.resource?.resource_name ||
-                          booking.resource_name ||
-                          booking.item_name ||
-                          "Resource"
-                        : booking.resource ||
-                          booking.resource_name ||
-                          booking.item_name ||
-                          "Resource";
+                      getBookingResourceNames(booking).join(", ");
 
                     const resourceImage = getResourceImage(booking, resources);
 
@@ -1031,11 +1037,13 @@ export default function BookingHistory() {
                   </span>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
-                  <p className="text-base font-bold text-slate-800">
-                    {typeof selectedBooking.resource === "object"
-                      ? selectedBooking.resource?.name || selectedBooking.resource_name || "Resource"
-                      : selectedBooking.resource || selectedBooking.resource_name || selectedBooking.item_name || "Resource"}
-                  </p>
+                  <ul className="space-y-1">
+                    {getBookingResourceNames(selectedBooking).map((name, index) => (
+                      <li key={`${name}-${index}`} className="text-base font-bold text-slate-800">
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </section>
 
@@ -1063,12 +1071,23 @@ export default function BookingHistory() {
                 <section className="border-b border-slate-100 pb-5">
                   <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Vehicle Cost Estimate</h3>
                   <div className="space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-900">
-                    <p><strong>Hourly rate:</strong> {formatResourcePrice(selectedBooking.price_per_hour)} / hour</p>
+                    {selectedVehicleEstimates.map(({ vehicle, rate, estimate }) => (
+                      <p key={vehicle.resource_id || vehicle.id || vehicle.name}>
+                        <strong>{vehicle.name}:</strong>{" "}
+                        {estimate?.total == null
+                          ? "Rate to be assessed"
+                          : `${formatResourcePrice(estimate.total)} (${formatResourcePrice(rate)} / hour)`}
+                      </p>
+                    ))}
                     <p><strong>Duration:</strong> {formatRentalDuration(selectedHourlyEstimate.durationMinutes)}</p>
                     <p><strong>Billable hours:</strong> {selectedHourlyEstimate.billableHours} (partial hours round up)</p>
                     <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-2">
                       <strong>Estimated total</strong>
-                      <strong>{formatResourcePrice(selectedHourlyEstimate.total)}</strong>
+                      <strong>
+                        {selectedTotalEstimate === null
+                          ? "For assessment"
+                          : formatResourcePrice(selectedTotalEstimate)}
+                      </strong>
                     </p>
                   </div>
                 </section>

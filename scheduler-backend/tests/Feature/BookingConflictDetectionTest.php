@@ -27,6 +27,7 @@ class BookingConflictDetectionTest extends TestCase
 
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Asia/Manila'));
 
+        Schema::dropIfExists('booking_vehicles');
         Schema::dropIfExists('booking_request');
         Schema::dropIfExists('approval');
         Schema::dropIfExists('notifications');
@@ -78,6 +79,12 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('priority')->nullable();
             $table->boolean('is_special_event')->default(false);
             $table->timestamp('deleted_at')->nullable();
+        });
+        Schema::create('booking_vehicles', function (Blueprint $table) {
+            $table->unsignedBigInteger('booking_id');
+            $table->unsignedBigInteger('resource_id');
+            $table->decimal('price_per_hour', 10, 2)->nullable();
+            $table->primary(['booking_id', 'resource_id']);
         });
         Schema::create('approval', function (Blueprint $table) {
             $table->id('log_id');
@@ -223,6 +230,201 @@ class BookingConflictDetectionTest extends TestCase
         $this->getJson('/api/bookings')
             ->assertOk()
             ->assertJsonPath('0.price_per_hour', '2543.00');
+        $this->assertDatabaseHas('booking_vehicles', [
+            'resource_id' => $vehicle->resource_id,
+            'price_per_hour' => 2543,
+        ]);
+    }
+
+    public function test_multiple_vehicles_are_saved_as_one_booking_and_returned_together(): void
+    {
+        $navara = Resource::create([
+            'name' => 'Nissan Navara',
+            'type' => 'vehicle',
+            'status' => 'available',
+            'price_per_hour' => 1000,
+        ]);
+        $van = Resource::create([
+            'name' => 'Toyota HiAce Van',
+            'type' => 'vehicle',
+            'status' => 'available',
+            'price_per_hour' => 1500,
+        ]);
+        $payload = $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '11:00');
+        $payload['resource_id'] = $navara->resource_id;
+        $payload['resource_ids'] = [$navara->resource_id, $van->resource_id];
+
+        $response = $this->postJson('/api/bookings', $payload)
+            ->assertCreated()
+            ->assertJsonPath('resource_id', $navara->resource_id)
+            ->assertJsonPath('vehicles.0.name', 'Nissan Navara')
+            ->assertJsonPath('vehicles.1.name', 'Toyota HiAce Van');
+
+        $bookingId = $response->json('booking_id');
+        $this->assertDatabaseCount('booking_request', 1);
+        $this->assertDatabaseHas('booking_vehicles', [
+            'booking_id' => $bookingId,
+            'resource_id' => $navara->resource_id,
+            'price_per_hour' => 1000,
+        ]);
+        $this->assertDatabaseHas('booking_vehicles', [
+            'booking_id' => $bookingId,
+            'resource_id' => $van->resource_id,
+            'price_per_hour' => 1500,
+        ]);
+
+        $this->getJson('/api/bookings')
+            ->assertOk()
+            ->assertJsonPath('0.resource_ids', [$navara->resource_id, $van->resource_id])
+            ->assertJsonPath('0.resource_names', ['Nissan Navara', 'Toyota HiAce Van']);
+    }
+
+    public function test_multi_vehicle_request_rejects_facilities(): void
+    {
+        $vehicle = Resource::create([
+            'name' => 'Ambulance #1',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $payload = $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '11:00');
+        $payload['resource_ids'] = [$this->resource->resource_id, $vehicle->resource_id];
+
+        $this->postJson('/api/bookings', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['resource_ids']);
+
+        $this->assertDatabaseCount('booking_request', 0);
+    }
+
+    public function test_multi_vehicle_request_rejects_duplicate_resource_ids(): void
+    {
+        $vehicle = Resource::create([
+            'name' => 'Ambulance #1',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $payload = $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '11:00');
+        $payload['resource_ids'] = [$vehicle->resource_id, $vehicle->resource_id];
+
+        $this->postJson('/api/bookings', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['resource_ids.1']);
+
+        $this->assertDatabaseCount('booking_request', 0);
+    }
+
+    public function test_conflicts_on_secondary_vehicle_block_the_entire_request(): void
+    {
+        $navara = Resource::create([
+            'name' => 'Nissan Navara',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $van = Resource::create([
+            'name' => 'Toyota HiAce Van',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $dumpTruck = Resource::create([
+            'name' => 'Dump Truck #1',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $existing = BookingRequest::create([
+            'user_id' => $this->user->user_id,
+            'resource_id' => $dumpTruck->resource_id,
+            'full_name' => 'Existing Requester',
+            'purpose' => 'Test reservation',
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-02',
+            'start_time' => '08:00',
+            'end_time' => '12:00',
+            'status' => 'approved',
+        ]);
+        $existing->vehicles()->attach($van->resource_id, ['price_per_hour' => null]);
+
+        $this->getJson('/api/bookings/availability?'.http_build_query([
+            'resource_id' => $van->resource_id,
+            'date' => '2026-11-02',
+            'start_time' => '08:00',
+            'end_time' => '09:00',
+        ]))
+            ->assertOk()
+            ->assertJsonCount(0, 'available_slots');
+
+        $this->getJson('/api/bookings/availability?'.http_build_query([
+            'resource_id' => $van->resource_id,
+            'date' => '2026-11-02',
+            'start_time' => '12:30',
+            'end_time' => '13:30',
+        ]))
+            ->assertOk()
+            ->assertJsonPath('available_slots.0.start_time', '12:30');
+
+        $payload = $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '11:00');
+        $payload['resource_id'] = $navara->resource_id;
+        $payload['resource_ids'] = [$navara->resource_id, $van->resource_id];
+
+        $this->postJson('/api/bookings', $payload)
+            ->assertStatus(409)
+            ->assertJsonPath('unavailable_vehicles.0.name', 'Toyota HiAce Van');
+
+        $this->assertDatabaseCount('booking_request', 1);
+    }
+
+    public function test_approval_rechecks_conflicts_for_every_linked_vehicle(): void
+    {
+        $navara = Resource::create([
+            'name' => 'Nissan Navara',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $van = Resource::create([
+            'name' => 'Toyota HiAce Van',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $dumpTruck = Resource::create([
+            'name' => 'Dump Truck #1',
+            'type' => 'vehicle',
+            'status' => 'available',
+        ]);
+        $existing = BookingRequest::create([
+            'user_id' => $this->user->user_id,
+            'resource_id' => $dumpTruck->resource_id,
+            'full_name' => 'Existing Requester',
+            'purpose' => 'Test reservation',
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-02',
+            'start_time' => '08:00',
+            'end_time' => '12:00',
+            'status' => 'approved',
+        ]);
+        $existing->vehicles()->attach($van->resource_id, ['price_per_hour' => null]);
+
+        $request = BookingRequest::create([
+            'user_id' => $this->user->user_id,
+            'resource_id' => $navara->resource_id,
+            'full_name' => 'Pending Requester',
+            'purpose' => 'Test reservation',
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-02',
+            'start_time' => '08:00',
+            'end_time' => '11:00',
+            'status' => 'pending',
+        ]);
+        $request->vehicles()->sync([
+            $navara->resource_id => ['price_per_hour' => null],
+            $van->resource_id => ['price_per_hour' => null],
+        ]);
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/bookings/{$request->booking_id}/status", [
+            'status' => 'approved',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('unavailable_vehicles.0.name', 'Toyota HiAce Van');
     }
 
     public function test_facility_booking_details_include_the_daily_rate_at_submission_time(): void
@@ -293,6 +495,43 @@ class BookingConflictDetectionTest extends TestCase
 
         $this->assertSame('2 billable hours', $soa['quantity_label']);
         $this->assertSame(400.0, $soa['amount']);
+    }
+
+    public function test_vehicle_soa_totals_all_selected_vehicles_using_saved_rates(): void
+    {
+        $navara = Resource::create([
+            'name' => 'Nissan Navara',
+            'type' => 'vehicle',
+            'status' => 'available',
+            'price_per_hour' => 1000,
+        ]);
+        $van = Resource::create([
+            'name' => 'Toyota HiAce Van',
+            'type' => 'vehicle',
+            'status' => 'available',
+            'price_per_hour' => 1500,
+        ]);
+        $booking = $this->createBooking('approved', '2026-11-02', '2026-11-02', '08:00', '11:00');
+        $booking->update([
+            'resource_id' => $navara->resource_id,
+            'price_per_hour' => 1000,
+            'reference_id' => 'JBG-2026-0003',
+        ]);
+        $booking->vehicles()->sync([
+            $navara->resource_id => ['price_per_hour' => 1000],
+            $van->resource_id => ['price_per_hour' => 1500],
+        ]);
+
+        $soa = app(BookingStatementOfAccount::class)->build($booking);
+
+        $this->assertSame(['Nissan Navara', 'Toyota HiAce Van'], $soa['resource_names']);
+        $this->assertSame(7500.0, $soa['amount']);
+        $this->assertSame([3000.0, 4500.0], array_column($soa['charges'], 'amount'));
+
+        $mail = new BookingApproved($booking, $this->user);
+        $this->assertStringContainsString('Nissan Navara', $mail->render());
+        $this->assertStringContainsString('Toyota HiAce Van', $mail->render());
+        $this->assertStringContainsString('₱7,500.00', $mail->render());
     }
 
     public function test_rejection_email_renders_the_reason_provided(): void

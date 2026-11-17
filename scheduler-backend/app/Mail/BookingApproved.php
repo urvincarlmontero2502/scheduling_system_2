@@ -29,8 +29,8 @@ class BookingApproved extends Mailable
     {
         $this->booking = $booking;
         $this->user = $user;
-        $this->resourceName = $booking->resource ? $booking->resource->name : 'Unknown Resource';
         $this->soa = app(BookingStatementOfAccount::class)->build($booking);
+        $this->resourceName = $this->soa['resource_name'];
     }
 
     public function envelope(): Envelope

@@ -9,6 +9,7 @@ import {
   formatRentalDuration,
   formatResourcePrice,
 } from "../utils/resourcePricing";
+import { getBookingResourceNames } from "../utils/bookingResources";
 
 function escapeHtml(value) {
   return String(value ?? "—").replace(/[&<>"']/g, (character) => ({
@@ -107,8 +108,9 @@ export default function BookingDetailModal({
 
   if (!booking) return null;
 
-  const resourceName =
-    booking.resource || booking.resource_name || booking.item_name || "Unknown Resource";
+  const resourceNames = getBookingResourceNames(booking);
+  const primaryResourceName = resourceNames[0];
+  const resourceName = resourceNames.join(", ");
   const resourceType =
     (booking.resource_type || booking.item_type || "").toLowerCase().includes("vehicle")
       ? "Vehicle"
@@ -126,6 +128,36 @@ export default function BookingDetailModal({
   const destination = booking.destination || booking.travel_destination || "";
   const attendees = booking.attendees;
   const priority = booking.priority || "normal";
+  const vehicleDetails = resourceType === "Vehicle"
+    ? (Array.isArray(booking.vehicles) && booking.vehicles.length
+        ? booking.vehicles
+        : [{
+            resource_id: booking.resource_id,
+            name: primaryResourceName,
+            price_per_hour: booking.price_per_hour,
+          }])
+    : [];
+  const vehicleHourlyEstimates = vehicleDetails.map((vehicle) => {
+    const hourlyRate =
+      vehicle.price_per_hour ??
+      vehicle.pivot?.price_per_hour ??
+      (String(vehicle.resource_id) === String(booking.resource_id)
+        ? booking.price_per_hour
+        : null);
+    return {
+      vehicle,
+      rate: hourlyRate,
+      estimate: calculateBookingHourlyEstimate({
+        ...booking,
+        price_per_hour: hourlyRate,
+      }),
+    };
+  });
+  const totalVehicleEstimate =
+    vehicleHourlyEstimates.length > 0 &&
+    vehicleHourlyEstimates.every(({ estimate }) => Number.isFinite(estimate?.total))
+      ? vehicleHourlyEstimates.reduce((total, { estimate }) => total + estimate.total, 0)
+      : null;
   const hourlyEstimate =
     resourceType === "Vehicle" ? calculateBookingHourlyEstimate(booking) : null;
   const dailyEstimate =
@@ -193,13 +225,15 @@ export default function BookingDetailModal({
 
     const referenceNumber = booking.reference_id || `#${bookingId}`;
     const amount =
-      resourceType === "Vehicle" ? hourlyEstimate?.total : dailyEstimate?.total;
+      resourceType === "Vehicle" ? totalVehicleEstimate : dailyEstimate?.total;
     const hasAmount = Number.isFinite(amount);
     const chargeBasis =
       resourceType === "Vehicle"
         ? `${formatRentalDuration(hourlyEstimate?.durationMinutes || 0)}; ${
             hourlyEstimate?.billableHours ?? "—"
-          } billable hours at ${formatResourcePrice(booking.price_per_hour)} per hour`
+          } billable hours. ${vehicleHourlyEstimates.map(({ vehicle, rate, estimate }) =>
+            `${vehicle.name}: ${formatResourcePrice(rate)} per hour, ${estimate?.total == null ? "for assessment" : formatResourcePrice(estimate.total)}`
+          ).join("; ")}`
         : `${dailyEstimate?.billableDays ?? "—"} booked calendar days at ${
             dailyEstimate?.dailyRate == null
               ? "rate to be assessed"
@@ -333,7 +367,16 @@ export default function BookingDetailModal({
             </div>
             <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
               <div>
-                <p className="text-base font-bold text-slate-800">{resourceName}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {resourceNames.length > 1 ? "Requested Vehicles" : "Resource"}
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {resourceNames.map((name, index) => (
+                    <li key={`${name}-${index}`} className="text-base font-bold text-slate-800">
+                      {name}
+                    </li>
+                  ))}
+                </ul>
                 <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
                   {resourceType}
                 </span>
@@ -369,17 +412,26 @@ export default function BookingDetailModal({
                 Hourly Cost Estimate
               </h3>
               <div className="space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-900">
+                {vehicleHourlyEstimates.map(({ vehicle, rate, estimate }) => (
+                  <p key={vehicle.resource_id || vehicle.id || vehicle.name}>
+                    <strong>{vehicle.name}:</strong>{" "}
+                    {estimate?.total == null
+                      ? "Rate to be assessed"
+                      : `${formatResourcePrice(estimate.total)} (${formatResourcePrice(rate)} / hour)`}
+                  </p>
+                ))}
                 <p>
                   <strong>Duration:</strong>{" "}
-                  {formatRentalDuration(hourlyEstimate.durationMinutes)}
-                </p>
-                <p>
-                  <strong>Billable hours:</strong>{" "}
-                  {hourlyEstimate.billableHours} (partial hours round up)
+                  {formatRentalDuration(hourlyEstimate.durationMinutes)} ·{" "}
+                  {hourlyEstimate.billableHours} billable hours (partial hours round up)
                 </p>
                 <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-2">
                   <strong>Estimated total</strong>
-                  <strong>{formatResourcePrice(hourlyEstimate.total)}</strong>
+                  <strong>
+                    {totalVehicleEstimate === null
+                      ? "For assessment"
+                      : formatResourcePrice(totalVehicleEstimate)}
+                  </strong>
                 </p>
               </div>
             </section>

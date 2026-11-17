@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
@@ -56,6 +57,7 @@ class BookingController extends Controller
             $query = BookingRequest::with([
                 'resource',
                 'user',
+                'vehicles',
             ]);
 
             // Barangay admins only see requests from their barangay.
@@ -77,17 +79,21 @@ class BookingController extends Controller
             $formatted = $bookings->map(function ($b) {
                 $ownerName = $b->user?->full_name;
                 $displayName = $b->full_name ?: ($ownerName ?: '—');
+                $vehicles = $this->formatVehicles($b);
 
                 return [
                     'id' => $b->booking_id,
                     'owner_user_id' => $b->user_id,
                     'resource_id' => $b->resource_id,
+                    'resource_ids' => array_column($vehicles, 'resource_id'),
                     'resource' => $b->resource?->name ?? 'Unknown Resource',
                     'resource_type' => $b->resource?->type,
                     'price_per_day' => $b->price_per_day ?? $b->resource?->price_per_day,
                     'price_per_hour' => $b->price_per_hour ?? $b->resource?->price_per_hour,
                     'buffer_minutes' => $b->resource?->buffer_minutes ?? 30,
                     'resource_image' => ($b->resource && $b->resource->image) ? Storage::disk('assets')->url($b->resource->image) : null,
+                    'vehicles' => $vehicles,
+                    'resource_names' => array_column($vehicles, 'name'),
                     'full_name' => $displayName,
                     'requester' => $displayName,
                     'barangay' => $b->user?->barangay ?? $b->user?->name ?? 'Poblacion',
@@ -126,7 +132,7 @@ class BookingController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        $query = BookingRequest::onlyTrashed()->with(['resource', 'user']);
+        $query = BookingRequest::onlyTrashed()->with(['resource', 'user', 'vehicles']);
         if ($user->isBarangayAdmin()) {
             $query->whereHas('user', fn ($builder) => $builder->where('barangay', $user->barangay));
         } elseif (! $user->isAdmin()) {
@@ -138,13 +144,17 @@ class BookingController extends Controller
             $displayName = ($booking->full_name && $booking->full_name !== $ownerName)
                 ? $booking->full_name
                 : '—';
+            $vehicles = $this->formatVehicles($booking);
 
             return [
                 'id' => $booking->booking_id,
                 'booking_id' => $booking->booking_id,
                 'owner_user_id' => $booking->user_id,
                 'resource_id' => $booking->resource_id,
+                'resource_ids' => array_column($vehicles, 'resource_id'),
                 'resource' => $booking->resource?->name ?? 'Unknown Resource',
+                'vehicles' => $vehicles,
+                'resource_names' => array_column($vehicles, 'name'),
                 'full_name' => $displayName,
                 'requester' => $displayName,
                 'barangay' => $booking->user?->barangay ?? 'Poblacion',
@@ -167,7 +177,7 @@ class BookingController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        $booking = BookingRequest::onlyTrashed()->with('user')->find($id);
+        $booking = BookingRequest::onlyTrashed()->with(['user', 'vehicles'])->find($id);
         if (! $booking) {
             return response()->json(['message' => 'Removed booking not found.'], 404);
         }
@@ -175,25 +185,36 @@ class BookingController extends Controller
             return response()->json(['message' => 'You can only restore bookings from your barangay.'], 403);
         }
 
-        $conflict = in_array($booking->status, ['pending', 'approved'], true)
-            ? $this->hasBookingConflict(
-                $booking->resource_id,
+        $conflicts = in_array($booking->status, ['pending', 'approved'], true)
+            ? $this->conflictsForResources(
+                $this->resourceIdsForBooking($booking),
                 $booking->start_date,
                 $booking->end_date,
                 $booking->start_time,
                 $booking->end_time,
                 $booking->booking_id
             )
-            : null;
-        if ($conflict) {
+            : [];
+        if ($conflicts !== []) {
             return response()->json([
-                'message' => 'This booking cannot be restored because it conflicts with another active booking.',
+                'message' => 'This booking cannot be restored because '
+                    .$conflicts[0]['resource_name'].' conflicts with another active booking.',
+                'unavailable_vehicles' => array_map(
+                    fn ($item) => [
+                        'resource_id' => $item['resource_id'],
+                        'name' => $item['resource_name'],
+                    ],
+                    $conflicts
+                ),
             ], 409);
         }
 
         $booking->restore();
 
-        $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+        $resourceName = implode(', ', array_column(
+            $this->formatVehicles($booking),
+            'name'
+        )) ?: ($booking->resource?->name ?? 'Unknown Resource');
         app(ActivityLogger::class)->record(
             $user,
             'booking.restored',
@@ -265,6 +286,9 @@ class BookingController extends Controller
                     'nullable',
                     'exists:resources,resource_id',
                 ],
+
+                'resource_ids' => ['nullable', 'array', 'min:1'],
+                'resource_ids.*' => ['required', 'integer', 'distinct', 'exists:resources,resource_id'],
 
                 'full_name' => [
                     'nullable',
@@ -345,16 +369,43 @@ class BookingController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $resourceId =
-                $validated['resource_id']
-                ?? $validated['item_id']
-                ?? null;
+            $resourceIds = $validated['resource_ids'] ?? array_filter([
+                $validated['resource_id'] ?? $validated['item_id'] ?? null,
+            ]);
+            $resourceIds = array_values(array_map('intval', $resourceIds));
+            if ($resourceIds === []) {
+                throw ValidationException::withMessages([
+                    'resource_id' => ['A resource must be selected.'],
+                ]);
+            }
+
+            $resourceId = $resourceIds[0];
+            $resources = Resource::whereIn('resource_id', $resourceIds)
+                ->get()
+                ->keyBy('resource_id');
+            if ($resources->count() !== count($resourceIds)) {
+                throw ValidationException::withMessages([
+                    'resource_ids' => ['One or more selected resources are unavailable.'],
+                ]);
+            }
+
+            $selectedResources = collect($resourceIds)->map(
+                fn ($id) => $resources->get($id)
+            );
+            $resource = $selectedResources->first();
+
+            if (isset($validated['resource_ids']) && $selectedResources->contains(
+                fn ($selectedResource) => strtolower($selectedResource->type) !== 'vehicle'
+            )) {
+                throw ValidationException::withMessages([
+                    'resource_ids' => ['Only utility vehicles may be requested together.'],
+                ]);
+            }
 
             // --- Capacity Matching ---
             // If the user specified an attendee count, validate it against
             // the resource capacity (facilities only).
             if (isset($validated['attendees']) && $resourceId) {
-                $resource = Resource::find($resourceId);
                 if ($resource && $resource->type === 'facility') {
                     $facilityDetail = $resource->facilityDetails;
                     $capacity = $facilityDetail ? $facilityDetail->capacity : null;
@@ -369,12 +420,10 @@ class BookingController extends Controller
                 }
             }
 
-            // Block requests that overlap an already approved booking OR
-            // if the resource is currently under maintenance
-            $resource = $resourceId ? Resource::find($resourceId) : null;
-
-            // Check if resource is in maintenance
-            if ($resource && $resource->status === 'maintenance') {
+            $maintenanceResources = $selectedResources
+                ->filter(fn ($selectedResource) => $selectedResource->status === 'maintenance')
+                ->values();
+            if ($maintenanceResources->isNotEmpty()) {
                 $alternatives = $this->findAvailableAlternatives(
                     $resource->type,
                     $validated['start_date'],
@@ -383,37 +432,47 @@ class BookingController extends Controller
                     $validated['end_time'] ?? null,
                     $resourceId
                 );
+                $names = $maintenanceResources->pluck('name')->all();
 
                 return response()->json([
-                    'message' => 'The selected resource is unavailable during this time.',
+                    'message' => count($resourceIds) === 1
+                        ? 'The selected resource is unavailable during this time.'
+                        : 'Unavailable vehicles: '.implode(', ', $names).'.',
                     'conflict' => true,
                     'reason' => 'maintenance',
+                    'unavailable_vehicles' => $maintenanceResources->map(fn ($item) => [
+                        'resource_id' => $item->resource_id,
+                        'name' => $item->name,
+                    ])->all(),
                     'alternatives' => $alternatives,
                 ], 409);
             }
 
-            $conflict = $this->hasBookingConflict(
-                $resourceId,
+            $conflicts = $this->conflictsForResources(
+                $resourceIds,
                 $validated['start_date'],
                 $validated['end_date'],
                 $validated['start_time'] ?? null,
                 $validated['end_time'] ?? null
             );
 
-            if ($conflict) {
+            if ($conflicts !== []) {
+                $firstConflict = $conflicts[0];
+                $conflict = $firstConflict['booking'];
+                $conflictResource = $resources->get($firstConflict['resource_id']);
                 $alternatives = [];
                 $suggestions = [];
-                if ($resourceId && $resource) {
+                if ($conflictResource) {
                     $alternatives = $this->findAvailableAlternatives(
-                        $resource->type,
+                        $conflictResource->type,
                         $validated['start_date'],
                         $validated['end_date'],
                         $validated['start_time'] ?? null,
                         $validated['end_time'] ?? null,
-                        $resourceId
+                        $conflictResource->resource_id
                     );
                     $suggestions = $this->findTimeSuggestions(
-                        $resourceId,
+                        $conflictResource->resource_id,
                         $validated['start_date'],
                         $validated['end_date'],
                         $validated['start_time'] ?? null,
@@ -423,8 +482,17 @@ class BookingController extends Controller
                 }
 
                 return response()->json([
-                    'message' => 'The requested time slot conflicts with an existing reservation.',
+                    'message' => count($resourceIds) === 1
+                        ? 'The requested time slot conflicts with an existing reservation.'
+                        : 'Unavailable vehicles: '.implode(', ', array_column($conflicts, 'resource_name')).'.',
                     'conflict' => true,
+                    'unavailable_vehicles' => array_map(
+                        fn ($item) => [
+                            'resource_id' => $item['resource_id'],
+                            'name' => $item['resource_name'],
+                        ],
+                        $conflicts
+                    ),
                     'conflicting_booking' => [
                         'start_date' => $conflict->start_date,
                         'end_date' => $conflict->end_date,
@@ -445,38 +513,48 @@ class BookingController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $booking = BookingRequest::create([
-                'user_id' => $user->user_id,
-                'resource_id' => $resourceId,
-                'full_name' => $validated['full_name'] ?? $user->full_name,
-                'purpose' => $validated['purpose'] ?? null,
-                'destination' => $validated['destination'] ?? null,
-                'price_per_day' => $resource?->type === 'facility'
-                    ? $resource->price_per_day
-                    : null,
-                'price_per_hour' => $resource?->type === 'vehicle'
-                    ? $resource->price_per_hour
-                    : null,
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-                'start_time' => $validated['start_time'] ?? null,
-                'end_time' => $validated['end_time'] ?? null,
-                'cell_number' => $validated['cell_number'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'email' => ($validated['email'] ?? null) ?: ($user->email ?? 'N/A'),
-                'status' => $validated['status'] ?? 'pending',
-                'attendees' => $validated['attendees'] ?? null,
-                'priority' => $validated['priority'] ?? 'normal',
-            ]);
+            $booking = DB::transaction(function () use ($user, $validated, $resource, $resourceId, $resourceIds, $selectedResources) {
+                $booking = BookingRequest::create([
+                    'user_id' => $user->user_id,
+                    'resource_id' => $resourceId,
+                    'full_name' => $validated['full_name'] ?? $user->full_name,
+                    'purpose' => $validated['purpose'] ?? null,
+                    'destination' => $validated['destination'] ?? null,
+                    'price_per_day' => $resource?->type === 'facility'
+                        ? $resource->price_per_day
+                        : null,
+                    'price_per_hour' => $resource?->type === 'vehicle'
+                        ? $resource->price_per_hour
+                        : null,
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'],
+                    'start_time' => $validated['start_time'] ?? null,
+                    'end_time' => $validated['end_time'] ?? null,
+                    'cell_number' => $validated['cell_number'] ?? null,
+                    'address' => $validated['address'] ?? null,
+                    'email' => ($validated['email'] ?? null) ?: ($user->email ?? 'N/A'),
+                    'status' => $validated['status'] ?? 'pending',
+                    'attendees' => $validated['attendees'] ?? null,
+                    'priority' => $validated['priority'] ?? 'normal',
+                ]);
 
-            // Generate human-readable reference ID: JBG-YYYY-NNNN
-            $referenceId = 'JBG-'.date('Y').'-'.str_pad($booking->booking_id, 4, '0', STR_PAD_LEFT);
-            $booking->update(['reference_id' => $referenceId]);
+                if (strtolower($resource->type) === 'vehicle') {
+                    $vehicleRates = $selectedResources->mapWithKeys(fn ($vehicle) => [
+                        $vehicle->resource_id => ['price_per_hour' => $vehicle->price_per_hour],
+                    ])->all();
+                    $booking->vehicles()->sync($vehicleRates);
+                }
+
+                // Generate human-readable reference ID: JBG-YYYY-NNNN
+                $referenceId = 'JBG-'.date('Y').'-'.str_pad($booking->booking_id, 4, '0', STR_PAD_LEFT);
+                $booking->update(['reference_id' => $referenceId]);
+
+                return $booking;
+            });
 
             // Notify administrators of new pending booking request
             $admins = User::where('role', 'admin')->get();
-            $resource = $booking->resource;
-            $resourceName = $resource ? $resource->name : 'Unknown';
+            $resourceName = implode(', ', $selectedResources->pluck('name')->all());
             $requesterName = $booking->full_name ?? ($user->full_name ?? 'Unknown');
 
             foreach ($admins as $admin) {
@@ -507,7 +585,7 @@ class BookingController extends Controller
             );
 
             return response()->json(
-                $booking->load(['resource', 'user']),
+                $booking->load(['resource', 'user', 'vehicles']),
                 201
             );
         } catch (ValidationException $e) {
@@ -548,8 +626,9 @@ class BookingController extends Controller
             ]);
 
             if ($validated['status'] === 'approved') {
-                $conflict = $this->hasBookingConflict(
-                    $booking->resource_id,
+                $bookingResourceIds = $this->resourceIdsForBooking($booking);
+                $conflicts = $this->conflictsForResources(
+                    $bookingResourceIds,
                     Carbon::parse($booking->start_date)->toDateString(),
                     Carbon::parse($booking->end_date)->toDateString(),
                     $booking->start_time,
@@ -557,12 +636,23 @@ class BookingController extends Controller
                     $booking->booking_id
                 );
 
-                if ($conflict) {
+                if ($conflicts !== []) {
+                    $firstConflict = $conflicts[0];
+                    $conflict = $firstConflict['booking'];
                     return response()->json([
-                        'message' => 'This resource is already booked for that date and time.',
+                        'message' => count($bookingResourceIds) === 1
+                            ? 'This resource is already booked for that date and time.'
+                            : 'Unavailable vehicles: '.implode(', ', array_column($conflicts, 'resource_name')).'.',
                         'conflict' => true,
+                        'unavailable_vehicles' => array_map(
+                            fn ($item) => [
+                                'resource_id' => $item['resource_id'],
+                                'name' => $item['resource_name'],
+                            ],
+                            $conflicts
+                        ),
                         'suggestions' => $this->findTimeSuggestions(
-                            $booking->resource_id,
+                            $firstConflict['resource_id'],
                             Carbon::parse($booking->start_date)->toDateString(),
                             Carbon::parse($booking->end_date)->toDateString(),
                             $booking->start_time,
@@ -584,16 +674,20 @@ class BookingController extends Controller
                 'remarks' => $validated['remarks'] ?? null,
             ]);
 
+            $booking->loadMissing('vehicles');
+            $resourceName = implode(', ', array_column(
+                $this->formatVehicles($booking),
+                'name'
+            )) ?: ($booking->resource?->name ?? 'Unknown Resource');
             Notification::create([
                 'booking_id' => $booking->booking_id,
                 'user_id' => $booking->user_id,
-                'message' => "Your booking request has been {$validated['status']}.",
+                'message' => "Your booking request for '{$resourceName}' has been {$validated['status']}.",
                 'is_read' => false,
                 'type' => $validated['status'] === 'approved' ? 'BOOKING_APPROVED' : 'BOOKING_REJECTED',
                 'title' => $validated['status'] === 'approved' ? 'Booking Approved' : 'Booking Rejected',
             ]);
 
-            $resourceName = $booking->resource?->name ?? 'Unknown Resource';
             app(ActivityLogger::class)->record(
                 $user,
                 'booking.'.$validated['status'],
@@ -612,8 +706,6 @@ class BookingController extends Controller
             $emailNotificationMessage = null;
             try {
                 $requester = User::find($booking->user_id);
-                $resource = $booking->resource;
-                $resourceName = $resource ? $resource->name : 'Unknown Resource';
                 $recipientEmail = $booking->email;
                 if (! is_string($recipientEmail) || ! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
                     $recipientEmail = $requester?->email;
@@ -643,7 +735,7 @@ class BookingController extends Controller
                 $emailNotificationMessage = 'The booking status changed, but its email notification could not be sent. Check the backend mail configuration.';
             }
 
-            return response()->json(array_merge($booking->toArray(), [
+            return response()->json(array_merge($booking->load(['resource', 'vehicles'])->toArray(), [
                 'email_notification_sent' => $emailNotificationSent,
                 'email_notification_message' => $emailNotificationMessage,
             ]));
@@ -689,7 +781,11 @@ class BookingController extends Controller
                 }
             }
 
-            $resourceName = $booking->resource?->name ?? 'Unknown Resource';
+            $booking->loadMissing('vehicles');
+            $resourceName = implode(', ', array_column(
+                $this->formatVehicles($booking),
+                'name'
+            )) ?: ($booking->resource?->name ?? 'Unknown Resource');
             $bookingSummary = [
                 'status' => $booking->status,
                 'resource_name' => $resourceName,
@@ -715,6 +811,91 @@ class BookingController extends Controller
 
             return response()->json(['message' => 'Failed to delete booking.'], 500);
         }
+    }
+
+    /**
+     * Serialize the vehicles linked to a booking while keeping the legacy
+     * resource fields available to existing clients.
+     */
+    private function formatVehicles(BookingRequest $booking): array
+    {
+        $vehicles = $booking->vehicles;
+        if ($vehicles->isEmpty() && strtolower((string) $booking->resource?->type) === 'vehicle') {
+            $vehicles = collect([$booking->resource]);
+        }
+
+        return $vehicles
+            ->sortBy(fn ($vehicle) => (int) $vehicle->resource_id === (int) $booking->resource_id ? 0 : 1)
+            ->map(fn ($vehicle) => [
+                'resource_id' => $vehicle->resource_id,
+                'name' => $vehicle->name,
+                'type' => $vehicle->type,
+                'price_per_hour' => $vehicle->pivot?->price_per_hour
+                    ?? ((int) $vehicle->resource_id === (int) $booking->resource_id
+                        ? $booking->price_per_hour
+                        : $vehicle->price_per_hour),
+                'buffer_minutes' => $vehicle->buffer_minutes ?? 30,
+                'image_url' => $vehicle->image
+                    ? Storage::disk('assets')->url($vehicle->image)
+                    : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function resourceIdsForBooking(BookingRequest $booking): array
+    {
+        $vehicleIds = $booking->vehicles
+            ->pluck('resource_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($vehicleIds === []) {
+            return $booking->resource_id ? [(int) $booking->resource_id] : [];
+        }
+
+        return array_values(array_unique($vehicleIds));
+    }
+
+    private function conflictsForResources(
+        array $resourceIds,
+        $startDate,
+        $endDate,
+        $startTime,
+        $endTime,
+        $excludeBookingId = null
+    ): array {
+        $conflicts = [];
+        foreach ($resourceIds as $resourceId) {
+            $booking = $this->hasBookingConflict(
+                $resourceId,
+                $startDate,
+                $endDate,
+                $startTime,
+                $endTime,
+                $excludeBookingId
+            );
+            if (! $booking) {
+                continue;
+            }
+
+            $conflicts[] = [
+                'resource_id' => (int) $resourceId,
+                'resource_name' => Resource::withTrashed()->find($resourceId)?->name ?? 'Unknown Vehicle',
+                'booking' => $booking,
+            ];
+        }
+
+        return $conflicts;
+    }
+
+    private function bookingsForResource($resourceId)
+    {
+        return BookingRequest::where(function ($query) use ($resourceId) {
+            $query->where('resource_id', $resourceId)
+                ->orWhereHas('vehicles', fn ($vehicles) => $vehicles
+                    ->where('resources.resource_id', $resourceId));
+        });
     }
 
     /**
@@ -753,7 +934,7 @@ class BookingController extends Controller
             $endTime
         );
 
-        $candidates = BookingRequest::where('resource_id', $resourceId)
+        $candidates = $this->bookingsForResource($resourceId)
             ->whereIn('status', ['pending', 'approved'])
             ->whereDate('start_date', '<=', Carbon::parse($endDate)->addDays($bufferDays)->toDateString())
             ->whereDate('end_date', '>=', Carbon::parse($startDate)->subDays($bufferDays)->toDateString())
@@ -882,7 +1063,7 @@ class BookingController extends Controller
             $requestedStart->second
         );
 
-        $lastBookedDate = BookingRequest::where('resource_id', $resourceId)
+        $lastBookedDate = $this->bookingsForResource($resourceId)
             ->whereIn('status', ['pending', 'approved'])
             ->max('end_date');
         $lastSearchDate = Carbon::parse($lastBookedDate ?: $startDate)
@@ -1022,7 +1203,7 @@ class BookingController extends Controller
         $bufferDays = intdiv($bufferMinutes, 1440) + ($bufferMinutes > 0 ? 1 : 0);
 
         // Include adjacent dates because resource buffers can cross midnight.
-        $bookings = BookingRequest::where('resource_id', $resourceId)
+        $bookings = $this->bookingsForResource($resourceId)
             ->whereIn('status', ['pending', 'approved'])
             ->whereDate('start_date', '<=', $dayStartDate->copy()->addDays($bufferDays)->toDateString())
             ->whereDate('end_date', '>=', $dayStartDate->copy()->subDays($bufferDays)->toDateString())
