@@ -145,6 +145,8 @@ export const fetchBookings = (params) => {
     return res;
   });
 };
+export const fetchResourceReport = (params) =>
+  client.get("/reports", { params });
 export const fetchRemovedBookings = () => client.get("/bookings/removed");
 export const restoreBooking = (id) => {
   invalidateCache(CACHE_KEYS.BOOKINGS);
