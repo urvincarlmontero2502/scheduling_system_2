@@ -286,14 +286,21 @@ export default function CalendarView() {
 
   const handleBookingStatusChange = async (id, status, remarks) => {
     try {
-      await api.updateBookingStatus(
+      const response = await api.updateBookingStatus(
         id,
         status,
         remarks ? { remarks } : {},
       );
-      toast.success(
-        `Booking ${status === "approved" ? "approved" : "rejected"} successfully`,
-      );
+      if (response?.data?.email_notification_sent === false) {
+        toast.error(
+          response.data.email_notification_message ||
+            `Booking ${status} but its email notification could not be sent.`,
+        );
+      } else {
+        toast.success(
+          `Booking ${status === "approved" ? "approved" : "rejected"} successfully`,
+        );
+      }
       setSelectedBooking(null);
       invalidateCache(CACHE_KEYS.BOOKINGS);
       invalidateCache(CACHE_KEYS.HEALTH);

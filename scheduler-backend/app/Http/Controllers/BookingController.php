@@ -608,23 +608,41 @@ class BookingController extends Controller
                 ['status' => $validated['status'], 'resource_name' => $resourceName]
             );
 
+            $emailNotificationSent = false;
+            $emailNotificationMessage = null;
             try {
                 $requester = User::find($booking->user_id);
                 $resource = $booking->resource;
                 $resourceName = $resource ? $resource->name : 'Unknown Resource';
+                $recipientEmail = $booking->email;
+                if (! is_string($recipientEmail) || ! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                    $recipientEmail = $requester?->email;
+                }
 
-                if ($requester && $requester->email) {
+                if ($requester && $recipientEmail && filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
                     if ($validated['status'] === 'approved') {
-                        Mail::to($requester->email)->send(new BookingApproved($booking, $requester));
+                        Mail::mailer('brevo')->to($recipientEmail)->send(new BookingApproved($booking, $requester));
                     } else {
-                        Mail::to($requester->email)->send(new BookingRejected($booking, $requester));
+                        Mail::mailer('brevo')->to($recipientEmail)->send(new BookingRejected($booking, $requester));
                     }
+                    $emailNotificationSent = true;
+                } else {
+                    Log::warning('Skipped booking status email because the requestor has no valid email address.', [
+                        'booking_id' => $booking->booking_id,
+                    ]);
+                    $emailNotificationMessage = 'No valid requestor email address is available.';
                 }
             } catch (Exception $e) {
-                Log::warning('Failed to send booking status email: '.$e->getMessage());
+                Log::error('Failed to send booking status email: '.$e->getMessage(), [
+                    'booking_id' => $booking->booking_id,
+                ]);
+                $emailNotificationMessage = 'The booking status changed, but its email notification could not be sent. Check the backend mail configuration.';
             }
 
-            return response()->json($booking);
+            return response()->json(array_merge($booking->toArray(), [
+                'email_notification_sent' => $emailNotificationSent,
+                'email_notification_message' => $emailNotificationMessage,
+            ]));
         } catch (Exception $e) {
             Log::error('Failed to update booking status: '.$e->getMessage());
 

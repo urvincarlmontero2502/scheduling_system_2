@@ -294,12 +294,20 @@ export default function Bookings() {
     writeCache(CACHE_KEYS.BOOKINGS, updatedBookings);
 
     try {
+      let response;
       if (status === "rejected" && reason) {
-        await api.updateBookingStatus(id, status, { remarks: reason });
+        response = await api.updateBookingStatus(id, status, { remarks: reason });
       } else {
-        await api.updateBookingStatus(id, status);
+        response = await api.updateBookingStatus(id, status);
       }
-      toast.success(`Booking ${status === "approved" ? "approved" : status === "rejected" ? "rejected" : "updated"} successfully`);
+      if (response?.data?.email_notification_sent === false) {
+        toast.error(
+          response.data.email_notification_message ||
+            `Booking ${status} but its email notification could not be sent.`,
+        );
+      } else {
+        toast.success(`Booking ${status === "approved" ? "approved" : status === "rejected" ? "rejected" : "updated"} successfully`);
+      }
       // Re-fetch cached data and invalidate health cache
       refetchBookings();
       invalidateCache(CACHE_KEYS.HEALTH);
