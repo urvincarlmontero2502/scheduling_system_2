@@ -11,6 +11,9 @@ import {
   FileText,
   ImageIcon,
   RotateCcw,
+  MapPin,
+  Phone,
+  Mail,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import StatusBadge from "../components/StatusBadge";
@@ -23,17 +26,34 @@ import {
   invalidateCache,
 } from "../utils/cache";
 import { isSpecialEvent } from "../utils/specialEvents";
+import {
+  calculateBookingHourlyEstimate,
+  calculateDailyBookingEstimate,
+  formatRentalDuration,
+  formatResourcePrice,
+} from "../utils/resourcePricing";
 
-// Helper to look up resource image by resource_id or name
-function getResourceImage(booking, resources) {
+function getResourceRecord(booking, resources) {
   const rid = booking.resource_id;
-  const name = booking.resource || booking.resource_name || booking.item_name || "";
-  const match =
+  const name = typeof booking.resource === "object"
+    ? booking.resource?.name || booking.resource_name || booking.item_name || ""
+    : booking.resource || booking.resource_name || booking.item_name || "";
+
+  return (
     (rid != null && resources.find((r) => String(r.id || r.resource_id) === String(rid))) ||
     resources.find((r) =>
       (r.name || r.resource_name || r.item_name || "").toLowerCase() === name.toLowerCase()
-    );
-  return match?.image || "";
+    )
+  );
+}
+
+function getResourceImage(booking, resources) {
+  return (
+    booking.resource_image ||
+    (typeof booking.resource === "object" ? booking.resource?.image_url : "") ||
+    getResourceRecord(booking, resources)?.image ||
+    ""
+  );
 }
 
 function formatTimeTo12Hour(timeStr) {
@@ -226,6 +246,28 @@ export default function BookingHistory() {
 
     return matchesSearch && matchesStatus;
   });
+  const selectedResourceRecord = selectedBooking
+    ? getResourceRecord(selectedBooking, resources)
+    : null;
+  const selectedResourceType = String(
+    selectedBooking?.resource_type ||
+      selectedBooking?.resource?.type ||
+      selectedResourceRecord?.type ||
+      "",
+  ).toLowerCase();
+  const isSelectedVehicle = selectedResourceType.includes("vehicle");
+  const selectedHourlyEstimate =
+    selectedBooking && isSelectedVehicle
+      ? calculateBookingHourlyEstimate(selectedBooking)
+      : null;
+  const selectedDailyEstimate =
+    selectedBooking && selectedResourceType.includes("facility")
+      ? calculateDailyBookingEstimate(
+          selectedBooking.start_date || selectedBooking.date,
+          selectedBooking.end_date || selectedBooking.start_date || selectedBooking.date,
+          selectedBooking.price_per_day,
+        )
+      : null;
 
   async function handleDelete(bookingId) {
     if (
@@ -939,154 +981,210 @@ export default function BookingHistory() {
       {/* Details Modal */}
       {selectedBooking && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/40 p-4"
-          onClick={() => setSelectedBooking(null)}>
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSelectedBooking(null)}
+        >
           <div
-            className="w-full max-w-lg rounded-xl bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            {/* Resource Image Banner Header */ }
-            <div className="relative w-full h-44 rounded-t-xl overflow-hidden bg-slate-100 mb-4">
-              {selectedBooking.resource?.image_url ? (
-                <img
-                  src={selectedBooking.resource?.image_url}
-                  alt={selectedBooking.resource?.name || "Resource"}
-                  className="w-full h-full object-cover"
-                />
-              ) : getResourceImage(selectedBooking, resources) ? (
+            className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="relative h-36 shrink-0 overflow-hidden bg-slate-100">
+              {getResourceImage(selectedBooking, resources) ? (
                 <img
                   src={getResourceImage(selectedBooking, resources)}
-                  alt={selectedBooking.resource || "Resource"}
-                  className="w-full h-full object-cover"
+                  alt={selectedBooking.resource?.name || selectedBooking.resource || "Resource"}
+                  className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="bg-slate-100 flex flex-col items-center justify-center text-slate-400 gap-1.5 h-full">
-                  <ImageIcon size={32} strokeWidth={1.5} />
-                  <span className="text-xs">No image provided</span>
+                <div className="flex h-full flex-col items-center justify-center gap-1.5 bg-slate-100 text-slate-400">
+                  <ImageIcon size={30} strokeWidth={1.5} />
+                  <span className="text-xs">No resource image</span>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <div>
-                <h2 className="text-[16px] font-semibold">Booking Details</h2>
-
-                <p className="text-[12px] text-steel">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Booking History</p>
+                <h2 className="mt-1 truncate text-base font-semibold text-slate-800">
                   Booking #{selectedBooking.id || selectedBooking.booking_id}
-                </p>
-                <p className="text-[11px] text-steel">
-                  Ref: {selectedBooking.reference_id || `#${selectedBooking.id || selectedBooking.booking_id}`}
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Reference: {selectedBooking.reference_id || `#${selectedBooking.id || selectedBooking.booking_id}`}
                 </p>
               </div>
-
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="text-gray-400 hover:text-gray-700">
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close booking details"
+              >
                 ×
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-steel">
-                  Requestor
-                </p>
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+              <section className="border-b border-slate-100 pb-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Requested Resource</h3>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                    {isSelectedVehicle ? "Vehicle" : "Facility"}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                  <p className="text-base font-bold text-slate-800">
+                    {typeof selectedBooking.resource === "object"
+                      ? selectedBooking.resource?.name || selectedBooking.resource_name || "Resource"
+                      : selectedBooking.resource || selectedBooking.resource_name || selectedBooking.item_name || "Resource"}
+                  </p>
+                </div>
+              </section>
 
-                <p className="mt-1 text-[14px] font-medium">
-                  {selectedBooking.full_name ||
-                    selectedBooking.requester ||
-                    selectedBooking.user?.full_name ||
-                    "Unknown"}
-                </p>
-              </div>
+              <section className="border-b border-slate-100 pb-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Reservation Schedule</h3>
+                <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2">
+                  <div className="flex items-start gap-3">
+                    <Calendar size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Date Range</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-800">{getDateValue(selectedBooking)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Clock size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Time Slot</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-800">{getTimeValue(selectedBooking)}</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-steel">
-                  Resource
-                </p>
+              {selectedHourlyEstimate && (
+                <section className="border-b border-slate-100 pb-5">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Vehicle Cost Estimate</h3>
+                  <div className="space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-900">
+                    <p><strong>Hourly rate:</strong> {formatResourcePrice(selectedBooking.price_per_hour)} / hour</p>
+                    <p><strong>Duration:</strong> {formatRentalDuration(selectedHourlyEstimate.durationMinutes)}</p>
+                    <p><strong>Billable hours:</strong> {selectedHourlyEstimate.billableHours} (partial hours round up)</p>
+                    <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-2">
+                      <strong>Estimated total</strong>
+                      <strong>{formatResourcePrice(selectedHourlyEstimate.total)}</strong>
+                    </p>
+                  </div>
+                </section>
+              )}
 
-                <div className="mt-1 flex items-center gap-3">
-                  {selectedBooking.resource?.image_url || getResourceImage(selectedBooking, resources) ? (
-                    <img
-                      src={selectedBooking.resource?.image_url || getResourceImage(selectedBooking, resources)}
-                      alt={selectedBooking.resource?.name || "Resource"}
-                      className="w-8 h-8 rounded-md object-cover border border-slate-200"
-                    />
-                  ) : (
-                    <ImageIcon size={20} className="text-slate-400" />
+              {selectedDailyEstimate && (
+                <section className="border-b border-slate-100 pb-5">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Facility Cost Estimate</h3>
+                  <div className="space-y-1 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-900">
+                    <p><strong>Daily rate:</strong> {formatResourcePrice(selectedDailyEstimate.dailyRate)} / day</p>
+                    <p><strong>Billable days:</strong> {selectedDailyEstimate.billableDays} (calendar days, inclusive)</p>
+                    <p className="mt-1 flex items-center justify-between border-t border-blue-100 pt-2">
+                      <strong>Estimated total</strong>
+                      <strong>{formatResourcePrice(selectedDailyEstimate.total)}</strong>
+                    </p>
+                  </div>
+                </section>
+              )}
+
+              <section className="border-b border-slate-100 pb-5">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Requested Details</h3>
+                <div className="grid grid-cols-1 gap-x-5 gap-y-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2">
+                  <div className="flex items-start gap-3">
+                    <User size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Requestor</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-800">
+                        {selectedBooking.full_name || selectedBooking.requester || selectedBooking.user?.full_name || "Unknown"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Building2 size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Barangay</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-800">{selectedBooking.barangay || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Phone size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Contact Number</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-800">{selectedBooking.cell_number || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Mail size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-500">Email</p>
+                      <p className="mt-0.5 break-all text-sm font-medium text-slate-800">
+                        {selectedBooking.email || selectedBooking.user?.email || selectedBooking.requester_email || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 sm:col-span-2">
+                    <MapPin size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Address</p>
+                      <p className="mt-0.5 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">
+                        {selectedBooking.where_do_you_live || selectedBooking.address || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  {isSelectedVehicle && selectedBooking.destination && (
+                    <div className="flex items-start gap-3 sm:col-span-2">
+                      <MapPin size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                      <div>
+                        <p className="text-xs text-slate-500">Destination</p>
+                        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">
+                          {selectedBooking.destination}
+                        </p>
+                      </div>
+                    </div>
                   )}
-                  <p className="text-[14px] font-medium">
-                    {selectedBooking.resource ||
-                      selectedBooking.resource_name ||
-                      selectedBooking.item_name ||
-                      "Resource"}
+                  {!isSelectedVehicle && selectedBooking.attendees != null && selectedBooking.attendees !== "" && (
+                    <div className="flex items-start gap-3">
+                      <User size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                      <div>
+                        <p className="text-xs text-slate-500">Attendees</p>
+                        <p className="mt-0.5 text-sm font-medium text-slate-800">{selectedBooking.attendees}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-start gap-3">
+                    <FileText size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-xs text-slate-500">Priority</p>
+                      <p className="mt-0.5 text-sm font-medium capitalize text-slate-800">
+                        {selectedBooking.priority || "normal"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Purpose / Additional Notes</h3>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                  <p className="whitespace-pre-wrap text-sm text-slate-700">
+                    {selectedBooking.purpose || "No purpose provided"}
                   </p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-steel">
-                    Date
-                  </p>
-
-                  <p className="mt-1 flex items-center gap-2 text-[13px]">
-                    <Calendar size={14} />
-                    {getDateValue(selectedBooking)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-steel">
-                    Time
-                  </p>
-
-                  <p className="mt-1 flex items-center gap-2 text-[13px]">
-                    <Clock size={14} />
-                    {getTimeValue(selectedBooking)}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-steel">
-                  Purpose
-                </p>
-
-                <p className="mt-1 text-[13px]">
-                  {selectedBooking.purpose || "No purpose provided"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-steel">
-                  Email
-                </p>
-                <p className="mt-1 text-[13px]">
-                  {selectedBooking.email ||
-                    selectedBooking.user?.email ||
-                    selectedBooking.requester_email ||
-                    "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-steel">
-                  Status
-                </p>
-
-                <div className="mt-1">
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</p>
                   <StatusBadge status={selectedBooking.status} />
                 </div>
-              </div>
+              </section>
             </div>
 
-            <div className="flex justify-between items-center border-t border-line px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-100 px-5 py-4 sm:px-6">
               {listMode === "removed" && canRestore ? (
                 <button
                   onClick={() =>
                     handleRestore(selectedBooking.id || selectedBooking.booking_id)
                   }
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 px-4 py-2 text-[13px] font-medium text-emerald-700 hover:bg-emerald-50"
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
                 >
                   <RotateCcw size={15} />
                   Restore Booking
@@ -1096,7 +1194,8 @@ export default function BookingHistory() {
                   onClick={() =>
                     handleDelete(selectedBooking.id || selectedBooking.booking_id)
                   }
-                  className="flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50">
+                  className="flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
                   <Trash2 size={15} />
                   Delete Booking
                 </button>
@@ -1109,13 +1208,15 @@ export default function BookingHistory() {
               }`}>
                 <button
                   onClick={() => setSelectedBooking(null)}
-                  className="rounded-lg border border-line px-4 py-2 text-[13px] font-medium hover:bg-gray-50">
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
                   Close
                 </button>
 
                 <button
                   onClick={() => handlePrint(selectedBooking)}
-                  className="flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-[13px] font-medium text-white hover:bg-gray-900">
+                  className="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+                >
                   <Printer size={15} />
                   Print
                 </button>
