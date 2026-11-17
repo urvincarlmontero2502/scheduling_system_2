@@ -66,6 +66,25 @@ export function calculateBookingHourlyEstimate(booking) {
   );
 }
 
+export function calculateDailyBookingEstimate(startDate, endDate, rate) {
+  const start = Date.parse(`${String(startDate || "").split("T")[0]}T00:00:00Z`);
+  const end = Date.parse(`${String(endDate || "").split("T")[0]}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+
+  const billableDays = Math.floor((end - start) / 86400000) + 1;
+  const hasDailyRate =
+    rate != null &&
+    String(rate).trim() !== "" &&
+    Number.isFinite(Number(rate)) &&
+    Number(rate) >= 0;
+
+  return {
+    billableDays,
+    dailyRate: hasDailyRate ? Number(rate) : null,
+    total: hasDailyRate ? Number(rate) * billableDays : null,
+  };
+}
+
 export function formatRentalDuration(durationMinutes) {
   return `${Math.floor(durationMinutes / 60)}h${
     durationMinutes % 60 ? ` ${durationMinutes % 60}m` : ""

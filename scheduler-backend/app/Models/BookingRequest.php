@@ -21,6 +21,7 @@ class BookingRequest extends Model
         'full_name', // <-- Add this here so it saves properly!
         'purpose',
         'destination',
+        'price_per_day',
         'price_per_hour',
         'start_date',
         'end_date',
@@ -45,6 +46,7 @@ class BookingRequest extends Model
             'reminder_sent_at' => 'datetime',
             'reminder_sms_sent_at' => 'datetime',
             'deleted_at' => 'datetime',
+            'price_per_day' => 'decimal:2',
             'price_per_hour' => 'decimal:2',
         ];
     }

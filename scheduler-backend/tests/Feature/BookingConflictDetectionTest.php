@@ -40,6 +40,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('name');
             $table->string('type');
             $table->string('status');
+            $table->decimal('price_per_day', 10, 2)->nullable();
             $table->decimal('price_per_hour', 10, 2)->nullable();
             $table->unsignedInteger('buffer_minutes')->default(30);
             $table->json('images')->nullable();
@@ -57,6 +58,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('full_name')->nullable();
             $table->string('purpose')->nullable();
             $table->text('destination')->nullable();
+            $table->decimal('price_per_day', 10, 2)->nullable();
             $table->decimal('price_per_hour', 10, 2)->nullable();
             $table->date('start_date');
             $table->date('end_date');
@@ -198,6 +200,28 @@ class BookingConflictDetectionTest extends TestCase
         $this->getJson('/api/bookings')
             ->assertOk()
             ->assertJsonPath('0.price_per_hour', '2543.00');
+    }
+
+    public function test_facility_booking_details_include_the_daily_rate_at_submission_time(): void
+    {
+        $facility = Resource::create([
+            'name' => 'Community Hall',
+            'type' => 'facility',
+            'status' => 'available',
+            'price_per_day' => 1500,
+        ]);
+        $payload = $this->bookingPayload('2026-11-02', '2026-11-03', '08:00', '17:00');
+        $payload['resource_id'] = $facility->resource_id;
+
+        $this->postJson('/api/bookings', $payload)
+            ->assertCreated()
+            ->assertJsonPath('price_per_day', '1500.00');
+
+        $facility->update(['price_per_day' => 2000]);
+
+        $this->getJson('/api/bookings')
+            ->assertOk()
+            ->assertJsonPath('0.price_per_day', '1500.00');
     }
 
     public function test_conflicting_full_day_booking_returns_next_day_suggestion(): void
