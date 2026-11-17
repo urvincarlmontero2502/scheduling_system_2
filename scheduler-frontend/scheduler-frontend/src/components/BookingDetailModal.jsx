@@ -64,6 +64,10 @@ export default function BookingDetailModal({
   const bookingId = booking?.id || booking?.booking_id;
   const status = (booking?.status || "pending").toLowerCase();
   const isPending = status === "pending";
+  const canRemoveBooking =
+    onDelete &&
+    ((isPending && canRemovePending) ||
+      (status === "approved" && canRemoveApproved));
 
   useEffect(() => {
     let active = true;
@@ -353,12 +357,22 @@ export default function BookingDetailModal({
           className="flex w-full flex-col gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
           style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
         >
-          <button
-            onClick={onClose}
-            className="h-10 w-full rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 sm:w-auto"
-          >
-            Close
-          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button
+              onClick={onClose}
+              className="h-10 flex-1 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 sm:flex-none"
+            >
+              Close
+            </button>
+            {canRemoveBooking && (
+              <button
+                onClick={handleRemove}
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:flex-none"
+              >
+                <Trash2 size={14} /> Remove
+              </button>
+            )}
+          </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
             {isPending && canModerate ? (
               <>
@@ -374,29 +388,7 @@ export default function BookingDetailModal({
                 >
                   <Check size={14} /> Approve
                 </button>
-                {canRemovePending && onDelete && (
-                  <button
-                    onClick={handleRemove}
-                    className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
-                  >
-                    <Trash2 size={14} /> Remove
-                  </button>
-                )}
               </>
-            ) : isPending && canRemovePending && onDelete ? (
-              <button
-                onClick={handleRemove}
-                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
-              >
-                <Trash2 size={14} /> Remove
-              </button>
-            ) : status === "approved" && canRemoveApproved && onDelete ? (
-              <button
-                onClick={handleRemove}
-                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
-              >
-                <Trash2 size={14} /> Remove
-              </button>
             ) : ["pending", "approved"].includes(status) && canRequestRemoval && onRequestRemoval ? (
               removalRequestStatus === "pending" ? (
                 <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-50 px-4 text-sm font-medium text-amber-700 sm:w-auto">
