@@ -31,7 +31,7 @@ const NAV_GROUPS = [
   {
     label: "Operations",
     items: [
-      { to: "/", label: "Overview", icon: LayoutGrid, end: true },
+      { to: "/", label: "Dashboard", icon: LayoutGrid, end: true },
       { to: "/calendar", label: "Calendar", icon: CalendarClock },
       { to: "/bookings", label: "Bookings", icon: ClipboardList },
       {
