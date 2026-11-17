@@ -53,6 +53,29 @@ function formatCapacity(cap) {
   return `${cap} pax`;
 }
 
+function ResourceCardImage({ src, alt, isMaintenance }) {
+  const [useNaturalSize, setUseNaturalSize] = useState(false);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={(event) => {
+        const image = event.currentTarget;
+        setUseNaturalSize(
+          image.naturalWidth < image.clientWidth ||
+            image.naturalHeight < image.clientHeight,
+        );
+      }}
+      className={`rounded-lg ${
+        useNaturalSize
+          ? "block h-auto w-auto max-h-full max-w-full object-contain"
+          : "h-full w-full object-cover"
+      } ${isMaintenance ? "grayscale opacity-60" : ""}`}
+    />
+  );
+}
+
 /** Resolve the display status of a resource */
 function getResourceStatus(item) {
   if (item.is_maintenance || item.status === "maintenance")
@@ -535,14 +558,12 @@ export default function Resources() {
         key={item.resource_id || item.id}
         className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex flex-col justify-between h-full transition transform hover:shadow-md hover:-translate-y-0.5">
         {/* Thumbnail with status badge overlay */}
-        <div className="relative w-full h-28 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shrink-0 overflow-hidden rounded-lg mb-2">
+        <div className="relative w-full h-28 sm:h-32 bg-white flex items-center justify-center shrink-0 overflow-hidden rounded-lg mb-2">
           {item.image ? (
-            <img
+            <ResourceCardImage
               src={item.image}
               alt={item.name}
-              className={`h-full w-full object-cover rounded-lg ${
-                isMaintenance ? "grayscale opacity-60" : ""
-              }`}
+              isMaintenance={isMaintenance}
             />
           ) : (
             <div
