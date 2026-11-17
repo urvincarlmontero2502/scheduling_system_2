@@ -75,17 +75,15 @@ class BookingController extends Controller
                 ->get();
 
             $formatted = $bookings->map(function ($b) {
-                $eventTitle = $b->full_name;
                 $ownerName = $b->user?->full_name;
-                $displayName = ($b->is_special_event && $eventTitle)
-                    ? $eventTitle
-                    : (($eventTitle && $eventTitle !== $ownerName) ? $eventTitle : '—');
+                $displayName = $b->full_name ?: ($ownerName ?: '—');
 
                 return [
                     'id' => $b->booking_id,
                     'owner_user_id' => $b->user_id,
                     'resource_id' => $b->resource_id,
                     'resource' => $b->resource?->name ?? 'Unknown Resource',
+                    'resource_type' => $b->resource?->type,
                     'buffer_minutes' => $b->resource?->buffer_minutes ?? 30,
                     'resource_image' => ($b->resource && $b->resource->image) ? Storage::disk('assets')->url($b->resource->image) : null,
                     'full_name' => $displayName,
@@ -94,6 +92,7 @@ class BookingController extends Controller
                     'cell_number' => $b->cell_number ?? 'N/A',
                     'where_do_you_live' => $b->address ?? 'N/A',
                     'address' => $b->address ?? 'N/A',
+                    'destination' => $b->destination,
                     'purpose' => $b->purpose ?? 'No purpose provided',
                     'start_date' => Carbon::parse($b->start_date)->toDateString(),
                     'end_date' => Carbon::parse($b->end_date)->toDateString(),
@@ -299,6 +298,11 @@ class BookingController extends Controller
                     'string',
                 ],
 
+                'destination' => [
+                    'nullable',
+                    'string',
+                ],
+
                 'cell_number' => [
                     'nullable',
                     'string',
@@ -444,6 +448,7 @@ class BookingController extends Controller
                 'resource_id' => $resourceId,
                 'full_name' => $validated['full_name'] ?? $user->full_name,
                 'purpose' => $validated['purpose'] ?? null,
+                'destination' => $validated['destination'] ?? null,
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'start_time' => $validated['start_time'] ?? null,

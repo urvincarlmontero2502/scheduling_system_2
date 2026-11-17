@@ -13,6 +13,7 @@ import {
   Building2,
   Phone,
   FileText,
+  MapPin,
   Calendar,
   Clock,
   User,
@@ -692,6 +693,9 @@ export default function Bookings() {
                     b.description ||
                     b.details ||
                     "No purpose provided";
+                  const destination = b.destination || b.travel_destination || "";
+                  const attendees = b.attendees;
+                  const priority = b.priority || "normal";
 
                   const startDate = b.start_date || b.date;
                   const endDate = b.end_date || b.date;
@@ -745,7 +749,10 @@ export default function Bookings() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-[13px] text-steel max-w-[200px] truncate">
-                        {purposeValue}
+                        <div>{purposeValue}</div>
+                        {destination && (
+                          <div className="mt-1 text-xs">Destination: {destination}</div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={b.status} />
@@ -819,6 +826,9 @@ export default function Bookings() {
                 b.description ||
                 b.details ||
                 "No purpose provided";
+              const destination = b.destination || b.travel_destination || "";
+              const attendees = b.attendees;
+              const priority = b.priority || "normal";
 
               const startDate = b.start_date || b.date;
               const endDate = b.end_date || b.date;
@@ -905,33 +915,58 @@ export default function Bookings() {
                   <div className="mx-4 my-3 space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 text-xs text-slate-600">
                     <div className="flex items-center gap-1.5">
                       <User size={12} className="shrink-0 text-slate-400" />
-                      <span className="truncate">
+                      <span className="break-words">
                         <strong className="text-slate-700">Requester:</strong>{" "}
                         {fullName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Building2 size={12} className="shrink-0 text-slate-400" />
-                      <span className="truncate">
+                      <span className="break-words">
                         <strong className="text-slate-700">Barangay:</strong>{" "}
                         {barangayName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Phone size={12} className="shrink-0 text-slate-400" />
-                      <span className="font-mono truncate">
+                      <span className="break-all font-mono">
                         <strong className="text-slate-700">Contact:</strong>{" "}
                         {cellNumber}
                       </span>
                     </div>
+                    {destination && (
+                      <div className="flex items-start gap-1.5">
+                        <MapPin size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                        <span className="break-words">
+                          <strong className="text-slate-700">Destination:</strong>{" "}
+                          {destination}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start gap-1.5">
                       <FileText
                         size={12}
                         className="mt-0.5 shrink-0 text-slate-400"
                       />
-                      <span className="line-clamp-2">
+                      <span className="break-words whitespace-pre-wrap">
                         <strong className="text-slate-700">Purpose:</strong>{" "}
                         {purposeValue}
+                      </span>
+                    </div>
+                    {attendees !== null && attendees !== undefined && attendees !== "" && (
+                      <div className="flex items-start gap-1.5">
+                        <User size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                        <span>
+                          <strong className="text-slate-700">Attendees:</strong>{" "}
+                          {attendees}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-1.5">
+                      <FileText size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                      <span>
+                        <strong className="text-slate-700">Priority:</strong>{" "}
+                        {priority === "high" ? "High Priority" : "Normal"}
                       </span>
                     </div>
                   </div>

@@ -168,10 +168,13 @@ export default function Resources() {
       start_time: payload.start_time,
       end_time: payload.end_time,
       purpose: payload.purpose,
+      destination: payload.destination || null,
       full_name: payload.full_name || null,
       cell_number: payload.cell_number,
       email: payload.email || null,
       address: payload.address || null,
+      attendees: payload.attendees ? Number(payload.attendees) : null,
+      priority: payload.priority || "normal",
       status: payload.status || "pending",
     };
 

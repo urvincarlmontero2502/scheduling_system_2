@@ -103,6 +103,9 @@ export default function BookingDetailModal({
   const email = booking.email || booking.user?.email || "N/A";
   const address =
     booking.where_do_you_live || booking.address || booking.location || booking.user_address || "N/A";
+  const destination = booking.destination || booking.travel_destination || "";
+  const attendees = booking.attendees;
+  const priority = booking.priority || "normal";
   const purposeValue =
     booking.purpose || booking.reason || booking.description || booking.details || "No purpose provided";
   const remarks = booking.remarks || booking.admin_remarks || "";
@@ -259,11 +262,38 @@ export default function BookingDetailModal({
                   <p className="mt-0.5 break-all text-sm font-medium text-slate-800">{email}</p>
                 </div>
               </div>
+              {destination && (
+                <div className="flex items-start gap-3">
+                  <MapPin size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs text-slate-500">Destination</p>
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">{destination}</p>
+                  </div>
+                </div>
+              )}
+              {attendees !== null && attendees !== undefined && attendees !== "" && (
+                <div className="flex items-start gap-3">
+                  <User size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs text-slate-500">Attendees</p>
+                    <p className="mt-0.5 text-sm font-medium text-slate-800">{attendees}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-start gap-3">
+                <FileText size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                <div>
+                  <p className="text-xs text-slate-500">Priority</p>
+                  <p className="mt-0.5 text-sm font-medium text-slate-800">
+                    {priority === "high" ? "High Priority" : "Normal"}
+                  </p>
+                </div>
+              </div>
               <div className="flex items-start gap-3 sm:col-span-2">
                 <MapPin size={17} className="mt-0.5 shrink-0 text-slate-400" />
                 <div>
                   <p className="text-xs text-slate-500">Address</p>
-                  <p className="mt-0.5 text-sm font-medium text-slate-800">{address}</p>
+                  <p className="mt-0.5 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">{address}</p>
                 </div>
               </div>
             </div>
