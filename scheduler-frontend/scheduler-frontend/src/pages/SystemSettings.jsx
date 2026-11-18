@@ -80,7 +80,7 @@ export default function SystemSettings() {
   if (user?.role !== "admin") {
     return (
       <section className="mx-auto max-w-3xl rounded-xl border border-red-200 bg-white p-6 text-red-700">
-        You do not have permission to change system settings.
+        You do not have permission to change notification settings.
       </section>
     );
   }
