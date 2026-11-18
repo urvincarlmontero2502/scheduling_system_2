@@ -379,18 +379,9 @@ export default function DashboardLayout() {
           className={`min-h-0 flex-1 overflow-y-auto px-3 py-2 ${sidebarCollapsed ? "md:px-2" : ""}`}>
           {visibleGroups.map((group) => {
             const isAdministration = group.label === "Administration";
-            const currentAdminItem = isAdministration
-              ? group.items.find(
-                  (item) =>
-                    location.pathname ===
-                    (item.activePath || item.to.split("?")[0]),
-                )
-              : null;
             const visibleItems =
               isAdministration && !adminExpanded
-                ? currentAdminItem
-                  ? [currentAdminItem]
-                  : []
+                ? []
                 : group.items;
 
             return (
