@@ -78,7 +78,7 @@ const NAV_GROUPS = [
       },
       {
         to: "/system-settings",
-        label: "Notifications",
+        label: "Reminder",
         icon: Bell,
         roles: ["admin"],
       },
@@ -684,7 +684,7 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/activity-logs") &&
                 "Activity Logs"}
               {location.pathname.startsWith("/system-settings") &&
-                "Notifications"}
+                "Reminder"}
               {location.pathname.startsWith("/reports") && "Resource Reports"}
               {location.pathname.startsWith("/trash") && "Trash Bin"}
               {location.pathname === "/" && "Dashboard Overview"}
@@ -703,7 +703,7 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/activity-logs") &&
                 "Review system activity from the past year"}
               {location.pathname.startsWith("/system-settings") &&
-                "Manage booking email and SMS reminder settings"}
+                "Manage booking Email and SMS reminder settings"}
               {location.pathname.startsWith("/reports") &&
                 "Booking activity, resource utilization, and assessed estimates in one place."}
               {location.pathname.startsWith("/trash") &&

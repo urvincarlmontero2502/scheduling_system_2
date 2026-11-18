@@ -80,7 +80,7 @@ export default function SystemSettings() {
   if (user?.role !== "admin") {
     return (
       <section className="mx-auto max-w-3xl rounded-xl border border-red-200 bg-white p-6 text-red-700">
-        You do not have permission to change notification settings.
+        You do not have permission to change reminder settings.
       </section>
     );
   }
@@ -94,10 +94,10 @@ export default function SystemSettings() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark">
-              Notifications
+              Reminder
             </p>
             <h2 className="text-lg font-semibold text-slate-900">
-              Booking email reminders
+              Booking reminders
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               Choose how early to email a reminder for approved bookings. This
