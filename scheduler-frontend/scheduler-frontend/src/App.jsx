@@ -14,7 +14,6 @@ import Login from "./pages/Login";
 import Overview from "./pages/Overview";
 import Calendar from "./pages/Calendar";
 import Bookings from "./pages/Bookings";
-import BookingHistory from "./pages/BookingHistory"; // 1. Import it here
 import Resources from "./pages/Resources";
 import Reports from "./pages/Reports";
 import AccountSettings from "./pages/AccountSettings";
@@ -56,7 +55,10 @@ export default function App() {
                 <Route index element={<Overview />} />
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="bookings" element={<Bookings />} />
-                <Route path="booking-history" element={<BookingHistory />} />
+                <Route
+                  path="booking-history"
+                  element={<Navigate to="/bookings?section=history" replace />}
+                />
                 {/* 2. Add the route here */}
                 <Route path="resources" element={<Resources />} />
                 <Route path="reports" element={<Reports />} />
