@@ -82,6 +82,7 @@ export default function Overview() {
       address: payload.address || null,
       attendees: payload.attendees ? Number(payload.attendees) : null,
       priority: payload.priority || "normal",
+      accept_pending_conflicts: payload.accept_pending_conflicts || false,
     };
 
     return api
@@ -101,6 +102,8 @@ export default function Overview() {
               data.message ||
               "The selected resource is unavailable during this time.",
             alternatives,
+            suggestions: data.suggestions || [],
+            pendingConflicts: data.pending_conflicts || [],
           });
         }
         return Promise.reject({

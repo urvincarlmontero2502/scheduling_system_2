@@ -200,6 +200,7 @@ export default function Resources() {
       attendees: payload.attendees ? Number(payload.attendees) : null,
       priority: payload.priority || "normal",
       status: payload.status || "pending",
+      accept_pending_conflicts: payload.accept_pending_conflicts || false,
     };
 
     const cachedResources = readCache(CACHE_KEYS.RESOURCES) || [];
@@ -217,19 +218,18 @@ export default function Resources() {
       writeCache(CACHE_KEYS.RESOURCES, updated);
     }
 
-    setSelectedResource(null);
-    setResourceType(null);
-    toast.success(
-      isDirectUse
-        ? "Resource allocated successfully!"
-        : "Booking request submitted successfully!",
-    );
-
     return api
       .createBooking(apiPayload)
       .then(() => {
         invalidateCache(CACHE_KEYS.HEALTH);
         refetchResources();
+        setSelectedResource(null);
+        setResourceType(null);
+        toast.success(
+          isDirectUse
+            ? "Resource allocated successfully!"
+            : "Booking request submitted successfully!",
+        );
       })
       .catch((err) => {
         if (isDirectUse) {
@@ -246,17 +246,23 @@ export default function Resources() {
 
         window.dispatchEvent(new Event("bookingUpdated"));
 
-        const msg =
-          err?.response?.data?.message ||
-          err?.response?.data?.conflict_message ||
-          "Failed to submit booking request. Please try again.";
-        toast.error(msg);
-
-        if (err?.response?.status === 409 || err?.response?.status === 422) {
-          setSelectedResource(payload._originalResource || null);
+        if (err?.response?.status === 409) {
+          const data = err?.response?.data || {};
+          throw {
+            type: "conflict",
+            message: data.message || "The selected resource is unavailable during this time.",
+            alternatives: data.alternatives || [],
+            suggestions: data.suggestions || [],
+            pendingConflicts: data.pending_conflicts || [],
+          };
         }
 
-        throw err;
+        throw {
+          type: "error",
+          message:
+            err?.response?.data?.message ||
+            "Failed to submit booking request. Please try again.",
+        };
       });
   };
 

@@ -97,6 +97,8 @@ export default function FacilityBookingModal({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitAlternatives, setSubmitAlternatives] = useState([]);
+  const [serverPendingConflicts, setServerPendingConflicts] = useState([]);
+  const [acceptPendingConflicts, setAcceptPendingConflicts] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const minimumBookingDate = getTodayDateInManila();
 
@@ -277,15 +279,70 @@ export default function FacilityBookingModal({
           );
         })
       : null;
+  const pendingConflict =
+    formData.start_date && formData.end_date
+      ? bookings.find((b) => {
+          if (!isPendingStatus(b.status)) return false;
+          if (!isMatch(b, resourceId)) return false;
+          const bookingStart = toDateTimeMins(b.start_date, b.start_time);
+          const bookingEnd = toDateTimeMins(
+            b.end_date || b.start_date,
+            b.end_time,
+            true,
+          );
+          if (
+            [requestedStart, requestedEnd, bookingStart, bookingEnd].some(
+              (v) => v === null,
+            )
+          ) {
+            return true;
+          }
+          return (
+            Math.max(requestedStart, bookingStart - BUFFER_MINUTES) <
+            Math.min(requestedEnd, bookingEnd + BUFFER_MINUTES)
+          );
+        })
+      : null;
+  const pendingConflictDetails = [
+    ...(pendingConflict
+      ? [{
+          resource_id: resourceId,
+          name: selectedFacility.name,
+          start_date: pendingConflict.start_date,
+          end_date: pendingConflict.end_date,
+          start_time: pendingConflict.start_time,
+          end_time: pendingConflict.end_time,
+        }]
+      : []),
+    ...serverPendingConflicts,
+  ].filter((item, index, items) =>
+    items.findIndex((other) => String(other.resource_id) === String(item.resource_id)) === index,
+  );
 
-  const update = (field, value) =>
+  const update = (field, value) => {
+    setAcceptPendingConflicts(false);
+    setServerPendingConflicts([]);
+    setSubmitError(null);
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   // Apply a suggested slot to the form
   const applySlot = (slot) => {
-    update("start_time", slot.start_time);
-    update("end_time", slot.end_time);
-    update("start_time_changed", true);
+    const parseSuggestion = (value) => {
+      const match = String(value || "").match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/);
+      return match ? { date: match[1], time: match[2] } : null;
+    };
+    const start = parseSuggestion(slot.start_time);
+    const end = parseSuggestion(slot.end_time);
+    setAcceptPendingConflicts(false);
+    setServerPendingConflicts([]);
+    setSubmitError(null);
+    setFormData((prev) => ({
+      ...prev,
+      ...(start ? { start_date: start.date, start_time: start.time } : { start_time: slot.start_time }),
+      ...(end ? { end_date: end.date, end_time: end.time } : { end_time: slot.end_time }),
+      start_time_changed: true,
+    }));
     setSuggestedSlots([]);
   };
 
@@ -299,7 +356,8 @@ export default function FacilityBookingModal({
       const ap = h < 12 ? "AM" : "PM";
       if (h > 12) h -= 12;
       if (h === 0) h = 12;
-      return `${h}:${min} ${ap}`;
+      const date = String(t || "").match(/^(\d{4}-\d{2}-\d{2})[ T]/)?.[1];
+      return `${date ? `${date} ` : ""}${h}:${min} ${ap}`;
     };
     return `${fmt(start)} – ${fmt(end)}`;
   };
@@ -469,6 +527,8 @@ export default function FacilityBookingModal({
     formData.email &&
     formData.address.trim() &&
     !conflict &&
+    (pendingConflictDetails.length === 0 ||
+      (!isDirectUse && acceptPendingConflicts)) &&
     (!formData.attendees ||
       !selectedFacility?.capacity ||
       parseInt(formData.attendees) <= parseInt(selectedFacility.capacity));
@@ -498,6 +558,7 @@ export default function FacilityBookingModal({
       start_date: formatLocalDate(formData.start_date),
       end_date: formatLocalDate(formData.end_date),
       status: isDirectUse ? "approved" : "pending",
+      accept_pending_conflicts: acceptPendingConflicts,
     };
 
     Promise.resolve(onSubmit(payload))
@@ -508,6 +569,9 @@ export default function FacilityBookingModal({
         if (err?.type === "conflict") {
           setSubmitError(err.message);
           setSubmitAlternatives(err.alternatives || []);
+          setSuggestedSlots(err.suggestions || []);
+          setServerPendingConflicts(err.pendingConflicts || []);
+          setAcceptPendingConflicts(false);
         } else if (err?.type === "error") {
           setSubmitError(err.message);
           setSubmitAlternatives([]);
@@ -887,6 +951,34 @@ export default function FacilityBookingModal({
                         <span className="block">Purpose: {conflict.purpose}</span>
                       )}
                     </p>
+                  )}
+                </div>
+              </div>
+            )}
+            {pendingConflictDetails.length > 0 && (
+              <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+                  <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-800">
+                    <Clock size={13} />
+                    A pending request overlaps this time
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-amber-900">
+                    Pending requests are not confirmed reservations. You may continue, but the request still requires approval.
+                  </p>
+                  {isDirectUse ? (
+                    <p className="mt-1 text-[10.5px] font-medium text-rose-700">
+                      Direct allocation is blocked until the pending request is resolved.
+                    </p>
+                  ) : (
+                    <label className="mt-1.5 flex cursor-pointer items-start gap-2 text-[10.5px] font-medium text-amber-900">
+                      <input
+                        type="checkbox"
+                        checked={acceptPendingConflicts}
+                        onChange={(event) => setAcceptPendingConflicts(event.target.checked)}
+                        className="mt-0.5"
+                      />
+                      Continue with this overlapping request
+                    </label>
                   )}
                 </div>
               </div>

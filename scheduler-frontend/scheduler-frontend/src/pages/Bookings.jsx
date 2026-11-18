@@ -168,109 +168,6 @@ function formatTimeTo12Hour(timeStr) {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-// Helper function to convert time string to minutes from midnight for accurate comparison
-function timeToMinutes(timeStr) {
-  if (!timeStr) return null;
-  const clean = timeStr
-    .toLowerCase()
-    .replace(/\s*(am|pm)/, "")
-    .trim();
-  const parts = clean.split(":");
-  let h = parseInt(parts[0], 10);
-  const m = parseInt(parts[1] || "0", 10);
-  if (isNaN(h)) return null;
-  if (timeStr.toLowerCase().includes("pm") && h < 12) h += 12;
-  if (timeStr.toLowerCase().includes("am") && h === 12) h = 0;
-  return h * 60 + m;
-}
-
-function dateTimeToMinutes(date, time, isEnd = false) {
-  const datePart = String(date || "").split("T")[0];
-  const dayStart = Date.parse(`${datePart}T00:00:00Z`);
-  if (!Number.isFinite(dayStart)) return null;
-  return (
-    dayStart / 60000 +
-    (timeToMinutes(time) ?? (isEnd ? 24 * 60 : 0))
-  );
-}
-
-// Helper to check for date and time conflicts with existing approved bookings
-function hasTimeDateConflict(targetBooking, allBookings) {
-  const targetResourceIds = getBookingResourceIds(targetBooking);
-  const targetResource = getBookingResourceNames(targetBooking)
-    .join(", ")
-    .trim()
-    .toLowerCase();
-  const targetStart = targetBooking.start_date || targetBooking.date;
-  const targetEnd = targetBooking.end_date || targetBooking.date || targetStart;
-  if (!targetStart) return false;
-
-  const targetStartTime =
-    targetBooking.start_time ||
-    (targetBooking.time ? targetBooking.time.split("-")[0]?.trim() : null);
-  const targetEndTime =
-    targetBooking.end_time ||
-    (targetBooking.time ? targetBooking.time.split("-")[1]?.trim() : null);
-  const tStartMins = dateTimeToMinutes(targetStart, targetStartTime);
-  const tEndMins = dateTimeToMinutes(targetEnd, targetEndTime, true);
-
-  for (const b of allBookings) {
-    const bId = b.id || b.booking_id;
-    const targetId = targetBooking.id || targetBooking.booking_id;
-    if (bId === targetId) continue;
-    if ((b.status || "").toLowerCase() !== "approved") continue;
-
-    const bResource = getBookingResourceNames(b)
-      .join(", ")
-      .trim()
-      .toLowerCase();
-    const matchingResourceIds = targetResourceIds.filter((id) =>
-      getBookingResourceIds(b).includes(id),
-    );
-    if (
-      matchingResourceIds.length === 0 &&
-      bResource !== targetResource
-    ) {
-      continue;
-    }
-    const bufferMinutes = Math.max(
-      0,
-      ...matchingResourceIds.map((id) => {
-        const vehicle = targetBooking.vehicles?.find(
-          (item) => String(item.resource_id || item.id) === id,
-        );
-        return Number(vehicle?.buffer_minutes ?? targetBooking.buffer_minutes ?? 30);
-      }),
-    );
-
-    const bStart = b.start_date || b.date;
-    const bEnd = b.end_date || b.date || bStart;
-    if (!bStart) continue;
-    const bStartTime =
-      b.start_time || (b.time ? b.time.split("-")[0]?.trim() : null);
-    const bEndTime =
-      b.end_time || (b.time ? b.time.split("-")[1]?.trim() : null);
-    const bStartMins = dateTimeToMinutes(bStart, bStartTime);
-    const bEndMins = dateTimeToMinutes(bEnd, bEndTime, true);
-
-    if (
-      [tStartMins, tEndMins, bStartMins, bEndMins].some(
-        (value) => value === null,
-      )
-    ) {
-      return true;
-    }
-
-    if (
-      Math.max(tStartMins, bStartMins - bufferMinutes) <
-      Math.min(tEndMins, bEndMins + bufferMinutes)
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 // Reject modal component
 function RejectModal({ booking, onClose, onConfirm, isSubmitting }) {
   const [reason, setReason] = useState("");
@@ -371,21 +268,6 @@ export default function Bookings() {
   }, [searchParams, bookings])
 
   async function handleStatusChange(id, status, reason = "") {
-    const targetBooking = bookings.find(
-      (b) => (b.id || b.booking_id) === id,
-    );
-
-    // If attempting to approve, check for time and date conflicts
-    if (status === "approved" && targetBooking) {
-      const hasConflict = hasTimeDateConflict(targetBooking, bookings);
-      if (hasConflict) {
-        toast.error(
-          "Conflict detected: This resource is already booked for the selected date and time. The request has been automatically rejected.",
-        );
-        status = "rejected";
-      }
-    }
-
     // Optimistically update cache with new status
     const prevBookings = [...bookings];
     const updatedBookings = prevBookings.map((b) =>

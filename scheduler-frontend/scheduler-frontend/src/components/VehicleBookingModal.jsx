@@ -95,6 +95,8 @@ export default function VehicleBookingModal({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitAlternatives, setSubmitAlternatives] = useState([]);
+  const [serverPendingConflicts, setServerPendingConflicts] = useState([]);
+  const [acceptPendingConflicts, setAcceptPendingConflicts] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedVehicles, setSelectedVehicles] = useState([]);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
@@ -259,7 +261,7 @@ export default function VehicleBookingModal({
   const bookingDurationLabel = rentalEstimate
     ? formatRentalDuration(rentalEstimate.durationMinutes)
     : null;
-  const findVehicleConflict = (vehicle) => {
+  const findVehicleConflict = (vehicle, statusFilter = "any") => {
     if (
       !formData.start_date ||
       !formData.end_date ||
@@ -272,7 +274,13 @@ export default function VehicleBookingModal({
     const bufferMinutes = Math.max(0, Number(vehicle.buffer_minutes ?? 30));
     const vehicleId = vehicle.resource_id || vehicle.id;
     return bookings.find((booking) => {
-      if (!isApprovedStatus(booking.status) && !isPendingStatus(booking.status)) {
+      if (
+        (statusFilter === "approved" && !isApprovedStatus(booking.status)) ||
+        (statusFilter === "pending" && !isPendingStatus(booking.status)) ||
+        (statusFilter === "any" &&
+          !isApprovedStatus(booking.status) &&
+          !isPendingStatus(booking.status))
+      ) {
         return false;
       }
       if (!isMatch(booking, vehicleId)) return false;
@@ -291,12 +299,31 @@ export default function VehicleBookingModal({
       );
     });
   };
-  const vehicleConflicts = vehiclesInRequest
+  const approvedVehicleConflicts = vehiclesInRequest
     .map((vehicle) => ({
       vehicle,
-      booking: findVehicleConflict(vehicle),
+      booking: findVehicleConflict(vehicle, "approved"),
     }))
     .filter(({ booking }) => booking);
+  const pendingVehicleConflicts = vehiclesInRequest
+    .map((vehicle) => ({
+      vehicle,
+      booking: findVehicleConflict(vehicle, "pending"),
+    }))
+    .filter(({ booking }) => booking);
+  const pendingConflictDetails = [
+    ...pendingVehicleConflicts.map(({ vehicle, booking }) => ({
+      resource_id: vehicle.resource_id || vehicle.id,
+      name: vehicle.name,
+      start_date: booking.start_date,
+      end_date: booking.end_date,
+      start_time: booking.start_time,
+      end_time: booking.end_time,
+    })),
+    ...serverPendingConflicts,
+  ].filter((item, index, items) =>
+    items.findIndex((other) => String(other.resource_id) === String(item.resource_id)) === index,
+  );
 
   const availableVehiclesForSelection = availableVehicles.filter((vehicle) => {
     const vehicleId = vehicle.resource_id || vehicle.id;
@@ -305,18 +332,34 @@ export default function VehicleBookingModal({
       vehicle.type?.toLowerCase() === "vehicle" &&
       String(vehicle.status || "").toLowerCase() !== "maintenance" &&
       !selectedVehicleIds.some((id) => String(id) === String(vehicleId)) &&
-      !findVehicleConflict(vehicle)
+      !findVehicleConflict(vehicle, "approved")
     );
   });
 
-  const update = (field, value) =>
+  const update = (field, value) => {
+    setAcceptPendingConflicts(false);
+    setServerPendingConflicts([]);
+    setSubmitError(null);
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   // Apply a suggested slot to the form
   const applySlot = (slot) => {
-    update("start_time", slot.start_time);
-    update("end_time", slot.end_time);
-    update("start_time_changed", true);
+    const parseSuggestion = (value) => {
+      const match = String(value || "").match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/);
+      return match ? { date: match[1], time: match[2] } : null;
+    };
+    const start = parseSuggestion(slot.start_time);
+    const end = parseSuggestion(slot.end_time);
+    setAcceptPendingConflicts(false);
+    setServerPendingConflicts([]);
+    setSubmitError(null);
+    setFormData((prev) => ({
+      ...prev,
+      ...(start ? { start_date: start.date, start_time: start.time } : { start_time: slot.start_time }),
+      ...(end ? { end_date: end.date, end_time: end.time } : { end_time: slot.end_time }),
+      start_time_changed: true,
+    }));
     setSuggestedSlots([]);
   };
 
@@ -330,7 +373,8 @@ export default function VehicleBookingModal({
       const ap = h < 12 ? "AM" : "PM";
       if (h > 12) h -= 12;
       if (h === 0) h = 12;
-      return `${h}:${min} ${ap}`;
+      const date = String(t || "").match(/^(\d{4}-\d{2}-\d{2})[ T]/)?.[1];
+      return `${date ? `${date} ` : ""}${h}:${min} ${ap}`;
     };
     return `${fmt(start)} – ${fmt(end)}`;
   };
@@ -500,7 +544,9 @@ export default function VehicleBookingModal({
     formData.cell_number.length === 11 &&
     formData.email &&
     formData.address.trim() &&
-    vehicleConflicts.length === 0;
+    approvedVehicleConflicts.length === 0 &&
+    (pendingConflictDetails.length === 0 ||
+      (!isDirectUse && acceptPendingConflicts));
 
   const handleAddVehicle = (id) => {
     const vehicle = availableVehiclesForSelection.find(
@@ -536,6 +582,7 @@ export default function VehicleBookingModal({
       ...formData,
       full_name: `${formData.first_name}${formData.middle_name ? " " + formData.middle_name : ""} ${formData.last_name}`.trim(),
       status: isDirectUse ? "approved" : "pending",
+      accept_pending_conflicts: acceptPendingConflicts,
     };
 
     Promise.resolve(onSubmit(payload))
@@ -546,6 +593,9 @@ export default function VehicleBookingModal({
         if (err?.type === "conflict") {
           setSubmitError(err.message);
           setSubmitAlternatives(err.alternatives || []);
+          setSuggestedSlots(err.suggestions || []);
+          setServerPendingConflicts(err.pendingConflicts || []);
+          setAcceptPendingConflicts(false);
         } else if (err?.type === "error") {
           setSubmitError(err.message);
           setSubmitAlternatives([]);
@@ -976,17 +1026,17 @@ export default function VehicleBookingModal({
           {/* Close grid, open fixed footer */}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-white z-10">
-            {vehicleConflicts.length > 0 && (
+            {approvedVehicleConflicts.length > 0 && (
               <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
                 <div className="rounded-lg border border-status-rejected/30 bg-status-rejected/5 px-3 py-2.5">
                   <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-status-rejected">
                     <Clock size={13} />
-                    {vehicleConflicts.length === 1
+                    {approvedVehicleConflicts.length === 1
                       ? "Vehicle Unavailable"
                       : "Vehicles Unavailable"}
                   </p>
                   <ul className="mt-1 space-y-1 text-[11px] text-steel">
-                    {vehicleConflicts.map(({ vehicle, booking }) => (
+                    {approvedVehicleConflicts.map(({ vehicle, booking }) => (
                       <li key={vehicle.resource_id || vehicle.id}>
                         <strong className="text-ink">{vehicle.name}</strong> has an
                         overlapping reservation from{" "}
@@ -1002,6 +1052,44 @@ export default function VehicleBookingModal({
                   <p className="mt-1 text-[10.5px] text-steel">
                     Each vehicle's configured turnaround buffer is enforced.
                   </p>
+                </div>
+              </div>
+            )}
+            {pendingConflictDetails.length > 0 && (
+              <div className="mr-auto mb-2 w-full sm:mb-0 sm:w-auto sm:max-w-[70%]">
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+                  <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-800">
+                    <Clock size={13} />
+                    A pending request overlaps one or more vehicles
+                  </p>
+                  <ul className="mt-1 space-y-1 text-[10.5px] text-amber-900">
+                    {pendingConflictDetails.map((item) => (
+                      <li key={item.resource_id}>
+                        {item.name}: {item.start_date} to {item.end_date}
+                        {item.start_time && item.end_time
+                          ? ` (${formatSlotLabel(item.start_time, item.end_time)})`
+                          : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1 text-[10.5px] text-amber-900">
+                    Pending requests are not confirmed reservations. This request still requires approval.
+                  </p>
+                  {isDirectUse ? (
+                    <p className="mt-1 text-[10.5px] font-medium text-rose-700">
+                      Direct allocation is blocked until the pending request is resolved.
+                    </p>
+                  ) : (
+                    <label className="mt-1.5 flex cursor-pointer items-start gap-2 text-[10.5px] font-medium text-amber-900">
+                      <input
+                        type="checkbox"
+                        checked={acceptPendingConflicts}
+                        onChange={(event) => setAcceptPendingConflicts(event.target.checked)}
+                        className="mt-0.5"
+                      />
+                      Continue with this overlapping request
+                    </label>
+                  )}
                 </div>
               </div>
             )}
