@@ -9,7 +9,7 @@ import {
   Building2,
   LogOut,
   Menu,
-  Settings,
+  Bell,
   User,
   X,
   Loader,
@@ -78,8 +78,8 @@ const NAV_GROUPS = [
       },
       {
         to: "/system-settings",
-        label: "System Settings",
-        icon: Settings,
+        label: "Notifications",
+        icon: Bell,
         roles: ["admin"],
       },
     ],
@@ -683,6 +683,8 @@ export default function DashboardLayout() {
                 "Account Settings"}
               {location.pathname.startsWith("/activity-logs") &&
                 "Activity Logs"}
+              {location.pathname.startsWith("/system-settings") &&
+                "Notifications"}
               {location.pathname.startsWith("/reports") && "Resource Reports"}
               {location.pathname.startsWith("/trash") && "Trash Bin"}
               {location.pathname === "/" && "Dashboard Overview"}
@@ -700,6 +702,8 @@ export default function DashboardLayout() {
                 "Manage your profile and security credentials"}
               {location.pathname.startsWith("/activity-logs") &&
                 "Review system activity from the past year"}
+              {location.pathname.startsWith("/system-settings") &&
+                "Manage booking email and SMS reminder settings"}
               {location.pathname.startsWith("/reports") &&
                 "Booking activity, resource utilization, and assessed estimates in one place."}
               {location.pathname.startsWith("/trash") &&
