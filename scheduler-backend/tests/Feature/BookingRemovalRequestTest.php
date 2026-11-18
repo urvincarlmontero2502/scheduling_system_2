@@ -35,6 +35,7 @@ class BookingRemovalRequestTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->timestamp('deleted_at')->nullable();
             $table->string('barangay')->nullable();
         });
         Schema::create('resources', function (Blueprint $table) {

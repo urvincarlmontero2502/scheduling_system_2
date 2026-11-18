@@ -74,6 +74,12 @@ export const updatePassword = (payload) =>
 export const fetchUsers = () => client.get("/users");
 export const promoteUser = (userId, payload) =>
   client.put(`/users/${userId}/role`, payload);
+export const deleteUser = (userId) => client.delete(`/users/${userId}`);
+export const fetchTrashedUsers = () => client.get("/users/trashed");
+export const restoreUser = (userId) =>
+  client.post(`/users/${userId}/restore`);
+export const forceDeleteUser = (userId) =>
+  client.delete(`/users/${userId}/force`);
 
 // --- Assets / Media ---------------------------------------------------
 export const uploadAsset = (file, assetType) => {

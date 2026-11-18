@@ -29,6 +29,7 @@ class GoogleRegistrationSqliteTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->timestamp('deleted_at')->nullable();
         });
 
         Schema::create('registration_requests', function (Blueprint $table) {

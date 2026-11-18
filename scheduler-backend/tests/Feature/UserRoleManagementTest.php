@@ -26,6 +26,7 @@ class UserRoleManagementTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->timestamp('deleted_at')->nullable();
             $table->string('barangay')->nullable();
             $table->timestamp('created_at')->nullable();
         });
@@ -131,6 +132,75 @@ class UserRoleManagementTest extends TestCase
             'role' => 'barangay_admin',
             'barangay' => 'Poblacion',
         ])->assertForbidden();
+        $this->deleteJson("/api/users/{$target->user_id}")->assertForbidden();
+    }
+
+    public function test_super_admin_can_move_users_to_trash_and_restore_them(): void
+    {
+        $admin = $this->createUser('System Admin', 'admin@example.test', 'admin');
+        $staff = $this->createUser('Barangay Staff', 'staff@example.test', 'staff', 'Poblacion');
+        Sanctum::actingAs($admin);
+
+        $this->deleteJson("/api/users/{$staff->user_id}")
+            ->assertOk()
+            ->assertJsonPath('message', 'User moved to the Trash Bin.');
+
+        $this->assertSoftDeleted('users', ['user_id' => $staff->user_id]);
+        $this->getJson('/api/users/trashed')
+            ->assertOk()
+            ->assertJsonFragment(['email' => 'staff@example.test']);
+        $this->getJson('/api/users')
+            ->assertOk()
+            ->assertJsonMissing(['email' => 'staff@example.test']);
+
+        $this->postJson("/api/users/{$staff->user_id}/restore")
+            ->assertOk()
+            ->assertJsonPath('user.email', 'staff@example.test');
+
+        $this->assertDatabaseHas('users', [
+            'user_id' => $staff->user_id,
+            'deleted_at' => null,
+        ]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'user.trashed',
+            'subject_id' => (string) $staff->user_id,
+        ]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'user.restored',
+            'subject_id' => (string) $staff->user_id,
+        ]);
+    }
+
+    public function test_super_admin_cannot_trash_themselves_or_another_super_admin(): void
+    {
+        $admin = $this->createUser('System Admin', 'admin@example.test', 'admin');
+        $anotherAdmin = $this->createUser('Another Admin', 'another-admin@example.test', 'admin');
+        Sanctum::actingAs($admin);
+
+        $this->deleteJson("/api/users/{$admin->user_id}")->assertUnprocessable();
+        $this->deleteJson("/api/users/{$anotherAdmin->user_id}")->assertUnprocessable();
+
+        $this->assertDatabaseHas('users', ['user_id' => $admin->user_id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('users', ['user_id' => $anotherAdmin->user_id, 'deleted_at' => null]);
+    }
+
+    public function test_super_admin_can_permanently_delete_a_trashed_user(): void
+    {
+        $admin = $this->createUser('System Admin', 'admin@example.test', 'admin');
+        $staff = $this->createUser('Barangay Staff', 'staff@example.test', 'staff');
+        Sanctum::actingAs($admin);
+
+        $this->deleteJson("/api/users/{$staff->user_id}/force")->assertConflict();
+        $this->deleteJson("/api/users/{$staff->user_id}")->assertOk();
+        $this->deleteJson("/api/users/{$staff->user_id}/force")
+            ->assertOk()
+            ->assertJsonPath('message', 'User and their booking history were permanently deleted.');
+
+        $this->assertDatabaseMissing('users', ['user_id' => $staff->user_id]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'user.permanently_deleted',
+            'subject_id' => (string) $staff->user_id,
+        ]);
     }
 
     private function createUser(string $name, string $email, string $role, ?string $barangay = null): User

@@ -30,6 +30,7 @@ class ActivityLogTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->timestamp('deleted_at')->nullable();
             $table->string('pending_email')->nullable();
             $table->string('email_verification_token')->nullable();
             $table->timestamp('email_verification_sent_at')->nullable();

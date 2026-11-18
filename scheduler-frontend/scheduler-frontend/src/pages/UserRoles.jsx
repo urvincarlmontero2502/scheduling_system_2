@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShieldCheck, UserRound, Users } from "lucide-react";
+import { Search, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 import * as api from "../api/endpoints";
 
 const roleLabel = (role) => {
@@ -24,6 +25,8 @@ export default function UserRoles() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [savingUserId, setSavingUserId] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deletingUserId, setDeletingUserId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -114,6 +117,26 @@ export default function UserRoles() {
     }
   };
 
+  const moveUserToTrash = async () => {
+    if (!deleteCandidate) return;
+
+    setDeletingUserId(deleteCandidate.user_id);
+    try {
+      const response = await api.deleteUser(deleteCandidate.user_id);
+      setUsers((current) =>
+        current.filter((candidate) => candidate.user_id !== deleteCandidate.user_id),
+      );
+      toast.success(response.data.message || "User moved to the Trash Bin.");
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Unable to remove this user.",
+      );
+    } finally {
+      setDeletingUserId(null);
+      setDeleteCandidate(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl">
       <header className="mb-6">
@@ -126,7 +149,7 @@ export default function UserRoles() {
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           {isSuperAdmin
-            ? "Promote eligible accounts to Super Admin or assign them as a Barangay Admin."
+            ? "Promote eligible accounts or move users to the Trash Bin."
             : `Promote eligible users to Barangay Admin for ${user?.barangay || "your barangay"}.`}
         </p>
       </header>
@@ -259,6 +282,18 @@ export default function UserRoles() {
                         ? "Saving..."
                         : "Promote"}
                     </button>
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        disabled={deletingUserId === candidate.user_id}
+                        onClick={() => setDeleteCandidate(candidate)}
+                        aria-label={`Move ${candidate.full_name} to the Trash Bin`}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Trash2 size={15} />
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -266,6 +301,16 @@ export default function UserRoles() {
           </div>
         )}
       </section>
+      <ConfirmModal
+        open={Boolean(deleteCandidate)}
+        onClose={() => setDeleteCandidate(null)}
+        onConfirm={moveUserToTrash}
+        title="Move user to Trash?"
+        message={`Move "${deleteCandidate?.full_name || "this user"}" to the Trash Bin? They will lose access, but their booking history will be kept. A Super Admin can restore the account later.`}
+        confirmText="Move to Trash"
+        confirmButtonClass="bg-rose-600"
+        titleIcon={Trash2}
+      />
     </div>
   );
 }

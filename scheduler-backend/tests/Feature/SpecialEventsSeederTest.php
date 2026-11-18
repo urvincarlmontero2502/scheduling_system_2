@@ -23,6 +23,7 @@ class SpecialEventsSeederTest extends TestCase
             $table->id('user_id');
             $table->string('email');
             $table->string('role');
+            $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('resources', function (Blueprint $table) {
             $table->id('resource_id');
