@@ -60,12 +60,21 @@ function ToastContainer({ toasts, onDismiss }) {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[12.5px] shadow-lg animate-in slide-in-from-bottom-2 ${
+          className={`flex max-w-[90vw] items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[12.5px] shadow-lg sm:max-w-md animate-in slide-in-from-bottom-2 ${
             typeClasses[t.type] || typeClasses.info
           }`}
         >
           <span className="mt-0.5 text-sm font-bold">{iconBy[t.type] ?? iconBy.info}</span>
-          <span className="flex-1 leading-relaxed">{t.message}</span>
+          <span className="min-w-0 flex-1 leading-relaxed">
+            {t.message}
+            {Array.isArray(t.details) && t.details.length > 0 && (
+              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11.5px]">
+                {t.details.map((detail, index) => (
+                  <li key={`${index}-${detail}`}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </span>
           <button
             onClick={() => onDismiss(t.id)}
             className="shrink-0 rounded p-0.5 text-current/60 hover:text-current"
