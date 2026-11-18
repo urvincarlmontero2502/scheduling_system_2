@@ -20,6 +20,7 @@ import {
   UserCheck,
   FileText,
   ShieldCheck,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
@@ -99,6 +100,7 @@ export default function DashboardLayout() {
 
   const [open, setOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
 
@@ -382,71 +384,120 @@ export default function DashboardLayout() {
 
         <nav
           className={`min-h-0 flex-1 overflow-y-auto px-3 py-2 ${sidebarCollapsed ? "md:px-2" : ""}`}>
-          {visibleGroups.map((group) => (
-            <section
-              key={group.label}
-              className={`space-y-1 ${sidebarCollapsed ? "md:mb-3" : ""}`}>
-              {group.label === "Administration" && sidebarCollapsed && (
-                <div
-                  aria-hidden="true"
-                  className="mx-auto my-2 hidden h-px w-6 bg-slate-200 md:block"
-                />
-              )}
-              <h2
-                className={`px-3 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 ${sidebarCollapsed ? "md:hidden" : ""}`}>
-                {group.label}
-              </h2>
-              {group.items.map(({ to, activePath, label, icon: Icon, end }) => {
-                const badgeCount =
-                  label === "Bookings"
-                    ? pendingRequestCounts.bookings
-                    : label === "Requests"
-                      ? pendingRequestCounts.registrations +
-                        pendingRequestCounts.removals
-                      : 0;
+          {visibleGroups.map((group) => {
+            const isAdministration = group.label === "Administration";
+            const currentAdminItem = isAdministration
+              ? group.items.find(
+                  (item) =>
+                    location.pathname ===
+                    (item.activePath || item.to.split("?")[0]),
+                )
+              : null;
+            const visibleItems =
+              isAdministration && !adminExpanded
+                ? currentAdminItem
+                  ? [currentAdminItem]
+                  : []
+                : group.items;
 
-                return (
-                  <NavLink
-                    key={label}
-                    to={to}
-                    end={end}
-                    title={sidebarCollapsed ? label : undefined}
-                    aria-label={sidebarCollapsed ? label : undefined}
-                    className={({ isActive }) => {
-                      const routeActive = activePath
-                        ? location.pathname === activePath
-                        : isActive;
-                      return `relative flex min-h-10 items-center whitespace-nowrap rounded-lg py-2 text-sm font-medium no-underline transition-colors ${
-                        sidebarCollapsed
-                          ? "gap-2.5 px-3 md:mx-auto md:w-10 md:justify-center md:gap-0 md:px-0"
-                          : "gap-2.5 px-3"
-                      } ${
-                        routeActive
-                          ? "bg-brand-light text-brand-dark shadow-sm"
-                          : "text-steel hover:bg-paper hover:text-ink"
-                      }`;
-                    }}>
-                    <Icon size={18} className="shrink-0" />
-                    <span
-                      className={`truncate ${sidebarCollapsed ? "md:hidden" : ""}`}>
-                      {label}
-                    </span>
-                    {badgeCount > 0 && (
-                      <span
-                        aria-label={`${badgeCount} pending items`}
-                        className={`inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ${
-                          sidebarCollapsed
-                            ? "absolute right-0 top-0 h-4 min-w-4 translate-x-1/4 -translate-y-1/4 px-0.5 text-[9px]"
-                            : "ml-auto"
-                        }`}>
-                        {badgeCount > 99 ? "99+" : badgeCount}
-                      </span>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </section>
-          ))}
+            return (
+              <section
+                key={group.label}
+                className={`space-y-1 ${sidebarCollapsed ? "md:mb-3" : ""}`}>
+                {isAdministration && sidebarCollapsed && (
+                  <div
+                    aria-hidden="true"
+                    className="mx-auto my-2 hidden h-px w-6 bg-slate-200 md:block"
+                  />
+                )}
+                {isAdministration ? (
+                  <h2
+                    className={`px-1 pt-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => setAdminExpanded((expanded) => !expanded)}
+                      aria-expanded={adminExpanded}
+                      aria-controls="administration-nav-items"
+                      className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400 transition hover:bg-slate-50 hover:text-slate-600">
+                      <span>Administration</span>
+                      <ChevronDown
+                        size={14}
+                        aria-hidden="true"
+                        className={`transition-transform ${
+                          adminExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </h2>
+                ) : (
+                  <h2
+                    className={`px-3 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 ${sidebarCollapsed ? "md:hidden" : ""}`}>
+                    {group.label}
+                  </h2>
+                )}
+                <div
+                  id={
+                    isAdministration ? "administration-nav-items" : undefined
+                  }
+                >
+                  {visibleItems.map(
+                    ({ to, activePath, label, icon: Icon, end }) => {
+                      const badgeCount =
+                        label === "Bookings"
+                          ? pendingRequestCounts.bookings
+                          : label === "Requests"
+                            ? pendingRequestCounts.registrations +
+                              pendingRequestCounts.removals
+                            : 0;
+
+                      return (
+                        <NavLink
+                          key={label}
+                          to={to}
+                          end={end}
+                          title={sidebarCollapsed ? label : undefined}
+                          aria-label={sidebarCollapsed ? label : undefined}
+                          className={({ isActive }) => {
+                            const routeActive = activePath
+                              ? location.pathname === activePath
+                              : isActive;
+                            return `relative flex min-h-10 items-center whitespace-nowrap rounded-lg py-2 text-sm font-medium no-underline transition-colors ${
+                              sidebarCollapsed
+                                ? "gap-2.5 px-3 md:mx-auto md:w-10 md:justify-center md:gap-0 md:px-0"
+                                : "gap-2.5 px-3"
+                            } ${
+                              routeActive
+                                ? "bg-brand-light text-brand-dark shadow-sm"
+                                : "text-steel hover:bg-paper hover:text-ink"
+                            }`;
+                          }}
+                        >
+                          <Icon size={18} className="shrink-0" />
+                          <span
+                            className={`truncate ${sidebarCollapsed ? "md:hidden" : ""}`}
+                          >
+                            {label}
+                          </span>
+                          {badgeCount > 0 && (
+                            <span
+                              aria-label={`${badgeCount} pending items`}
+                              className={`inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ${
+                                sidebarCollapsed
+                                  ? "absolute right-0 top-0 h-4 min-w-4 translate-x-1/4 -translate-y-1/4 px-0.5 text-[9px]"
+                                  : "ml-auto"
+                              }`}
+                            >
+                              {badgeCount > 99 ? "99+" : badgeCount}
+                            </span>
+                          )}
+                        </NavLink>
+                      );
+                    },
+                  )}
+                </div>
+              </section>
+            );
+          })}
         </nav>
 
         <div
