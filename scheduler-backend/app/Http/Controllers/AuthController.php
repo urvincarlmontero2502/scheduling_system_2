@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Barangay;
 use Illuminate\Http\Request;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -22,8 +26,56 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required'],
             'remember_me' => ['nullable', 'boolean'],
+            'recaptcha_token' => ['required', 'string', 'max:4096'],
         ]);
 
+        $recaptchaSecret = config('recaptcha.secret');
+        if (!$recaptchaSecret) {
+            Log::error('reCAPTCHA is not configured for password login.');
+
+            return response()->json([
+                'message' => 'Sign-in protection is not configured. Please contact the system administrator.',
+            ], 503);
+        }
+
+        try {
+            $verificationResponse = Http::asForm()
+                ->connectTimeout(3)
+                ->timeout(5)
+                ->post('https://www.google.com/recaptcha/api/siteverify', [
+                    'secret' => $recaptchaSecret,
+                    'response' => $credentials['recaptcha_token'],
+                    'remoteip' => $request->ip(),
+                ])
+                ->throw();
+        } catch (ConnectionException|RequestException $exception) {
+            Log::warning('reCAPTCHA verification service is unavailable.', [
+                'exception' => $exception::class,
+            ]);
+
+            return response()->json([
+                'message' => 'Sign-in verification is temporarily unavailable. Please try again.',
+            ], 503);
+        }
+
+        $verification = $verificationResponse->json();
+        $allowedHostnames = config('recaptcha.allowed_hostnames', []);
+        $hostnameAllowed = $allowedHostnames === []
+            || in_array($verification['hostname'] ?? null, $allowedHostnames, true);
+
+        if (
+            !($verification['success'] ?? false)
+            || !is_numeric($verification['score'] ?? null)
+            || (float) $verification['score'] < config('recaptcha.minimum_score', 0.5)
+            || ($verification['action'] ?? null) !== config('recaptcha.login_action', 'login')
+            || !$hostnameAllowed
+        ) {
+            return response()->json([
+                'message' => 'reCAPTCHA verification failed. Please try again.',
+            ], 422);
+        }
+
+        unset($credentials['recaptcha_token']);
         $rememberMe = $credentials['remember_me'] ?? false;
         unset($credentials['remember_me']);
 

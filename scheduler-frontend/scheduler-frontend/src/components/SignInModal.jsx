@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import { executeLoginRecaptcha } from "../utils/recaptcha";
 
 function GoogleMark() {
   return (
@@ -76,7 +77,13 @@ export default function SignInModal({
     setSubmitting(true);
 
     try {
-      await signIn({ email, password, remember_me: rememberMe });
+      const recaptchaToken = await executeLoginRecaptcha();
+      await signIn({
+        email,
+        password,
+        remember_me: rememberMe,
+        recaptcha_token: recaptchaToken,
+      });
       onClose();
       navigate(from, { replace: true });
     } catch (err) {
@@ -84,6 +91,7 @@ export default function SignInModal({
         err.response?.status === 429
           ? "Too many login attempts. Please wait a few minutes before trying again."
           : err.response?.data?.message ||
+              err.message ||
               "Could not sign in. Check your email and password.",
       );
     } finally {
