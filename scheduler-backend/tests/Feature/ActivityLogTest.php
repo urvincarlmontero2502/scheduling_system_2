@@ -113,6 +113,13 @@ class ActivityLogTest extends TestCase
         $this->getJson('/api/admin/activity-logs')->assertUnauthorized();
     }
 
+    public function test_guest_user_lookup_returns_null_without_unauthorized_response(): void
+    {
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertContent('null');
+    }
+
     public function test_non_admin_users_cannot_read_activity_logs(): void
     {
         Sanctum::actingAs($this->user);
