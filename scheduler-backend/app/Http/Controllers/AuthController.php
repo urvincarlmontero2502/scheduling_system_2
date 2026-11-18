@@ -172,7 +172,11 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user('sanctum');
+
+        return $user
+            ? response()->json($user)
+            : response('null', 200, ['Content-Type' => 'application/json']);
     }
 
     public function update(Request $request)

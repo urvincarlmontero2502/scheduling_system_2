@@ -94,7 +94,9 @@ class SessionAuthenticationTest extends TestCase
 
         $this->assertGuest('web');
         Auth::forgetGuards();
-        $this->getJson('/api/user')->assertUnauthorized();
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertContent('null');
     }
 
     public function test_remember_me_uses_a_limited_remember_cookie(): void

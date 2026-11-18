@@ -165,6 +165,7 @@ Route::post('/diagnostics/oauth-tokens', function () {
 
 // Public: get barangays list (no auth required — needed during registration flow)
 Route::get('/barangays', [AuthController::class, 'getBarangays']);
+Route::get('/user', [AuthController::class, 'user']);
 
 // Public: submit a staff registration request for approval
 Route::post('/registration-requests', [RegistrationController::class, 'store'])
@@ -180,7 +181,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Authentication
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'update']);
     Route::put('/user/email', [AuthController::class, 'updateEmail']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
