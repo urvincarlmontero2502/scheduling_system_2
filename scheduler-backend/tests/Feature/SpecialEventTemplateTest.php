@@ -131,6 +131,18 @@ class SpecialEventTemplateTest extends TestCase
         );
     }
 
+    public function test_admin_can_list_recurring_events_with_their_resources(): void
+    {
+        $templateId = $this->createEventTemplate();
+
+        $this->getJson('/api/special-events')
+            ->assertOk()
+            ->assertJsonPath('0.id', $templateId)
+            ->assertJsonPath('0.name', 'Municipal Foundation Day')
+            ->assertJsonPath('0.resources.0.resource_id', 1)
+            ->assertJsonPath('0.resources.0.name', 'Municipal Gymnasium');
+    }
+
     public function test_first_template_seed_links_existing_reservations_without_duplicates(): void
     {
         DB::table('booking_request')->insert([

@@ -180,7 +180,7 @@ class SpecialEventTemplateController extends Controller
 
     private function annualDate(int $year, int $month, int $day): string
     {
-        $lastDay = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $lastDay = Carbon::create($year, $month, 1)->daysInMonth;
 
         return sprintf('%04d-%02d-%02d', $year, $month, min($day, $lastDay));
     }

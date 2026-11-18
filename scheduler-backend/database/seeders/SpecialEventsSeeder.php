@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Services\SpecialEventReservationSeeder;
+use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -148,7 +149,7 @@ class SpecialEventsSeeder extends Seeder
      */
     private function annualDate(int $year, int $month, int $day): string
     {
-        $lastDay = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $lastDay = Carbon::create($year, $month, 1)->daysInMonth;
 
         return sprintf('%04d-%02d-%02d', $year, $month, min($day, $lastDay));
     }
