@@ -42,6 +42,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('resources', function (Blueprint $table) {
             $table->id('resource_id');

@@ -7,14 +7,16 @@ import {
   FileText,
   Calendar,
   Info,
+  UserRound,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import { useToast } from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { Skeleton } from "../components/Skeleton";
+import { useAuth } from "../context/AuthContext";
 
 function getItemId(item) {
-  return item?.resource_id ?? item?.booking_id ?? item?.id;
+  return item?.resource_id ?? item?.booking_id ?? item?.user_id ?? item?.id;
 }
 
 function formatDate(value) {
@@ -52,10 +54,13 @@ function statusStyle(status) {
 
 export default function Trash() {
   const toast = useToast();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "admin";
   const [activeTab, setActiveTab] = useState("resources");
   const [loading, setLoading] = useState(true);
   const [trashedResources, setTrashedResources] = useState([]);
   const [removedBookings, setRemovedBookings] = useState([]);
+  const [trashedUsers, setTrashedUsers] = useState([]);
 
   // Confirmation Modal State
   const [confirmOpen, setConfirmModalOpen] = useState(false);
@@ -64,12 +69,14 @@ export default function Trash() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resResources, resBookings] = await Promise.all([
+      const [resResources, resBookings, resUsers] = await Promise.all([
         api.fetchTrashedResources(),
         api.fetchRemovedBookings(),
+        isSuperAdmin ? api.fetchTrashedUsers() : Promise.resolve({ data: [] }),
       ]);
       setTrashedResources(resResources.data || []);
       setRemovedBookings(resBookings.data || []);
+      setTrashedUsers(resUsers.data || []);
     } catch (err) {
       console.error("Failed to fetch trashed items:", err);
       toast.error("Failed to load deleted items.");
@@ -80,7 +87,7 @@ export default function Trash() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isSuperAdmin]);
 
   const handleRestore = (item, type) => {
     const id = getItemId(item);
@@ -88,7 +95,7 @@ export default function Trash() {
       action: "restore",
       type,
       id,
-      name: item.name || item.requester || `Booking #${id}`,
+      name: item.name || item.full_name || item.requester || `Booking #${id}`,
       item,
     });
     setConfirmModalOpen(true);
@@ -100,7 +107,7 @@ export default function Trash() {
       action: "forceDelete",
       type,
       id,
-      name: item.name || item.requester || `Booking #${id}`,
+      name: item.name || item.full_name || item.requester || `Booking #${id}`,
       item,
     });
     setConfirmModalOpen(true);
@@ -114,17 +121,21 @@ export default function Trash() {
       if (action === "restore") {
         if (type === "resource") {
           await api.restoreResource(id);
+        } else if (type === "user") {
+          await api.restoreUser(id);
         } else {
           await api.restoreBooking(id);
         }
-        toast.success("Item restored successfully.");
+        toast.success(type === "user" ? "User restored successfully." : "Item restored successfully.");
       } else {
         if (type === "resource") {
           await api.forceDeleteResource(id);
+        } else if (type === "user") {
+          await api.forceDeleteUser(id);
         } else {
           await api.forceDeleteBooking(id);
         }
-        toast.success("Item permanently deleted.");
+        toast.success(type === "user" ? "User and booking history permanently deleted." : "Item permanently deleted.");
       }
       fetchData();
     } catch (err) {
@@ -137,11 +148,15 @@ export default function Trash() {
   };
 
   const activeCount =
-    activeTab === "resources" ? trashedResources.length : removedBookings.length;
+    activeTab === "resources"
+      ? trashedResources.length
+      : activeTab === "requests"
+        ? removedBookings.length
+        : trashedUsers.length;
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className={`grid gap-3 ${isSuperAdmin ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         {[
           {
             label: "Deleted resources",
@@ -157,6 +172,15 @@ export default function Trash() {
             icon: FileText,
             tone: "bg-violet-50 text-violet-700",
           },
+          ...(isSuperAdmin
+            ? [{
+                label: "Deleted users",
+                count: trashedUsers.length,
+                detail: "Accounts available for restoration",
+                icon: UserRound,
+                tone: "bg-rose-50 text-rose-700",
+              }]
+            : []),
         ].map((stat) => (
           <div
             key={stat.label}
@@ -249,6 +273,33 @@ export default function Trash() {
                 {loading ? "—" : removedBookings.length}
               </span>
             </button>
+            {isSuperAdmin && (
+              <button
+                id="trash-users-tab"
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "users"}
+                aria-controls="trash-items-panel"
+                onClick={() => setActiveTab("users")}
+                className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition sm:flex-none sm:px-4 ${
+                  activeTab === "users"
+                    ? "bg-white text-blue-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <UserRound size={15} />
+                Users
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                    activeTab === "users"
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-white/70 text-slate-500"
+                  }`}
+                >
+                  {loading ? "—" : trashedUsers.length}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -266,7 +317,9 @@ export default function Trash() {
           aria-labelledby={
             activeTab === "resources"
               ? "trash-resources-tab"
-              : "trash-requests-tab"
+              : activeTab === "requests"
+                ? "trash-requests-tab"
+                : "trash-users-tab"
           }
           className="p-3 sm:p-5"
         >
@@ -291,19 +344,25 @@ export default function Trash() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200">
                 {activeTab === "resources" ? (
                   <Building2 size={22} />
-                ) : (
+                ) : activeTab === "requests" ? (
                   <FileText size={22} />
+                ) : (
+                  <UserRound size={22} />
                 )}
               </div>
               <h3 className="mt-4 text-sm font-semibold text-slate-800">
                 {activeTab === "resources"
                   ? "No deleted resources"
-                  : "No deleted booking requests"}
+                  : activeTab === "requests"
+                    ? "No deleted booking requests"
+                    : "No deleted users"}
               </h3>
               <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500">
                 {activeTab === "resources"
                   ? "Deleted facilities and vehicles will appear here, where an administrator can restore or permanently remove them."
-                  : "Deleted booking requests will appear here and can be restored to the active booking list."}
+                  : activeTab === "requests"
+                    ? "Deleted booking requests will appear here and can be restored to the active booking list."
+                    : "Removed accounts will appear here. Restore an account to reinstate access, or permanently delete it along with its booking history."}
               </p>
             </div>
           ) : activeTab === "resources" ? (
@@ -373,7 +432,7 @@ export default function Trash() {
                 );
               })}
             </div>
-          ) : (
+          ) : activeTab === "requests" ? (
             <div className="space-y-3">
               {removedBookings.map((item) => {
                 const resourceNames =
@@ -461,6 +520,58 @@ export default function Trash() {
                 );
               })}
             </div>
+          ) : (
+            <div className="space-y-3">
+              {trashedUsers.map((item) => (
+                <article
+                  key={getItemId(item)}
+                  className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm sm:flex-row sm:items-center"
+                >
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
+                      <UserRound size={20} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-semibold text-slate-900">
+                        {item.full_name || "Unnamed user"}
+                      </h3>
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {item.email}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                        <span className="capitalize">
+                          {String(item.role || "user").replaceAll("_", " ")}
+                        </span>
+                        {item.barangay && <span>{item.barangay}</span>}
+                        {item.deleted_at && (
+                          <span>Removed {formatDate(item.deleted_at)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRestore(item, "user")}
+                      aria-label={`Restore ${item.full_name || "user"}`}
+                      className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                    >
+                      <RotateCcw size={14} />
+                      Restore
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePermanentDelete(item, "user")}
+                      aria-label={`Permanently delete ${item.full_name || "user"}`}
+                      className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+                    >
+                      <Trash2 size={14} />
+                      Delete permanently
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           )}
         </div>
       </section>
@@ -477,7 +588,9 @@ export default function Trash() {
         message={
           confirmData?.action === "restore"
             ? `Are you sure you want to restore "${confirmData?.name}"? It will be moved back to active items.`
-            : `Are you sure you want to PERMANENTLY delete "${confirmData?.name}"? This action cannot be undone and will remove all history.`
+            : confirmData?.type === "user"
+              ? `Permanently delete "${confirmData?.name}"? This cannot be undone and will also permanently delete their booking history.`
+              : `Are you sure you want to PERMANENTLY delete "${confirmData?.name}"? This action cannot be undone and will remove all history.`
         }
         confirmText={
           confirmData?.action === "restore" ? "Restore" : "Delete Permanently"

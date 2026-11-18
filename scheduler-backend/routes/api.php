@@ -284,6 +284,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin: list all users
     Route::get('/users', [AuthController::class, 'listUsers']);
+    Route::get('/users/trashed', [AuthController::class, 'trashedUsers'])
+        ->middleware('admin');
+    Route::delete('/users/{userId}', [AuthController::class, 'deleteUser'])
+        ->middleware('admin');
+    Route::post('/users/{userId}/restore', [AuthController::class, 'restoreUser'])
+        ->middleware('admin');
+    Route::delete('/users/{userId}/force', [AuthController::class, 'forceDeleteUser'])
+        ->middleware('admin');
     Route::put('/users/{userId}/role', [AuthController::class, 'promoteUser']);
 
     // Admin-only: secure test email endpoint (rate-limited)

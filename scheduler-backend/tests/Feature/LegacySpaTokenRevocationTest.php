@@ -9,6 +9,24 @@ use Tests\TestCase;
 
 class LegacySpaTokenRevocationTest extends TestCase
 {
+    public function test_user_soft_delete_migration_adds_and_drops_deleted_at(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::create('users', function (Blueprint $table) {
+            $table->id('user_id');
+            $table->string('email');
+        });
+
+        $migration = require database_path(
+            'migrations/2026_11_18_000004_add_soft_deletes_to_users_table.php'
+        );
+        $migration->up();
+        $this->assertTrue(Schema::hasColumn('users', 'deleted_at'));
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('users', 'deleted_at'));
+    }
+
     public function test_remember_token_migration_adds_and_drops_the_user_column(): void
     {
         Schema::dropIfExists('users');

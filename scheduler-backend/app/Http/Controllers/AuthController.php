@@ -576,6 +576,15 @@ class AuthController extends Controller
                 ], 400);
             }
 
+            $removedAccount = User::onlyTrashed()
+                ->whereRaw('LOWER(email) = ?', [mb_strtolower($googleEmail)])
+                ->first();
+            if ($removedAccount) {
+                return response()->json([
+                    'message' => 'This account has been removed. Contact a Super Admin to restore access.',
+                ], 403);
+            }
+
             // Check if user exists with Google ID
             try {
                 $user = User::where('google_id', $googleUserId)
@@ -728,7 +737,7 @@ class AuthController extends Controller
         }
 
         // Check if a user with this email already exists
-        $existingUser = User::where('email', $tempRecord->email)->first();
+        $existingUser = User::withTrashed()->where('email', $tempRecord->email)->first();
         if ($existingUser) {
             DB::table('google_oauth_temp_tokens')
                 ->where('token', $temporaryToken)
@@ -736,7 +745,9 @@ class AuthController extends Controller
             $request->session()->forget('google_registration_token');
 
             return response()->json([
-                'message' => 'An account with this email already exists. Please log in instead.',
+                'message' => $existingUser->trashed()
+                    ? 'This email belongs to a removed account. Contact a Super Admin to restore access.'
+                    : 'An account with this email already exists. Please log in instead.',
             ], 409);
         }
 
@@ -944,6 +955,147 @@ class AuthController extends Controller
         $users = $query->get();
 
         return response()->json($users);
+    }
+
+    public function trashedUsers(Request $request)
+    {
+        if ($request->user()?->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        return response()->json(
+            User::onlyTrashed()
+                ->select('user_id', 'full_name', 'email', 'role', 'barangay', 'created_at', 'deleted_at')
+                ->orderByDesc('deleted_at')
+                ->get()
+        );
+    }
+
+    public function deleteUser(Request $request, int $userId)
+    {
+        $actor = $request->user();
+        if ($actor?->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $target = DB::transaction(function () use ($actor, $userId) {
+            $target = User::where('user_id', $userId)->lockForUpdate()->firstOrFail();
+
+            if ((string) $target->user_id === (string) $actor->user_id) {
+                abort(422, 'You cannot remove your own account.');
+            }
+
+            if ($target->role === 'admin') {
+                abort(422, 'Super Admin accounts cannot be moved to the Trash Bin.');
+            }
+
+            if (Schema::hasTable('personal_access_tokens')) {
+                $target->tokens()->delete();
+            }
+
+            $target->delete();
+
+            app(\App\Services\ActivityLogger::class)->record(
+                $actor,
+                'user.trashed',
+                sprintf('Moved %s to the user Trash Bin.', $target->full_name),
+                'user',
+                $target->user_id,
+                ['role' => $target->role, 'barangay' => $target->barangay]
+            );
+
+            return $target;
+        });
+
+        return response()->json([
+            'message' => 'User moved to the Trash Bin.',
+            'user' => $target->only(['user_id', 'full_name', 'email', 'role', 'barangay', 'deleted_at']),
+        ]);
+    }
+
+    public function restoreUser(Request $request, int $userId)
+    {
+        $actor = $request->user();
+        if ($actor?->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $restoredUser = DB::transaction(function () use ($actor, $userId) {
+            $target = User::onlyTrashed()
+                ->where('user_id', $userId)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $target->restore();
+
+            app(\App\Services\ActivityLogger::class)->record(
+                $actor,
+                'user.restored',
+                sprintf('Restored %s from the user Trash Bin.', $target->full_name),
+                'user',
+                $target->user_id,
+                ['role' => $target->role, 'barangay' => $target->barangay]
+            );
+
+            return $target;
+        });
+
+        return response()->json([
+            'message' => 'User restored successfully.',
+            'user' => $restoredUser->only(['user_id', 'full_name', 'email', 'role', 'barangay']),
+        ]);
+    }
+
+    public function forceDeleteUser(Request $request, int $userId)
+    {
+        $actor = $request->user();
+        if ($actor?->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        DB::transaction(function () use ($actor, $userId) {
+            $target = User::withTrashed()
+                ->where('user_id', $userId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((string) $target->user_id === (string) $actor->user_id) {
+                abort(422, 'You cannot permanently delete your own account here.');
+            }
+
+            if ($target->role === 'admin') {
+                abort(422, 'Super Admin accounts cannot be permanently deleted here.');
+            }
+
+            if (! $target->trashed()) {
+                abort(409, 'Move the user to the Trash Bin before permanently deleting them.');
+            }
+
+            $name = $target->full_name;
+            $role = $target->role;
+            $barangay = $target->barangay;
+
+            if (Schema::hasTable('personal_access_tokens')) {
+                $target->tokens()->delete();
+            }
+            if (Schema::hasTable('email_change_logs')) {
+                DB::table('email_change_logs')->where('user_id', $target->user_id)->delete();
+            }
+
+            $target->forceDelete();
+
+            app(\App\Services\ActivityLogger::class)->record(
+                $actor,
+                'user.permanently_deleted',
+                sprintf('Permanently deleted %s and their booking history.', $name),
+                'user',
+                $userId,
+                ['role' => $role, 'barangay' => $barangay]
+            );
+        });
+
+        return response()->json([
+            'message' => 'User and their booking history were permanently deleted.',
+        ]);
     }
 
     /**

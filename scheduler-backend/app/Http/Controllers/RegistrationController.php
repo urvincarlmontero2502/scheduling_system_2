@@ -38,10 +38,14 @@ class RegistrationController extends Controller
         ]);
 
         $email = $validated['email'];
-        $existingUser = User::whereRaw('LOWER(email) = ?', [$email])->exists();
+        $existingUser = User::withTrashed()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
         if ($existingUser) {
             return response()->json([
-                'message' => 'An account with this email already exists. Please sign in instead.',
+                'message' => $existingUser->trashed()
+                    ? 'This email belongs to a removed account. Contact a Super Admin to restore access.'
+                    : 'An account with this email already exists. Please sign in instead.',
             ], 409);
         }
 
@@ -325,12 +329,16 @@ class RegistrationController extends Controller
             DB::beginTransaction();
 
             // Check if user already exists with this email
-            $existing = User::where('email', $registrationRequest->email)->first();
+            $existing = User::withTrashed()
+                ->where('email', $registrationRequest->email)
+                ->first();
             if ($existing) {
                 DB::rollBack();
 
                 return response()->json([
-                    'message' => 'A user with this email already exists.',
+                    'message' => $existing->trashed()
+                        ? 'This email belongs to a removed account. Restore it from the Trash Bin instead of creating a new account.'
+                        : 'A user with this email already exists.',
                 ], 422);
             }
 
