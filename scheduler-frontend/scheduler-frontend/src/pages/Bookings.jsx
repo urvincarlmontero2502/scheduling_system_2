@@ -21,6 +21,7 @@ import {
   LayoutGrid,
   Table2,
   ImageIcon,
+  Loader2,
 } from "lucide-react";
 import * as api from "../api/endpoints";
 import {
@@ -271,7 +272,7 @@ function hasTimeDateConflict(targetBooking, allBookings) {
 }
 
 // Reject modal component
-function RejectModal({ booking, onClose, onConfirm }) {
+function RejectModal({ booking, onClose, onConfirm, isSubmitting }) {
   const [reason, setReason] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -298,16 +299,25 @@ function RejectModal({ booking, onClose, onConfirm }) {
         <div className="flex justify-end gap-2 border-t border-line px-5 py-4">
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="px-4 py-2 text-[13px] font-medium text-steel hover:bg-paper rounded-lg border border-line"
           >
             Cancel
           </button>
           <button
             onClick={() => onConfirm(reason)}
-            disabled={!reason.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!reason.trim() || isSubmitting}
+            className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium rounded-lg bg-rose-600 text-white transition duration-150 hover:bg-rose-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <X size={14} /> Reject Booking
+            {isSubmitting ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> Rejecting...
+              </>
+            ) : (
+              <>
+                <X size={14} /> Reject Booking
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -329,6 +339,7 @@ export default function Bookings() {
   const [barangayFilter, setBarangayFilter] = useState("all");
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectBooking, setRejectBooking] = useState(null);
+  const [processingBooking, setProcessingBooking] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -380,6 +391,7 @@ export default function Bookings() {
     const updatedBookings = prevBookings.map((b) =>
       b.id === id || b.booking_id === id ? { ...b, status } : b,
     );
+    setProcessingBooking({ id: String(id), status });
     writeCache(CACHE_KEYS.BOOKINGS, updatedBookings);
 
     try {
@@ -401,12 +413,16 @@ export default function Bookings() {
       refetchBookings();
       invalidateCache(CACHE_KEYS.HEALTH);
       window.dispatchEvent(new Event("cacheInvalidated"));
+      return true;
     } catch (err) {
       // Rollback cache
       writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
       toast.error(
         err?.response?.data?.message || "Could not update the booking status.",
       );
+      return false;
+    } finally {
+      setProcessingBooking(null);
     }
   }
 
@@ -455,8 +471,8 @@ export default function Bookings() {
   ).length;
 
   // Helper to normalize the rejection handler — accepts (id, status) or (id, status, reason)
-  const safeReject = (id, reason) => {
-    handleStatusChange(id, "rejected", reason);
+  const safeReject = async (id, reason) => {
+    return handleStatusChange(id, "rejected", reason);
   };
 
   // Apply tab + search + barangay filtering
@@ -822,6 +838,8 @@ export default function Bookings() {
 
                   const isPendingItem =
                     (b.status || "").toLowerCase() === "pending";
+                  const isProcessing =
+                    processingBooking?.id === String(bookingId);
                   const statusText = b.status || "pending";
                   const statusColor =
                     statusText.toLowerCase() === "approved" ? "bg-status-approved" :
@@ -883,17 +901,28 @@ export default function Bookings() {
                                 onClick={() =>
                                   handleStatusChange(bookingId, "approved")
                                 }
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand-dark"
+                                disabled={isProcessing}
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-brand text-white flex items-center justify-center gap-1 transition duration-150 hover:bg-brand-dark active:scale-95 disabled:cursor-wait disabled:opacity-70"
                                 title="Approve"
                               >
-                                <Check size={12} /> Approve
+                                {isProcessing &&
+                                processingBooking.status === "approved" ? (
+                                  <>
+                                    <Loader2 size={12} className="animate-spin" /> Approving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check size={12} /> Approve
+                                  </>
+                                )}
                               </button>
                               <button
                                 onClick={() => {
                                   setRejectBooking(b);
                                   setRejectModalOpen(true);
                                 }}
-                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-status-rejected bg-status-rejectedBg flex items-center justify-center hover:bg-rose-100"
+                                disabled={isProcessing}
+                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-status-rejected bg-status-rejectedBg flex items-center justify-center gap-1 transition duration-150 hover:bg-rose-100 active:scale-95 disabled:cursor-wait disabled:opacity-70"
                                 title="Reject"
                               >
                                 <X size={12} /> Reject
@@ -982,6 +1011,10 @@ export default function Bookings() {
 
               const isPendingItem =
                 (b.status || "").toLowerCase() === "pending";
+              const isProcessing =
+                processingBooking?.id === String(bookingId);
+              const isApproving =
+                isProcessing && processingBooking.status === "approved";
               const statusText = b.status || "pending";
               const normalizedStatus = statusText.toLowerCase();
               const statusBadgeClasses =
@@ -1193,9 +1226,18 @@ export default function Bookings() {
                           event.stopPropagation();
                           handleStatusChange(bookingId, "approved");
                         }}
-                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                        disabled={isProcessing}
+                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition duration-150 hover:bg-blue-700 active:scale-95 disabled:cursor-wait disabled:opacity-70"
                       >
-                        <Check size={14} /> Approve
+                        {isApproving ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" /> Approving...
+                          </>
+                        ) : (
+                          <>
+                            <Check size={14} /> Approve
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={(event) => {
@@ -1203,7 +1245,8 @@ export default function Bookings() {
                           setRejectBooking(b);
                           setRejectModalOpen(true);
                         }}
-                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                        disabled={isProcessing}
+                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 transition duration-150 hover:bg-rose-100 active:scale-95 disabled:cursor-wait disabled:opacity-70"
                       >
                         <X size={14} /> Reject
                       </button>
@@ -1220,14 +1263,23 @@ export default function Bookings() {
       {rejectModalOpen && rejectBooking && (
         <RejectModal
           booking={rejectBooking}
+          isSubmitting={
+            processingBooking?.id ===
+            String(rejectBooking.id || rejectBooking.booking_id)
+          }
           onClose={() => {
             setRejectModalOpen(false);
             setRejectBooking(null);
           }}
-          onConfirm={(reason) => {
-            safeReject(rejectBooking.id || rejectBooking.booking_id, reason);
-            setRejectModalOpen(false);
-            setRejectBooking(null);
+          onConfirm={async (reason) => {
+            const rejected = await safeReject(
+              rejectBooking.id || rejectBooking.booking_id,
+              reason,
+            );
+            if (rejected) {
+              setRejectModalOpen(false);
+              setRejectBooking(null);
+            }
           }}
         />
       )}
