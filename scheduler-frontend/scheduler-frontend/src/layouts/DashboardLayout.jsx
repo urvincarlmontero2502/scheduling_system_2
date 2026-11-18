@@ -19,6 +19,7 @@ import {
   PanelLeftClose,
   UserCheck,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/endpoints";
@@ -57,6 +58,12 @@ const NAV_GROUPS = [
   {
     label: "Administration",
     items: [
+      {
+        to: "/users",
+        label: "User Roles",
+        icon: ShieldCheck,
+        roles: ["admin", "barangay_admin"],
+      },
       {
         to: "/requests?section=registration",
         activePath: "/requests",

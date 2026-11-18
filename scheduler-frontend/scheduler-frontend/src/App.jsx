@@ -26,6 +26,7 @@ import VerifyEmailChange from "./pages/VerifyEmailChange";
 import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
 import RegistrationStatus from "./pages/RegistrationStatus";
+import UserRoles from "./pages/UserRoles";
 import { useAuth } from "./context/AuthContext";
 
 function LandingOrDashboard() {
@@ -70,6 +71,7 @@ export default function App() {
                 <Route path="account-settings" element={<AccountSettings />} />
                 <Route path="system-settings" element={<SystemSettings />} />
                 <Route path="activity-logs" element={<ActivityLogs />} />
+                <Route path="users" element={<UserRoles />} />
                 <Route
                   path="booking-removal-requests"
                   element={<Navigate to="/requests?section=removal" replace />}

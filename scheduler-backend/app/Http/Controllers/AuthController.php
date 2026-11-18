@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -916,14 +917,127 @@ class AuthController extends Controller
     }
 
     /**
-     * List all users (admin only).
+     * List users the authenticated administrator is allowed to manage.
      */
     public function listUsers(Request $request)
     {
-        $users = User::select('user_id', 'full_name', 'email', 'role', 'barangay', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $actor = $request->user();
+        if (! in_array($actor->role, ['admin', 'barangay_admin'], true)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $query = User::select('user_id', 'full_name', 'email', 'role', 'barangay', 'created_at')
+            ->orderBy('created_at', 'desc');
+
+        if ($actor->role === 'barangay_admin') {
+            if (! $actor->barangay) {
+                return response()->json(['message' => 'Your account is not assigned to a barangay.'], 403);
+            }
+
+            $query->where('barangay', $actor->barangay);
+        }
+
+        $users = $query->get();
+
         return response()->json($users);
+    }
+
+    /**
+     * Promote an eligible user to an administrator role.
+     */
+    public function promoteUser(Request $request, int $userId)
+    {
+        $actor = $request->user();
+        if (! in_array($actor->role, ['admin', 'barangay_admin'], true)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $allowedRoles = $actor->role === 'admin'
+            ? ['admin', 'barangay_admin']
+            : ['barangay_admin'];
+        $validated = $request->validate([
+            'role' => ['required', Rule::in($allowedRoles)],
+        ]);
+
+        if ($actor->role === 'barangay_admin' && ! $actor->barangay) {
+            return response()->json(['message' => 'Your account is not assigned to a barangay.'], 403);
+        }
+
+        $assignedBarangay = null;
+        if ($validated['role'] === 'barangay_admin') {
+            if ($actor->role === 'admin') {
+                $barangayData = $request->validate([
+                    'barangay' => ['required', 'string', 'max:255', Rule::exists('barangays', 'name')],
+                ]);
+                $assignedBarangay = $barangayData['barangay'];
+            } else {
+                $assignedBarangay = $actor->barangay;
+            }
+        }
+
+        $promotedUser = DB::transaction(function () use ($actor, $userId, $validated, $assignedBarangay) {
+            $target = User::where('user_id', $userId)->lockForUpdate()->firstOrFail();
+
+            if ($target->user_id === $actor->user_id) {
+                abort(422, 'You cannot change your own administrator role.');
+            }
+
+            if ($target->role === 'admin') {
+                abort(422, 'An existing super admin cannot be changed through this promotion action.');
+            }
+
+            if ($actor->role === 'barangay_admin') {
+                if ($validated['role'] !== 'barangay_admin') {
+                    abort(403, 'Barangay admins cannot grant super-admin access.');
+                }
+
+                if (! in_array($target->role, ['staff', 'user'], true)) {
+                    abort(422, 'Only regular users in your barangay can be promoted.');
+                }
+
+                if ($target->barangay !== $actor->barangay) {
+                    abort(403, 'You can only promote users from your own barangay.');
+                }
+            } elseif (! in_array($target->role, ['staff', 'user', 'barangay_admin'], true)) {
+                abort(422, 'This account is not eligible for promotion.');
+            }
+
+            if ($target->role === 'barangay_admin' && $validated['role'] === 'barangay_admin') {
+                abort(422, 'This user is already a barangay admin.');
+            }
+
+            $oldRole = $target->role;
+            $oldBarangay = $target->barangay;
+            $target->role = $validated['role'];
+            $target->barangay = $assignedBarangay;
+            $target->save();
+
+            app(\App\Services\ActivityLogger::class)->record(
+                $actor,
+                'user.role_promoted',
+                sprintf(
+                    'Promoted %s to %s%s.',
+                    $target->full_name,
+                    $validated['role'] === 'admin' ? 'super admin' : 'barangay admin',
+                    $assignedBarangay ? ' for '.$assignedBarangay : ''
+                ),
+                'user',
+                $target->user_id,
+                [
+                    'old_role' => $oldRole,
+                    'new_role' => $target->role,
+                    'old_barangay' => $oldBarangay,
+                    'new_barangay' => $target->barangay,
+                ]
+            );
+
+            return $target;
+        });
+
+        return response()->json([
+            'message' => 'User role updated successfully.',
+            'user' => $promotedUser->only(['user_id', 'full_name', 'email', 'role', 'barangay', 'created_at']),
+        ]);
     }
 
     /**

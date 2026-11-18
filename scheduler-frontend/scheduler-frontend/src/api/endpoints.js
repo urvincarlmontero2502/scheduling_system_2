@@ -71,6 +71,9 @@ export const verifyEmailChange = (token) =>
   client.post("/verify-email-change", { token });
 export const updatePassword = (payload) =>
   client.put("/user/password", payload);
+export const fetchUsers = () => client.get("/users");
+export const promoteUser = (userId, payload) =>
+  client.put(`/users/${userId}/role`, payload);
 
 // --- Assets / Media ---------------------------------------------------
 export const uploadAsset = (file, assetType) => {
