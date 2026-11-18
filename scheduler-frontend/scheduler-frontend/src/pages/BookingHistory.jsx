@@ -34,6 +34,16 @@ import {
 } from "../utils/resourcePricing";
 import { getBookingResourceNames } from "../utils/bookingResources";
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
+
 function getResourceRecord(booking, resources) {
   const rid = booking.resource_id;
   const name = typeof booking.resource === "object"
@@ -428,6 +438,20 @@ export default function BookingHistory() {
     const time = getTimeValue(booking);
     const status = (booking.status || "unknown").toUpperCase();
     const referenceId = booking.reference_id || `#${bookingId}`;
+    const printValues = {
+      bookingId: escapeHtml(bookingId),
+      referenceId: escapeHtml(referenceId),
+      requester: escapeHtml(requester),
+      barangay: escapeHtml(barangay),
+      cellNumber: escapeHtml(cellNumber),
+      email: escapeHtml(email),
+      address: escapeHtml(address),
+      resource: escapeHtml(resource),
+      date: escapeHtml(date),
+      time: escapeHtml(time),
+      purpose: escapeHtml(purpose),
+      status: escapeHtml(status),
+    };
 
     const printWindow = window.open("", "_blank");
 
@@ -440,7 +464,7 @@ export default function BookingHistory() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Booking #${bookingId}</title>
+        <title>Booking #${printValues.bookingId}</title>
         <style>
           * { box-sizing: border-box; }
           body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 40px; color: #222; background: white; }
@@ -475,27 +499,27 @@ export default function BookingHistory() {
             <h3>Facility / Utility Vehicle Booking Record</h3>
           </div>
           <div class="booking-id">
-            Booking ID: <strong>#${bookingId}</strong>
-            <br />Reference ID: <strong>${referenceId}</strong>
+            Booking ID: <strong>#${printValues.bookingId}</strong>
+            <br />Reference ID: <strong>${printValues.referenceId}</strong>
           </div>
           <div class="section">
             <div class="section-title">REQUESTOR INFORMATION</div>
             <table>
-              <tr><td>Full Name</td><td>${requester}</td></tr>
-              <tr><td>Barangay</td><td>${barangay}</td></tr>
-              <tr><td>Cell Number</td><td>${cellNumber}</td></tr>
-              <tr><td>Email</td><td>${email}</td></tr>
-              <tr><td>Address</td><td>${address}</td></tr>
+              <tr><td>Full Name</td><td>${printValues.requester}</td></tr>
+              <tr><td>Barangay</td><td>${printValues.barangay}</td></tr>
+              <tr><td>Cell Number</td><td>${printValues.cellNumber}</td></tr>
+              <tr><td>Email</td><td>${printValues.email}</td></tr>
+              <tr><td>Address</td><td>${printValues.address}</td></tr>
             </table>
           </div>
           <div class="section">
             <div class="section-title">BOOKING INFORMATION</div>
             <table>
-              <tr><td>Resource</td><td>${resource}</td></tr>
-              <tr><td>Date</td><td>${date}</td></tr>
-              <tr><td>Time</td><td>${time}</td></tr>
-              <tr><td>Purpose</td><td>${purpose}</td></tr>
-              <tr><td>Status</td><td class="status">${status}</td></tr>
+              <tr><td>Resource</td><td>${printValues.resource}</td></tr>
+              <tr><td>Date</td><td>${printValues.date}</td></tr>
+              <tr><td>Time</td><td>${printValues.time}</td></tr>
+              <tr><td>Purpose</td><td>${printValues.purpose}</td></tr>
+              <tr><td>Status</td><td class="status">${printValues.status}</td></tr>
             </table>
           </div>
           <div class="signature">
@@ -543,25 +567,27 @@ export default function BookingHistory() {
       printMode === "month"
         ? `Month: ${selectedMonth}`
         : `Year: ${selectedYear}`;
+    const safePeriodLabel = escapeHtml(periodLabel);
 
     const rowsHtml = matchingBookings
       .map((b, index) => {
-        const id = b.id || b.booking_id;
+        const id = escapeHtml(b.id || b.booking_id);
         const req =
           b.full_name ||
           b.requester ||
           b.user_name ||
           b.user?.full_name ||
           "Unknown";
-        const res = getBookingResourceNames(b).join(", ");
-        const date = getDateValue(b);
-        const status = (b.status || "").toUpperCase();
+        const safeReq = escapeHtml(req);
+        const res = escapeHtml(getBookingResourceNames(b).join(", "));
+        const date = escapeHtml(getDateValue(b));
+        const status = escapeHtml((b.status || "").toUpperCase());
 
         return `
           <tr>
             <td>${index + 1}</td>
             <td>#${id}</td>
-            <td>${req}</td>
+            <td>${safeReq}</td>
             <td>${res}</td>
             <td>${date}</td>
             <td>${status}</td>
@@ -574,7 +600,7 @@ export default function BookingHistory() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Booking Report - ${periodLabel}</title>
+        <title>Booking Report - ${safePeriodLabel}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 30px; color: #222; }
           .header { text-align: center; border-bottom: 2px solid #222; padding-bottom: 15px; margin-bottom: 20px; }
@@ -596,10 +622,10 @@ export default function BookingHistory() {
           <h2>MUNICIPALITY OF JABONGA</h2>
         </div>
         <div class="title">
-          <h3>Booking History Report (${printMode.toUpperCase()})</h3>
+          <h3>Booking History Report (${escapeHtml(printMode.toUpperCase())})</h3>
         </div>
         <div class="meta">
-          Period: ${periodLabel} | Total Records: ${matchingBookings.length}
+          Period: ${safePeriodLabel} | Total Records: ${matchingBookings.length}
         </div>
         <table>
           <thead>

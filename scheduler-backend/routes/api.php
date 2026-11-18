@@ -16,57 +16,29 @@ use Illuminate\Support\Str;
 
 // Public Health Check Endpoint
 Route::get('/health', function () {
-    $dbConnected = true;
-
     try {
         DB::connection()->getPdo();
+        $dbConnected = true;
     } catch (Exception $e) {
         $dbConnected = false;
-    }
-
-    // Check if required columns exist for Google OAuth
-    $columns = [];
-    $missing = [];
-    try {
-        $columns = DB::connection()
-            ->select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
-        $columnNames = array_map(fn ($c) => $c->column_name, $columns);
-
-        foreach (['google_id', 'email_verified_at', 'full_name', 'email', 'password_hash', 'role'] as $col) {
-            if (! in_array($col, $columnNames)) {
-                $missing[] = $col;
-            }
-        }
-    } catch (Exception $e) {
-        $missing = ['error_checking: '.$e->getMessage()];
-    }
-
-    // Check personal_access_tokens table
-    $tokensTableExists = true;
-    try {
-        DB::connection()->select('SELECT 1 FROM personal_access_tokens LIMIT 1');
-    } catch (Exception $e) {
-        $tokensTableExists = false;
     }
 
     return response()->json([
         'api' => true,
         'database' => $dbConnected,
-        'missing_columns' => $missing,
-        'personal_access_tokens_table' => $tokensTableExists,
-        'user_columns' => array_map(fn ($c) => $c->column_name, $columns),
     ]);
 });
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
 Route::post('/verify-email-change', [AuthController::class, 'verifyEmailChange']);
-Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])
+    ->middleware('throttle:10,1');
 Route::post('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])
     ->middleware('throttle:10,1'); // 10 attempts per minute
 Route::post('/auth/google/complete-registration', [AuthController::class, 'completeGoogleRegistration']);
 
-// Diagnostic endpoint to check database schema
+// Admin-only diagnostic endpoints for schema troubleshooting
 Route::get('/diagnostics/oauth-schema', function () {
     $missing = [];
     $columns = [];
@@ -99,7 +71,7 @@ Route::get('/diagnostics/oauth-schema', function () {
         'tokens_table_exists' => $tablesOk,
         'all_required_present' => empty($missing),
     ]);
-});
+})->middleware(['auth:sanctum', 'admin']);
 
 // Diagnostic: check resources table schema
 Route::get('/diagnostics/resources-schema', function () {
@@ -130,10 +102,10 @@ Route::get('/diagnostics/resources-schema', function () {
     }
 
     return response()->json($result);
-});
+})->middleware(['auth:sanctum', 'admin']);
 
 // Diagnostic: check oauth temp tokens table accessibility
-Route::get('/diagnostics/oauth-tokens', function () {
+Route::post('/diagnostics/oauth-tokens', function () {
     $result = [
         'table_exists' => true,
         'accessible' => true,
@@ -189,7 +161,7 @@ Route::get('/diagnostics/oauth-tokens', function () {
     }
 
     return response()->json($result);
-});
+})->middleware(['auth:sanctum', 'admin']);
 
 // Public: get barangays list (no auth required — needed during registration flow)
 Route::get('/barangays', [AuthController::class, 'getBarangays']);
@@ -198,8 +170,11 @@ Route::get('/barangays', [AuthController::class, 'getBarangays']);
 Route::post('/registration-requests', [RegistrationController::class, 'store'])
     ->middleware('throttle:5,1');
 
-// Public: check registration request status by email
-Route::get('/registration-lookup', [RegistrationController::class, 'lookup']);
+// Public: request and consume an email-verified registration status link
+Route::post('/registration-lookup', [RegistrationController::class, 'lookup'])
+    ->middleware('throttle:3,1');
+Route::post('/registration-lookup/verify', [RegistrationController::class, 'verifyLookup'])
+    ->middleware('throttle:10,1');
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -216,7 +191,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports', [ResourceReportController::class, 'index']);
 
     // System-wide admin settings
-    Route::get('/admin/activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('/admin/activity-logs', [ActivityLogController::class, 'index'])
+        ->middleware('admin');
     Route::get('/admin/storage-check', [SystemSettingsController::class, 'storageCheck'])
         ->middleware(['admin', 'throttle:5,1']);
     Route::get('/admin/settings/booking-reminder', [SystemSettingsController::class, 'showBookingReminder'])

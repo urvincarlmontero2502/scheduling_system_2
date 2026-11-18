@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -77,17 +80,60 @@ class GoogleRegistrationSqliteTest extends TestCase
 
     public function test_google_registration_schema_checks_work_with_sqlite(): void
     {
-        $this->postJson('/api/auth/google/complete-registration', [
-            'temporary_token' => 'sqlite-google-registration-token',
+        $this->withSession([
+            'google_registration_token' => 'sqlite-google-registration-token',
+        ])->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/auth/google/complete-registration', [
             'barangay' => 'Poblacion',
         ])
             ->assertCreated()
+            ->assertJsonMissingPath('temporary_token')
             ->assertJsonPath('status', 'pending');
 
         $this->assertDatabaseHas('registration_requests', [
             'email' => 'new-user@example.test',
             'barangay' => 'Poblacion',
             'status' => 'pending',
+        ]);
+        $this->assertNull(Session::get('google_registration_token'));
+    }
+
+    public function test_google_registration_token_is_kept_in_the_server_session(): void
+    {
+        config([
+            'services.google.client_id' => 'google-client',
+            'services.google.client_secret' => 'google-secret',
+            'services.google.redirect' => 'https://frontend.example.test/auth/google/callback',
+        ]);
+        Cache::put('google_oauth_state:valid-state', true, now()->addMinutes(10));
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+            ]),
+            'www.googleapis.com/oauth2/v2/userinfo' => Http::response([
+                'id' => 'google-user-id',
+                'email' => 'new-user@example.test',
+                'name' => 'New Google User',
+            ]),
+        ]);
+
+        $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/auth/google/callback', [
+            'code' => 'one-time-code',
+            'state' => 'valid-state',
+        ])->assertOk()
+            ->assertJsonPath('requires_barangay_setup', true)
+            ->assertJsonMissingPath('temporary_token');
+
+        $token = Session::get('google_registration_token');
+        $this->assertNotEmpty($token);
+        $this->assertDatabaseHas('google_oauth_temp_tokens', [
+            'token' => $token,
+            'email' => 'new-user@example.test',
         ]);
     }
 
@@ -150,6 +196,20 @@ class GoogleRegistrationSqliteTest extends TestCase
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('password');
+    }
+
+    public function test_diagnostic_endpoints_are_not_public_and_health_response_is_minimal(): void
+    {
+        $this->getJson('/api/diagnostics/oauth-schema')->assertUnauthorized();
+        $this->getJson('/api/diagnostics/oauth-tokens')->assertMethodNotAllowed();
+        $this->postJson('/api/diagnostics/oauth-tokens')->assertUnauthorized();
+
+        $this->getJson('/api/health')
+            ->assertOk()
+            ->assertJsonStructure(['api', 'database'])
+            ->assertJsonMissingPath('user_columns')
+            ->assertJsonMissingPath('missing_columns')
+            ->assertJsonMissingPath('personal_access_tokens_table');
     }
 
     public function test_notification_booking_id_migration_allows_null_on_sqlite(): void

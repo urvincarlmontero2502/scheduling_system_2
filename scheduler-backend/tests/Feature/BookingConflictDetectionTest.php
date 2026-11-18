@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\BookingStatementOfAccount;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
@@ -150,6 +151,35 @@ class BookingConflictDetectionTest extends TestCase
         ))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['start_date']);
+    }
+
+    public function test_regular_users_only_receive_their_own_bookings(): void
+    {
+        $otherUser = User::create([
+            'full_name' => 'Another User',
+            'email' => 'another-user@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'user',
+        ]);
+        foreach ([$this->user->user_id, $otherUser->user_id] as $userId) {
+            DB::table('booking_request')->insert([
+                'user_id' => $userId,
+                'resource_id' => $this->resource->resource_id,
+                'start_date' => '2026-11-02',
+                'end_date' => '2026-11-02',
+                'status' => 'pending',
+            ]);
+        }
+
+        $this->getJson('/api/bookings')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.owner_user_id', $this->user->user_id);
+
+        $this->getJson('/api/dashboard/stats')
+            ->assertOk()
+            ->assertJsonPath('pending', 1)
+            ->assertJsonPath('approved', 0);
     }
 
     public function test_booking_request_allows_starting_today_in_manila(): void

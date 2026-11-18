@@ -30,6 +30,9 @@ class ActivityLogTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->string('pending_email')->nullable();
+            $table->string('email_verification_token')->nullable();
+            $table->timestamp('email_verification_sent_at')->nullable();
         });
 
         Schema::create('activity_logs', function (Blueprint $table) {
@@ -66,9 +69,9 @@ class ActivityLogTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_authenticated_users_can_search_and_filter_activity_logs_from_the_last_year(): void
+    public function test_admins_can_search_and_filter_activity_logs_from_the_last_year(): void
     {
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->admin);
 
         ActivityLog::create([
             'actor_name' => 'System Admin',
@@ -108,6 +111,30 @@ class ActivityLogTest extends TestCase
     public function test_guests_cannot_read_activity_logs(): void
     {
         $this->getJson('/api/admin/activity-logs')->assertUnauthorized();
+    }
+
+    public function test_non_admin_users_cannot_read_activity_logs(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $this->getJson('/api/admin/activity-logs')->assertForbidden();
+    }
+
+    public function test_user_endpoint_does_not_serialize_email_verification_secrets(): void
+    {
+        $this->admin->forceFill([
+            'pending_email' => 'new@example.test',
+            'email_verification_token' => 'verification-token',
+            'email_verification_sent_at' => now(),
+        ])->save();
+        Sanctum::actingAs($this->admin);
+
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonMissingPath('pending_email')
+            ->assertJsonMissingPath('email_verification_token')
+            ->assertJsonMissingPath('email_verification_sent_at')
+            ->assertJsonMissingPath('password_hash');
     }
 
     public function test_purge_command_removes_activity_logs_older_than_one_year(): void

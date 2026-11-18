@@ -91,7 +91,7 @@ class RecaptchaLoginTest extends TestCase
             ->with([
                 'email' => 'user@example.com',
                 'password' => 'password',
-            ])
+            ], false)
             ->andReturnFalse();
 
         $this->postJson('/api/login', [

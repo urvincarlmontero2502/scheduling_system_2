@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import * as api from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 import { AlertCircle, Check, ChevronDown, Loader2 } from "lucide-react";
@@ -25,7 +25,8 @@ const FALLBACK_BARANGAYS = [
 
 export default function BarangaySetup() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { refreshUser, user, loading: authLoading } = useAuth();
   const [barangays, setBarangays] = useState(FALLBACK_BARANGAYS);
   const [selectedBarangay, setSelectedBarangay] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,13 +35,12 @@ export default function BarangaySetup() {
   const barangayDropdownRef = useRef(null);
   const barangayTriggerRef = useRef(null);
 
-  // For the registration flow, we need a temporary token, not a regular auth token
-  const registrationToken = localStorage.getItem("google_registration_token");
-  const hasAuthToken = localStorage.getItem("auth_token");
-
+  const registrationPending =
+    searchParams.get("google-registration") === "1";
   useEffect(() => {
-    // If no auth token or registration token, redirect to login
-    if (!registrationToken && !hasAuthToken) {
+    if (authLoading) return;
+
+    if (!registrationPending && !user) {
       navigate("/login");
       return;
     }
@@ -55,18 +55,10 @@ export default function BarangaySetup() {
       })
       .catch(() => {});
 
-    // If existing user, try to restore their previously selected barangay
-    if (hasAuthToken) {
-      api
-        .fetchCurrentUser()
-        .then((userRes) => {
-          if (userRes.data.barangay) {
-            setSelectedBarangay(userRes.data.barangay);
-          }
-        })
-        .catch(() => {});
+    if (user?.barangay) {
+      setSelectedBarangay(user.barangay);
     }
-  }, [navigate, registrationToken, hasAuthToken]);
+  }, [authLoading, navigate, registrationPending, user]);
 
   useEffect(() => {
     if (!barangayMenuOpen) return undefined;
@@ -101,15 +93,9 @@ export default function BarangaySetup() {
     setError("");
 
     try {
-      if (registrationToken) {
+      if (registrationPending) {
         // New user completing registration — creates a PENDING registration request
-        const res = await api.completeGoogleRegistration(
-          registrationToken,
-          selectedBarangay
-        );
-
-        // Clean up the temporary registration token
-        localStorage.removeItem("google_registration_token");
+        await api.completeGoogleRegistration(selectedBarangay);
 
         // Redirect to registration status page (thank you / pending approval)
         navigate("/registration-status?status=pending");
@@ -144,8 +130,7 @@ export default function BarangaySetup() {
   };
 
   const handleCancel = () => {
-    if (registrationToken) {
-      localStorage.removeItem("google_registration_token");
+    if (registrationPending) {
       navigate("/login", { replace: true });
       return;
     }
@@ -171,7 +156,7 @@ export default function BarangaySetup() {
           </h2>
           <p className="text-[13px] text-steel">
             Please select your barangay to complete your profile setup.
-            {registrationToken && (
+            {registrationPending && (
               <span className="block mt-2 text-xs text-amber-600">
                 Your account will need approval from the barangay admin before
                 you can log in.
@@ -277,9 +262,9 @@ export default function BarangaySetup() {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 size={16} className="animate-spin" />
-                {registrationToken ? "Submitting..." : "Saving..."}
+                {registrationPending ? "Submitting..." : "Saving..."}
               </span>
-            ) : registrationToken ? (
+            ) : registrationPending ? (
               "Submit Request"
             ) : (
               "Save Barangay"

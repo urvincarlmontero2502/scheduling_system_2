@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -79,25 +80,21 @@ class AuthController extends Controller
         $rememberMe = $credentials['remember_me'] ?? false;
         unset($credentials['remember_me']);
 
-        if (!Auth::attempt($credentials)) {
+        if ($rememberMe) {
+            Auth::guard('web')->setRememberDuration(43200);
+        }
+
+        if (!Auth::attempt($credentials, $rememberMe)) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
         }
 
-        $user = User::where('email', $credentials['email'])->firstOrFail();
-
-        // Adjust token expiration based on remember_me
-        $expiresAt = $rememberMe
-            ? now()->addDays(30)   // 30 days when "Remember me" is checked
-            : now()->addHours(12); // 12 hours otherwise
-
-        $token = $user->createToken('spa-token', ['*'], $expiresAt)->plainTextToken;
+        $request->session()->regenerate();
+        $user = Auth::user();
 
         return response()->json([
-            'token' => $token,
             'user' => $user,
-            'expires_at' => $expiresAt->toDateTimeString(),
         ]);
     }
 
@@ -158,7 +155,17 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $currentAccessToken = $request->user()->currentAccessToken();
+        if ($currentAccessToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $currentAccessToken->delete();
+        }
+
+        if ($request->hasSession()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
         return response()->json(['message' => 'Logged out.']);
     }
 
@@ -460,6 +467,9 @@ class AuthController extends Controller
             ], 500);
         }
 
+        $state = Str::random(64);
+        Cache::put('google_oauth_state:'.$state, true, now()->addMinutes(10));
+
         $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
@@ -467,6 +477,7 @@ class AuthController extends Controller
             'scope' => 'openid email profile',
             'access_type' => 'offline',
             'prompt' => 'consent',
+            'state' => $state,
         ]);
 
         return response()->json(['redirect' => $url]);
@@ -476,7 +487,7 @@ class AuthController extends Controller
      * Handle the Google OAuth callback — two-step registration flow.
      *
      * Step 1: Authenticate with Google and check if the user exists.
-     *   - If user exists → issue token and log them in.
+     *   - If user exists → establish a cookie session.
      *   - If user doesn't exist → create a temporary token with their Google
      *     profile data and return it. The frontend will redirect to
      *     /register/barangay to collect their barangay selection.
@@ -495,13 +506,17 @@ class AuthController extends Controller
             ], 500);
         }
 
-        $code = $request->input('code');
-
-        if (!$code) {
+        $validated = $request->validate([
+            'state' => ['required', 'string', 'max:128'],
+            'code' => ['required', 'string', 'max:2048'],
+        ]);
+        if (! Cache::pull('google_oauth_state:'.$validated['state'])) {
             return response()->json([
-                'message' => 'Authorization code not provided.',
-            ], 400);
+                'message' => 'The Google sign-in request is invalid or has expired. Please try again.',
+            ], 422);
         }
+
+        $code = $validated['code'];
 
         try {
             // Get access token from Google using the code
@@ -592,14 +607,14 @@ class AuthController extends Controller
                     // Column doesn't exist — log but continue
                 }
 
-                // Generate token and log them in
-                $expiresAt = now()->addDays(30);
-                $token = $user->createToken('spa-token', ['*'], $expiresAt)->plainTextToken;
+                // Keep Google sign-in sessions persistent for 30 days.
+                $guard = Auth::guard('web');
+                $guard->setRememberDuration(43200);
+                $guard->login($user, true);
+                $request->session()->regenerate();
 
                 return response()->json([
-                    'token' => $token,
                     'user' => $user,
-                    'expires_at' => $expiresAt->toDateTimeString(),
                 ]);
             }
 
@@ -622,8 +637,9 @@ class AuthController extends Controller
                 ]
             );
 
+            $request->session()->put('google_registration_token', $tempToken);
+
             return response()->json([
-                'temporary_token' => $tempToken,
                 'message' => 'Account not found. Please select your barangay to complete registration.',
                 'requires_barangay_setup' => true,
             ], 200);
@@ -651,20 +667,29 @@ class AuthController extends Controller
     public function completeGoogleRegistration(Request $request)
     {
         $validated = $request->validate([
-            'temporary_token' => ['required', 'string'],
             'barangay' => ['required', 'string', 'max:255'],
         ]);
+        if (! $request->hasSession()) {
+            return response()->json([
+                'message' => 'The Google registration session has expired. Please sign in again.',
+            ], 401);
+        }
 
-        // Log the attempt (without sensitive data)
+        $temporaryToken = $request->session()->get('google_registration_token');
+        if (! $temporaryToken) {
+            return response()->json([
+                'message' => 'The Google registration session has expired. Please sign in again.',
+            ], 401);
+        }
+
         \Log::info('completeGoogleRegistration called', [
             'barangay' => $validated['barangay'],
-            'token_length' => strlen($validated['temporary_token']),
+            'registration_token_present' => true,
         ]);
 
-        // Look up the temporary token
         try {
             $tempRecord = DB::table('google_oauth_temp_tokens')
-                ->where('token', $validated['temporary_token'])
+                ->where('token', $temporaryToken)
                 ->first();
         } catch (\Exception $e) {
             \Log::error('google_oauth_temp_tokens lookup failed', [
@@ -678,12 +703,9 @@ class AuthController extends Controller
         }
 
         if (!$tempRecord) {
-            \Log::warning('Registration token not found', [
-                'barangay' => $validated['barangay'],
-                'token_length' => strlen($validated['temporary_token']),
-            ]);
+            $request->session()->forget('google_registration_token');
             return response()->json([
-                'message' => 'Invalid or expired registration token. Please try signing in with Google again.',
+                'message' => 'The Google registration session has expired. Please sign in again.',
             ], 400);
         }
 
@@ -691,8 +713,9 @@ class AuthController extends Controller
         $expiresAt = \Carbon\Carbon::parse($tempRecord->expires_at);
         if ($expiresAt->isPast()) {
             DB::table('google_oauth_temp_tokens')
-                ->where('token', $validated['temporary_token'])
+                ->where('token', $temporaryToken)
                 ->delete();
+            $request->session()->forget('google_registration_token');
 
             return response()->json([
                 'message' => 'This registration link has expired. Please try signing in with Google again.',
@@ -703,8 +726,9 @@ class AuthController extends Controller
         $existingUser = User::where('email', $tempRecord->email)->first();
         if ($existingUser) {
             DB::table('google_oauth_temp_tokens')
-                ->where('token', $validated['temporary_token'])
+                ->where('token', $temporaryToken)
                 ->delete();
+            $request->session()->forget('google_registration_token');
 
             return response()->json([
                 'message' => 'An account with this email already exists. Please log in instead.',
@@ -720,8 +744,9 @@ class AuthController extends Controller
             // If it's still pending, return it - user should wait for approval
             if ($existingRequest->status === 'pending') {
                 DB::table('google_oauth_temp_tokens')
-                    ->where('token', $validated['temporary_token'])
+                    ->where('token', $temporaryToken)
                     ->delete();
+                $request->session()->forget('google_registration_token');
 
                 return response()->json([
                     'message' => 'Your registration request is still pending approval. Please wait for an admin to review your request.',
@@ -775,7 +800,7 @@ class AuthController extends Controller
 
                 // Delete the temporary token
                 DB::table('google_oauth_temp_tokens')
-                    ->where('token', $validated['temporary_token'])
+                    ->where('token', $temporaryToken)
                     ->delete();
 
                 // Notify the barangay admin (if a mapping exists)
@@ -811,6 +836,7 @@ class AuthController extends Controller
                 }
 
                 DB::commit();
+                $request->session()->forget('google_registration_token');
 
                 return response()->json([
                     'message' => 'Your registration request has been submitted for approval. You will be notified once an admin reviews your request.',
@@ -842,10 +868,11 @@ class AuthController extends Controller
 
                 // Delete the temporary token
                 DB::table('google_oauth_temp_tokens')
-                    ->where('token', $validated['temporary_token'])
+                    ->where('token', $temporaryToken)
                     ->delete();
 
                 DB::commit();
+                $request->session()->forget('google_registration_token');
 
                 return response()->json([
                     'message' => 'Registration completed. Please log in.',
