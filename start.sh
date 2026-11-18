@@ -28,11 +28,15 @@ php artisan migrate --path=database/migrations/2026_11_11_000002_add_images_to_r
 php artisan migrate --path=database/migrations/2026_11_18_000001_create_registration_status_verifications_table.php --force
 php artisan migrate --path=database/migrations/2026_11_18_000002_add_remember_token_to_users_table.php --force
 php artisan migrate --path=database/migrations/2026_11_18_000003_revoke_legacy_spa_tokens.php --force
-php artisan migrate --path=database/migrations/2026_11_18_000004_add_soft_deletes_to_users_table.php --force
 
 # Run remaining migrations. Keep stderr visible and warn if a legacy migration
 # prevents the rest of the batch from completing.
 php artisan migrate --force || echo "Migrations completed (some may have already run)"
+
+# These schema changes depend on the core users and booking tables existing.
+php artisan migrate --path=database/migrations/2026_11_18_000004_add_soft_deletes_to_users_table.php --force
+php artisan migrate --path=database/migrations/2026_11_18_000005_create_special_event_templates_table.php --force
+php artisan migrate --path=database/migrations/2026_11_18_000006_add_special_event_template_id_to_booking_request.php --force
 
 # Optional one-time seeding: set RUN_SEED=true in Render, deploy once, then remove it
 if [ "$RUN_SEED" = "true" ]; then
