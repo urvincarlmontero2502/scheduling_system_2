@@ -37,3 +37,19 @@ export function formatBookingConflictDetails(conflicts) {
     return `${conflict.resource_name || "Resource"} conflicts with ${article} ${status} booking on ${dateRange}${timeRange}; the ${bufferMinutes}-minute turnaround buffer is included.`;
   });
 }
+
+export function formatBookingConflictSuggestions(suggestions) {
+  if (!Array.isArray(suggestions)) return [];
+
+  return suggestions.map((suggestion) => {
+    const formatDateTime = (value) => {
+      const match = String(value || "").match(
+        /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/,
+      );
+      if (!match) return value;
+      return `${match[1]} ${formatTime(match[2])}`;
+    };
+
+    return `Suggested schedule: ${formatDateTime(suggestion.start_time)}–${formatDateTime(suggestion.end_time)}${suggestion.label ? ` (${suggestion.label})` : ""}.`;
+  });
+}

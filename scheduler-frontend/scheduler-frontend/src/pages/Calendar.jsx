@@ -23,7 +23,10 @@ import {
 } from "../utils/specialEvents";
 import { getBookingResourceNames } from "../utils/bookingResources";
 import { groupCalendarBookings } from "../utils/calendarEventGroups";
-import { formatBookingConflictDetails } from "../utils/bookingConflicts";
+import {
+  formatBookingConflictDetails,
+  formatBookingConflictSuggestions,
+} from "../utils/bookingConflicts";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -311,7 +314,10 @@ export default function CalendarView() {
       invalidateCache(CACHE_KEYS.HEALTH);
     } catch (error) {
       const errorData = error?.response?.data;
-      const conflictDetails = formatBookingConflictDetails(errorData?.conflicts);
+      const conflictDetails = [
+        ...formatBookingConflictDetails(errorData?.conflicts),
+        ...formatBookingConflictSuggestions(errorData?.suggestions),
+      ];
       toast.error(
         errorData?.message || "Could not update the booking status.",
         conflictDetails.length > 0
