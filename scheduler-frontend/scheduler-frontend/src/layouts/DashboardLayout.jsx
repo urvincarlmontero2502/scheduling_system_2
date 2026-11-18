@@ -6,7 +6,6 @@ import {
   CalendarClock,
   LayoutGrid,
   ClipboardList,
-  History,
   Building2,
   LogOut,
   Menu,
@@ -41,12 +40,6 @@ const NAV_GROUPS = [
         label: "Reports",
         icon: FileText,
         roles: ["admin", "barangay_admin", "staff"],
-      },
-      {
-        to: "/booking-history",
-        label: "Booking History",
-        icon: History,
-        roles: ["admin", "barangay_admin", "staff", "user"],
       },
       {
         to: "/resources",
@@ -683,8 +676,6 @@ export default function DashboardLayout() {
             <h1 className="text-[17px] font-semibold text-ink leading-tight">
               {location.pathname.startsWith("/bookings") && "Bookings"}
               {location.pathname.startsWith("/calendar") && "Schedule Calendar"}
-              {location.pathname.startsWith("/booking-history") &&
-                "Booking History"}
               {location.pathname.startsWith("/resources") &&
                 "Facilities & Vehicles"}
               {location.pathname.startsWith("/requests") && "Requests"}
@@ -701,8 +692,6 @@ export default function DashboardLayout() {
                 "Manage and review facility and vehicle reservation requests"}
               {location.pathname.startsWith("/calendar") &&
                 "Interactive schedule of LGU facilities and vehicles"}
-              {location.pathname.startsWith("/booking-history") &&
-                "Archived reservation records and logs"}
               {location.pathname.startsWith("/resources") &&
                 "Browse and manage municipal assets and equipment"}
               {location.pathname.startsWith("/requests") &&
