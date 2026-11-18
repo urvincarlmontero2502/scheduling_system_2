@@ -238,7 +238,7 @@ export default function Bookings() {
       <div
         role="tablist"
         aria-label="Booking sections"
-        className="mb-5 inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm"
+        className="mb-5 flex w-full border-b border-slate-200"
       >
         <button
           id="booking-section-requests"
@@ -247,10 +247,10 @@ export default function Bookings() {
           aria-selected={activeSection === "requests"}
           aria-controls="booking-section-panel"
           onClick={() => setSection("requests")}
-          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+          className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${
             activeSection === "requests"
-              ? "bg-blue-50 text-blue-700"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800"
           }`}
         >
           <ClipboardList size={16} />
@@ -263,10 +263,10 @@ export default function Bookings() {
           aria-selected={activeSection === "history"}
           aria-controls="booking-section-panel"
           onClick={() => setSection("history")}
-          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+          className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${
             activeSection === "history"
-              ? "bg-blue-50 text-blue-700"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800"
           }`}
         >
           <History size={16} />
