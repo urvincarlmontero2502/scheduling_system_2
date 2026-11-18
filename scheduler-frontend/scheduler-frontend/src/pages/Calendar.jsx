@@ -23,6 +23,7 @@ import {
 } from "../utils/specialEvents";
 import { getBookingResourceNames } from "../utils/bookingResources";
 import { groupCalendarBookings } from "../utils/calendarEventGroups";
+import { formatBookingConflictDetails } from "../utils/bookingConflicts";
 
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -309,8 +310,13 @@ export default function CalendarView() {
       invalidateCache(CACHE_KEYS.BOOKINGS);
       invalidateCache(CACHE_KEYS.HEALTH);
     } catch (error) {
+      const errorData = error?.response?.data;
+      const conflictDetails = formatBookingConflictDetails(errorData?.conflicts);
       toast.error(
-        error?.response?.data?.message || "Could not update the booking status.",
+        errorData?.message || "Could not update the booking status.",
+        conflictDetails.length > 0
+          ? { details: conflictDetails, duration: 10000 }
+          : {},
       );
     }
   };

@@ -680,13 +680,25 @@ class BookingController extends Controller
 
                 return response()->json([
                     'message' => count($result['resource_ids']) === 1
-                        ? 'This resource is already booked for that date and time.'
-                        : 'Unavailable vehicles: '.implode(', ', array_column($conflicts, 'resource_name')).'.',
+                        ? 'Cannot approve this booking because the resource conflicts with an approved booking or its turnaround buffer.'
+                        : 'Cannot approve this booking because selected vehicles conflict with approved bookings or their turnaround buffers.',
                     'conflict' => true,
                     'unavailable_vehicles' => array_map(
                         fn ($item) => [
                             'resource_id' => $item['resource_id'],
                             'name' => $item['resource_name'],
+                        ],
+                        $conflicts
+                    ),
+                    'conflicts' => array_map(
+                        fn ($item) => [
+                            'resource_name' => $item['resource_name'],
+                            'status' => $item['booking']->status,
+                            'start_date' => Carbon::parse($item['booking']->start_date)->toDateString(),
+                            'end_date' => Carbon::parse($item['booking']->end_date)->toDateString(),
+                            'start_time' => $item['booking']->start_time,
+                            'end_time' => $item['booking']->end_time,
+                            'buffer_minutes' => $this->bufferMinutesForResource($item['resource_id']),
                         ],
                         $conflicts
                     ),

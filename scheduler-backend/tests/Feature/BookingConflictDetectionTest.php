@@ -424,7 +424,12 @@ class BookingConflictDetectionTest extends TestCase
             'status' => 'approved',
         ])
             ->assertStatus(422)
-            ->assertJsonPath('unavailable_vehicles.0.name', 'Toyota HiAce Van');
+            ->assertJsonPath('unavailable_vehicles.0.name', 'Toyota HiAce Van')
+            ->assertJsonPath('conflicts.0.resource_name', 'Toyota HiAce Van')
+            ->assertJsonPath('conflicts.0.status', 'approved')
+            ->assertJsonPath('conflicts.0.start_date', '2026-11-02')
+            ->assertJsonPath('conflicts.0.start_time', '08:00')
+            ->assertJsonPath('conflicts.0.buffer_minutes', 30);
     }
 
     public function test_facility_booking_details_include_the_daily_rate_at_submission_time(): void
