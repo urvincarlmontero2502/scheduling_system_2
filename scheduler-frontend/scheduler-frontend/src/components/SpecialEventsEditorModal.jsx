@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarDays, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import * as api from "../api/endpoints";
 import { useToast } from "./Toast";
 import ConfirmModal from "./ConfirmModal";
@@ -14,6 +23,27 @@ function localDateString(date = new Date()) {
 function emptyForm() {
   const date = localDateString();
   return { name: "", start_date: date, end_date: date, resource_ids: [] };
+}
+
+function dateToMonth(dateString) {
+  const [year, month] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, 1);
+}
+
+function monthCalendarDays(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  return [
+    ...Array.from({ length: firstWeekday }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, index) => {
+      const day = String(index + 1).padStart(2, "0");
+      const monthString = String(month + 1).padStart(2, "0");
+      return `${year}-${monthString}-${day}`;
+    }),
+  ];
 }
 
 function recurringDateLabel(template) {
@@ -35,27 +65,53 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
   const [templates, setTemplates] = useState([]);
   const [resources, setResources] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    dateToMonth(localDateString()),
+  );
+  const [selectingEndDate, setSelectingEndDate] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [resourceLoadError, setResourceLoadError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    try {
-      const [templateResponse, resourceResponse] = await Promise.all([
-        api.fetchSpecialEventTemplates(),
-        api.fetchResources(),
-      ]);
-      setTemplates(templateResponse.data || []);
-      setResources(resourceResponse.data || []);
-    } catch (error) {
+    setResourcesLoading(true);
+    setResourceLoadError("");
+    const [templateResult, resourceResult] = await Promise.allSettled([
+      api.fetchSpecialEventTemplates(),
+      api.fetchResources(),
+    ]);
+
+    if (templateResult.status === "fulfilled") {
+      const data = templateResult.value?.data;
+      setTemplates(Array.isArray(data) ? data : []);
+    } else {
       toastRef.current.error(
-        error?.response?.data?.message || "Unable to load special events.",
+        templateResult.reason?.response?.data?.message ||
+          "Unable to load special events.",
       );
-    } finally {
-      setLoading(false);
     }
+
+    if (resourceResult.status === "fulfilled") {
+      const data = resourceResult.value?.data;
+      setResources(Array.isArray(data) ? data : []);
+      setResourceLoadError("");
+    } else {
+      setResourceLoadError(
+        resourceResult.reason?.response?.data?.message ||
+          "Unable to load resources.",
+      );
+      toastRef.current.error(
+        resourceResult.reason?.response?.data?.message ||
+          "Unable to load resources.",
+      );
+    }
+
+    setLoading(false);
+    setResourcesLoading(false);
   }, []);
 
   useEffect(() => {
@@ -66,7 +122,10 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
 
   const resetForm = () => {
     setEditingId(null);
-    setForm(emptyForm());
+    const nextForm = emptyForm();
+    setForm(nextForm);
+    setCalendarMonth(dateToMonth(nextForm.start_date));
+    setSelectingEndDate(false);
   };
 
   const editTemplate = (template) => {
@@ -82,6 +141,8 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
         .map(String)
         .filter((id) => activeResourceIds.has(id)),
     });
+    setCalendarMonth(dateToMonth(template.start_date));
+    setSelectingEndDate(false);
   };
 
   const toggleResource = (resourceId) => {
@@ -93,6 +154,45 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
         : [...current.resource_ids, id],
     }));
   };
+
+  const handleCalendarDateSelect = (date) => {
+    if (!selectingEndDate || date.slice(0, 4) !== form.start_date.slice(0, 4)) {
+      setForm((current) => ({ ...current, start_date: date, end_date: date }));
+      setSelectingEndDate(true);
+      return;
+    }
+
+    if (date < form.start_date) {
+      setForm((current) => ({
+        ...current,
+        start_date: date,
+        end_date: current.start_date,
+      }));
+    } else {
+      setForm((current) => ({ ...current, end_date: date }));
+    }
+    setSelectingEndDate(false);
+  };
+
+  const handleDateInputChange = (field, date) => {
+    setForm((current) => ({
+      ...current,
+      [field]: date,
+      ...(field === "start_date" && current.end_date < date
+        ? { end_date: date }
+        : {}),
+    }));
+    if (field === "start_date" && date) {
+      setCalendarMonth(dateToMonth(date));
+    }
+    setSelectingEndDate(false);
+  };
+
+  const calendarDays = monthCalendarDays(calendarMonth);
+  const monthLabel = calendarMonth.toLocaleDateString("en-PH", {
+    month: "long",
+    year: "numeric",
+  });
 
   const saveTemplate = async (event) => {
     event.preventDefault();
@@ -174,7 +274,7 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
             </button>
           </header>
 
-          <div className="grid min-h-0 gap-5 overflow-y-auto p-5 md:grid-cols-[1fr_1.1fr]">
+          <div className="grid min-h-0 gap-5 overflow-y-auto p-5 md:grid-cols-[1.05fr_0.95fr]">
             <form onSubmit={saveTemplate} className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-800">
@@ -207,6 +307,64 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
                 />
               </label>
 
+              <fieldset className="space-y-2">
+                <legend className="flex w-full items-center justify-between text-xs font-medium text-slate-700">
+                  <span>Resources to reserve</span>
+                  <span className="text-[10px] font-normal text-slate-500">
+                    {form.resource_ids.length} selected
+                  </span>
+                </legend>
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                  {resourcesLoading ? (
+                    <p className="p-2 text-xs text-slate-500">
+                      Loading resources...
+                    </p>
+                  ) : resourceLoadError ? (
+                    <div className="flex items-center justify-between gap-2 p-2">
+                      <p className="text-xs text-rose-600">{resourceLoadError}</p>
+                      <button
+                        type="button"
+                        onClick={loadData}
+                        className="shrink-0 text-xs font-semibold text-purple-700 hover:text-purple-900"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : resources.length === 0 ? (
+                    <p className="p-2 text-xs text-slate-500">
+                      No active resources are available.
+                    </p>
+                  ) : (
+                    resources.map((resource) => (
+                      <label
+                        key={resource.resource_id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs text-slate-700 hover:bg-purple-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.resource_ids.includes(
+                            String(resource.resource_id),
+                          )}
+                          onChange={() => toggleResource(resource.resource_id)}
+                          className="accent-purple-700"
+                        />
+                        <span className="min-w-0 flex-1 truncate font-medium">
+                          {resource.name}
+                        </span>
+                        <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] capitalize text-slate-500">
+                          {resource.type}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {form.resource_ids.length === 0 && (
+                  <p className="text-[11px] text-rose-600">
+                    Select at least one resource.
+                  </p>
+                )}
+              </fieldset>
+
               <div className="grid grid-cols-2 gap-3">
                 <label className="block space-y-1.5">
                   <span className="text-xs font-medium text-slate-700">
@@ -217,14 +375,7 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
                     type="date"
                     value={form.start_date}
                     onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        start_date: event.target.value,
-                        end_date:
-                          current.end_date < event.target.value
-                            ? event.target.value
-                            : current.end_date,
-                      }))
+                      handleDateInputChange("start_date", event.target.value)
                     }
                     className="w-full rounded-lg border border-slate-200 px-2 py-2 text-xs outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
                   />
@@ -237,63 +388,108 @@ export default function SpecialEventsEditorModal({ open, onClose }) {
                     required
                     type="date"
                     min={form.start_date}
+                    max={`${form.start_date.slice(0, 4)}-12-31`}
                     value={form.end_date}
                     onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        end_date: event.target.value,
-                      }))
+                      handleDateInputChange("end_date", event.target.value)
                     }
                     className="w-full rounded-lg border border-slate-200 px-2 py-2 text-xs outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
                   />
                 </label>
               </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-700">
+                    Choose dates
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Previous month"
+                      onClick={() =>
+                        setCalendarMonth(
+                          (current) =>
+                            new Date(
+                              current.getFullYear(),
+                              current.getMonth() - 1,
+                              1,
+                            ),
+                        )
+                      }
+                      className="rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
+                    >
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="min-w-28 text-center text-xs font-semibold text-slate-800">
+                      {monthLabel}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Next month"
+                      onClick={() =>
+                        setCalendarMonth(
+                          (current) =>
+                            new Date(
+                              current.getFullYear(),
+                              current.getMonth() + 1,
+                              1,
+                            ),
+                        )
+                      }
+                      className="rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
+                    >
+                      <ChevronRight size={15} />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                    <span
+                      key={day}
+                      className="py-1 text-[9px] font-semibold uppercase text-slate-400"
+                    >
+                      {day}
+                    </span>
+                  ))}
+                  {calendarDays.map((date, index) => {
+                    if (!date) {
+                      return <span key={`empty-${index}`} className="h-7" />;
+                    }
+
+                    const selectedStart = date === form.start_date;
+                    const selectedEnd = date === form.end_date;
+                    const inRange =
+                      date > form.start_date && date < form.end_date;
+                    return (
+                      <button
+                        key={date}
+                        type="button"
+                        aria-label={date}
+                        aria-pressed={selectedStart || selectedEnd || inRange}
+                        onClick={() => handleCalendarDateSelect(date)}
+                        className={`h-7 rounded-md text-[11px] transition ${
+                          selectedStart || selectedEnd
+                            ? "bg-purple-700 font-semibold text-white"
+                            : inRange
+                              ? "bg-purple-100 text-purple-900"
+                              : "text-slate-700 hover:bg-white"
+                        }`}
+                      >
+                        {Number(date.slice(-2))}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[10px] text-slate-500">
+                  {selectingEndDate
+                    ? "Select the last date, or choose one date for a single-day event."
+                    : "Select a date to start a new range."}
+                </p>
+              </div>
               <p className="text-[11px] leading-relaxed text-purple-700">
                 <CalendarDays size={13} className="mr-1 inline" />
                 The month and day repeat annually, starting in the first date&apos;s year.
               </p>
-
-              <fieldset className="space-y-2">
-                <legend className="text-xs font-medium text-slate-700">
-                  Reserved resources
-                </legend>
-                <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2">
-                  {resources.length === 0 ? (
-                    <p className="p-2 text-xs text-slate-500">
-                      No active resources are available.
-                    </p>
-                  ) : (
-                    resources.map((resource) => (
-                      <label
-                        key={resource.resource_id}
-                        className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={form.resource_ids.includes(
-                            String(resource.resource_id),
-                          )}
-                          onChange={() => toggleResource(resource.resource_id)}
-                          className="mt-0.5 accent-purple-700"
-                        />
-                        <span>
-                          <span className="font-medium">{resource.name}</span>
-                          {resource.description && (
-                            <span className="block text-[10px] text-slate-500">
-                              {resource.description}
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-                {form.resource_ids.length === 0 && (
-                  <p className="text-[11px] text-rose-600">
-                    Select at least one resource.
-                  </p>
-                )}
-              </fieldset>
 
               <button
                 type="submit"
