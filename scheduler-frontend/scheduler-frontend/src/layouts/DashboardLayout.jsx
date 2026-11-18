@@ -97,6 +97,7 @@ export default function DashboardLayout() {
 
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
 
   const { toggleDropdown, closeDropdown, dropdownOpen, bellRef } =
     useNotifications();
@@ -241,13 +242,22 @@ export default function DashboardLayout() {
     return () => document.removeEventListener("keydown", onKey);
   }, [showSignOutModal, isSigningOut]);
 
-  const requestSignOut = () => setShowSignOutModal(true);
+  const requestSignOut = () => {
+    setSignOutError("");
+    setShowSignOutModal(true);
+  };
 
   async function confirmSignOut() {
     setIsSigningOut(true);
-    await signOut();
-    setShowSignOutModal(false);
-    navigate("/login", { replace: true });
+    try {
+      await signOut();
+      setShowSignOutModal(false);
+      navigate("/login", { replace: true });
+    } catch {
+      setSignOutError("Could not end your session. Check your connection and try again.");
+    } finally {
+      setIsSigningOut(false);
+    }
   }
 
   const visibleGroups = NAV_GROUPS.map((group) => ({
@@ -567,6 +577,11 @@ export default function DashboardLayout() {
               <p className="mt-0 text-[13px] text-steel">
                 Are you sure you want to end your current session?
               </p>
+              {signOutError && (
+                <p role="alert" className="mt-3 text-[13px] text-red-700">
+                  {signOutError}
+                </p>
+              )}
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={closeSignOutModal}

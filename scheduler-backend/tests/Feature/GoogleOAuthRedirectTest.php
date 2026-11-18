@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class GoogleOAuthRedirectTest extends TestCase
@@ -24,6 +25,26 @@ class GoogleOAuthRedirectTest extends TestCase
             $query['redirect_uri'] ?? null
         );
         $this->assertSame('test-client-id', $query['client_id'] ?? null);
+        $this->assertNotEmpty($query['state'] ?? null);
+        $this->assertTrue(Cache::has('google_oauth_state:'.$query['state']));
+    }
+
+    public function test_google_callback_rejects_missing_or_invalid_state(): void
+    {
+        config([
+            'services.google.client_id' => 'test-client-id',
+            'services.google.client_secret' => 'test-client-secret',
+        ]);
+
+        $this->postJson('/api/auth/google/callback', [
+            'code' => 'authorization-code',
+            'state' => 'not-issued-by-this-server',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'The Google sign-in request is invalid or has expired. Please try again.'
+            );
     }
 
     public function test_google_redirect_reports_missing_oauth_configuration(): void

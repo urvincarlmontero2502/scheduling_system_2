@@ -27,13 +27,22 @@ class BookingController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function stats()
+    public function stats(Request $request)
     {
+        $user = $request->user();
+        $bookings = BookingRequest::notSpecialEvent();
+
+        if ($user->isBarangayAdmin()) {
+            $bookings->whereHas('user', fn ($query) => $query->where('barangay', $user->barangay));
+        } elseif (! $user->isAdmin()) {
+            $bookings->where('user_id', $user->user_id);
+        }
+
         return response()->json([
-            'pending' => BookingRequest::notSpecialEvent()
+            'pending' => (clone $bookings)
                 ->where('status', 'pending')
                 ->count(),
-            'approved' => BookingRequest::notSpecialEvent()
+            'approved' => (clone $bookings)
                 ->where('status', 'approved')
                 ->count(),
             'resources' => Resource::count(),
@@ -70,6 +79,8 @@ class BookingController extends Controller
                             $inner->where('barangay', $user->barangay);
                         });
                 });
+            } elseif (! $user->isAdmin()) {
+                $query->where('user_id', $user->user_id);
             }
 
             $bookings = $query

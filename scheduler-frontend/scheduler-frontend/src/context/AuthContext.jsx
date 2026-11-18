@@ -6,50 +6,39 @@ import { ToastProvider } from '../components/Toast'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('auth_user')
-    return stored ? JSON.parse(stored) : null
-  })
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token")
-    if (!token) {
-      setLoading(false)
-      return
+    const handleUnauthorized = () => {
+      clearAllCache()
+      setUser(null)
     }
-    // Verify the stored token is still valid and refresh user details.
+    window.addEventListener('auth:unauthorized', handleUnauthorized)
+
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    localStorage.removeItem('auth_expires_at')
+    localStorage.removeItem('google_registration_token')
+    sessionStorage.removeItem('auth_token')
+    sessionStorage.removeItem('auth_user')
+
     api
       .fetchCurrentUser()
       .then((res) => {
         setUser(res.data)
-        localStorage.setItem("auth_user", JSON.stringify(res.data))
       })
       .catch(() => {
-        // Don't immediately clear the user on initial load — the token
-        // might be valid but the request failed due to a transient error.
-        // Keep the user from localStorage so the app doesn't flash to login.
-        // The token will be validated on subsequent API calls.
-        const stored = localStorage.getItem("auth_user")
-        if (stored) {
-          try {
-            setUser(JSON.parse(stored))
-          } catch {
-            setUser(null)
-          }
-        }
+        setUser(null)
       })
       .finally(() => setLoading(false))
+
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)
   }, [])
 
   async function signIn(credentials) {
     const res = await api.login(credentials)
-    const { token, user: signedInUser, expires_at } = res.data
-    localStorage.setItem('auth_token', token)
-    localStorage.setItem('auth_user', JSON.stringify(signedInUser))
-    if (expires_at) {
-      localStorage.setItem('auth_expires_at', expires_at)
-    }
+    const { user: signedInUser } = res.data
     setUser(signedInUser)
     return signedInUser
   }
@@ -58,6 +47,11 @@ export function AuthProvider({ children }) {
     // Step 1: Get the Google OAuth redirect URL
     const redirectRes = await api.getGoogleRedirect()
     const redirectUrl = redirectRes.data.redirect
+    const state = new URL(redirectUrl).searchParams.get("state")
+    if (!state) {
+      throw new Error("Google sign-in did not provide an OAuth state value.")
+    }
+    sessionStorage.setItem("google_oauth_state", state)
 
     // Step 2: Redirect the entire window (avoids COOP blocking popup.closed)
     window.location.href = redirectUrl
@@ -66,15 +60,17 @@ export function AuthProvider({ children }) {
   async function signOut() {
     try {
       await api.logout()
-    } catch {
-      // Ignore network errors on logout — clear local state regardless.
+    } catch (error) {
+      if (error.response?.status !== 401) {
+        throw error
+      }
     }
-    // Clean up all auth-related storage (localStorage + sessionStorage)
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
     localStorage.removeItem('auth_expires_at')
     localStorage.removeItem('google_auth_success')
     localStorage.removeItem('google_registration_token')
+    sessionStorage.removeItem('google_oauth_state')
     sessionStorage.removeItem('auth_token')
     sessionStorage.removeItem('auth_user')
     // Clear data cache on logout
@@ -85,7 +81,6 @@ export function AuthProvider({ children }) {
   async function refreshUser() {
     const res = await api.fetchCurrentUser()
     const refreshedUser = res.data
-    localStorage.setItem('auth_user', JSON.stringify(refreshedUser))
     setUser(refreshedUser)
     return refreshedUser
   }

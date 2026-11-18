@@ -23,6 +23,12 @@ done
 php artisan migrate --path=database/migrations/2026_11_11_000001_add_buffer_minutes_to_resources_table.php --force
 php artisan migrate --path=database/migrations/2026_11_11_000002_add_images_to_resources_table.php --force
 
+# Apply security migrations explicitly so a failure in a legacy migration
+# cannot leave the new authentication flow running against an old schema.
+php artisan migrate --path=database/migrations/2026_11_18_000001_create_registration_status_verifications_table.php --force
+php artisan migrate --path=database/migrations/2026_11_18_000002_add_remember_token_to_users_table.php --force
+php artisan migrate --path=database/migrations/2026_11_18_000003_revoke_legacy_spa_tokens.php --force
+
 # Run remaining migrations. Keep stderr visible and warn if a legacy migration
 # prevents the rest of the batch from completing.
 php artisan migrate --force || echo "Migrations completed (some may have already run)"

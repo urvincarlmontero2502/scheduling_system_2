@@ -1,24 +1,33 @@
 <?php
 
+$frontendUrl = env(
+    'FRONTEND_URL',
+    env('APP_ENV', 'production') === 'production'
+        ? 'https://jabongascheduler.vercel.app'
+        : 'http://localhost:5173'
+);
+$localOrigins = env('APP_ENV', 'production') === 'production'
+    ? []
+    : ['http://localhost:5173', 'http://localhost:5174'];
+$configuredOrigins = array_map(
+    'trim',
+    explode(',', env('FRONTEND_ALLOWED_ORIGINS', ''))
+);
+
 return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    // Set FRONTEND_URL in Render to your Vercel URL (no trailing slash)
-    // If not set, we allow any HTTPS origin for the auth/registration flow
-    // (Bearer tokens are used, not cookies, so CORS security is not a concern)
-    'allowed_origins' => array_values(array_filter([
-        env('FRONTEND_URL'),
-        env('APP_URL'),
-        'http://localhost:5173',
-        'http://localhost:5174',
-    ])),
+    // Set FRONTEND_URL in Render and explicitly list trusted additional origins.
+    'allowed_origins' => array_values(array_unique(array_filter(array_merge(
+        [$frontendUrl],
+        $configuredOrigins,
+        $localOrigins
+    )))),
 
-    // Allow any HTTPS origin as a fallback — registration is the entry point
-    // for new users and must never be blocked by CORS
-    'allowed_origins_patterns' => ['^https://.*'],
+    'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
@@ -26,7 +35,6 @@ return [
 
     'max_age' => 0,
 
-    // Bearer tokens are used, not cookies
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

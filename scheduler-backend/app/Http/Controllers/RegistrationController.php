@@ -12,7 +12,9 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 
 class RegistrationController extends Controller
@@ -134,32 +136,129 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Public lookup: Get registration request details by email.
-     * No authentication required - returns request status if found.
+     * Send a one-time email link before disclosing registration status.
      */
     public function lookup(Request $request)
     {
-        $email = $request->query('email');
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+        $email = mb_strtolower(trim($validated['email']));
+        $rateLimitKey = 'registration-status-email:'.hash('sha256', $email);
+        $responseMessage = 'If a registration request exists for this address, verification instructions will be sent.';
 
-        if (! $email) {
-            return response()->json(['message' => 'Email parameter is required.'], 400);
-        }
-
-        $registrationRequest = RegistrationRequest::where('email', $email)->first();
-
-        if ($registrationRequest) {
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 3)) {
             return response()->json([
-                'request_id' => $registrationRequest->request_id,
-                'email' => $registrationRequest->email,
-                'full_name' => $registrationRequest->full_name,
-                'barangay' => $registrationRequest->barangay,
-                'role' => $registrationRequest->role,
-                'status' => $registrationRequest->status,
-                'reviewed_at' => $registrationRequest->reviewed_at,
-            ], 200);
-        } else {
-            return response()->json(['message' => 'No registration request found for this email.'], 404);
+                'message' => 'Too many verification requests. Please try again later.',
+            ], 429);
         }
+        RateLimiter::hit($rateLimitKey, 900);
+
+        DB::table('registration_status_verifications')
+            ->where('expires_at', '<=', now())
+            ->delete();
+        DB::table('registration_status_verifications')
+            ->where('email', $email)
+            ->delete();
+
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        DB::table('registration_status_verifications')->insert([
+            'email' => $email,
+            'token_hash' => $tokenHash,
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now(),
+        ]);
+
+        $verificationUrl = rtrim(config('app.frontend_url'), '/')
+            .'/registration-status?'.http_build_query([
+                'email' => $email,
+                'token' => $token,
+            ]);
+
+        try {
+            Mail::raw(
+                "A request was made to check registration status for this email address.\n\n"
+                ."If you submitted a registration request, verify ownership of this address using the link below. "
+                ."The link expires in 15 minutes and can only be used once:\n"
+                .$verificationUrl."\n\n"
+                ."If you did not request this, you can ignore this email.",
+                function ($message) use ($email) {
+                    $message->to($email)
+                        ->subject('Verify Your Registration Status Request');
+                }
+            );
+        } catch (\Throwable $exception) {
+            DB::table('registration_status_verifications')
+                ->where('token_hash', $tokenHash)
+                ->delete();
+            RateLimiter::clear($rateLimitKey);
+            Log::error('Failed to send registration status verification email.', [
+                'exception' => $exception::class,
+            ]);
+
+            return response()->json([
+                'message' => 'We could not send a verification email. Please try again later.',
+            ], 503);
+        }
+
+        return response()->json(['message' => $responseMessage], 202);
+    }
+
+    /**
+     * Consume an email verification link and return status only to its owner.
+     */
+    public function verifyLookup(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'token' => ['required', 'regex:/^[a-f0-9]{64}$/'],
+        ]);
+        $email = mb_strtolower(trim($validated['email']));
+        $tokenHash = hash('sha256', $validated['token']);
+
+        $result = DB::transaction(function () use ($email, $tokenHash) {
+            $verification = DB::table('registration_status_verifications')
+                ->where('email', $email)
+                ->where('token_hash', $tokenHash)
+                ->where('expires_at', '>', now())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $verification) {
+                return ['valid' => false];
+            }
+
+            $consumed = DB::table('registration_status_verifications')
+                ->where('id', $verification->id)
+                ->where('expires_at', '>', now())
+                ->delete();
+            if ($consumed !== 1) {
+                return ['valid' => false];
+            }
+
+            return [
+                'valid' => true,
+                'registration' => RegistrationRequest::whereRaw('LOWER(email) = ?', [$email])->first(),
+            ];
+        });
+
+        if (! $result['valid']) {
+            return response()->json([
+                'message' => 'This verification link is invalid, expired, or already used. Request a new link.',
+            ], 422);
+        }
+
+        if (! $result['registration']) {
+            return response()->json([
+                'message' => 'No registration request was found for this verified email address.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => $result['registration']->status,
+            'reviewed_at' => $result['registration']->reviewed_at,
+        ]);
     }
 
     /**

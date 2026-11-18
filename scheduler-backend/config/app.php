@@ -1,5 +1,12 @@
 <?php
 
+$frontendUrl = env(
+    'FRONTEND_URL',
+    env('APP_ENV', 'production') === 'production'
+        ? 'https://jabongascheduler.vercel.app'
+        : 'http://localhost:5173'
+);
+
 return [
 
     /*
@@ -54,11 +61,11 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+    'frontend_url' => $frontendUrl,
 
     'mail_logo_url' => env(
         'MAIL_LOGO_URL',
-        rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/jabonga-logo.png'
+        rtrim($frontendUrl, '/').'/jabonga-logo.png'
     ),
 
     /*

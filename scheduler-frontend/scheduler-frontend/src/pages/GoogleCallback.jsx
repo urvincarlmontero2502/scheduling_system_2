@@ -23,6 +23,16 @@ export default function GoogleCallback() {
 
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const state = searchParams.get("state");
+    const expectedState = sessionStorage.getItem("google_oauth_state");
+    sessionStorage.removeItem("google_oauth_state");
+
+    if (!state || !expectedState || state !== expectedState) {
+      setStatus("error");
+      setMessage("The Google sign-in request could not be verified. Please try again.");
+      localStorage.setItem("google_auth_success", "false");
+      return;
+    }
 
     if (error) {
       setStatus("error");
@@ -45,33 +55,18 @@ export default function GoogleCallback() {
 
     // Exchange the code for tokens
     api
-      .googleCallback(code)
+      .googleCallback(code, state)
       .then(async (res) => {
-        if (res.data.temporary_token) {
+        if (res.data.requires_barangay_setup) {
           // New user — redirect to two-step registration
-          localStorage.setItem(
-            "google_registration_token",
-            res.data.temporary_token
-          );
           setStatus("success");
           setMessage("Google authenticated! Please select your barangay to continue.");
-          setTimeout(() => navigate("/register/barangay"), 1500);
+          setTimeout(() => navigate("/register/barangay?google-registration=1"), 1500);
         } else {
           // Existing user — full login
-          const { token, user: signInUser, expires_at } = res.data;
-          localStorage.setItem("auth_token", token);
-          localStorage.setItem("auth_user", JSON.stringify(signInUser));
-          if (expires_at) {
-            localStorage.setItem("auth_expires_at", expires_at);
-          }
           localStorage.setItem("google_auth_success", "true");
 
-          // Refresh the Auth Context so Sidebar/profile updates immediately
-          try {
-            await refreshUser();
-          } catch {
-            // If refresh fails, the localStorage user data is still valid
-          }
+          await refreshUser();
 
           setStatus("success");
           setMessage("Successfully signed in with Google!");

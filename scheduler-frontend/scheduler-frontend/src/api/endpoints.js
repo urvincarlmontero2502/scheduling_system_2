@@ -10,15 +10,18 @@ export const login = (credentials) => client.post("/login", credentials);
 export const forgotPassword = (email) =>
   client.post("/forgot-password", { email });
 export const getGoogleRedirect = () => client.get("/auth/google");
-export const googleCallback = (code) =>
-  client.post("/auth/google/callback", { code });
-export const completeGoogleRegistration = (tempToken, barangay) =>
+export const googleCallback = (code, state) =>
+  client.post("/auth/google/callback", { code, state });
+export const completeGoogleRegistration = (barangay) =>
   client.post("/auth/google/complete-registration", {
-    temporary_token: tempToken,
     barangay,
   });
 export const registerStaff = (payload) =>
   client.post("/registration-requests", payload);
+export const requestRegistrationStatusVerification = (email) =>
+  client.post("/registration-lookup", { email });
+export const verifyRegistrationStatus = (email, token) =>
+  client.post("/registration-lookup/verify", { email, token });
 
 // --- System Settings (admin only) ------------------------------------
 export const fetchBookingReminderSettings = () =>

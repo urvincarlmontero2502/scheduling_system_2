@@ -1,5 +1,12 @@
 <?php
 
+$frontendUrl = env(
+    'FRONTEND_URL',
+    env('APP_ENV', 'production') === 'production'
+        ? 'https://jabongascheduler.vercel.app'
+        : 'http://localhost:5173'
+);
+
 return [
 
     /*
@@ -38,7 +45,7 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') . '/auth/google/callback',
+        'redirect' => rtrim($frontendUrl, '/') . '/auth/google/callback',
     ],
 
     'brevo' => [

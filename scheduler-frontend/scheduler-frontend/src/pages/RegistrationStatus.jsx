@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { ArrowRight, Mail, Search, Clock, CheckCircle } from "lucide-react";
+import * as api from "../api/endpoints";
 
 const STATUS_CONFIG = {
   pending: {
@@ -53,61 +54,75 @@ export default function RegistrationStatus() {
   const location = useLocation();
   const urlParams = new URLSearchParams(location.search);
   const lookupEmail = urlParams.get("email");
+  const verificationToken = urlParams.get("token");
   const storedStatus = localStorage.getItem("registration_submitted");
 
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
   const [lookupResult, setLookupResult] = useState(null);
+  const attemptedToken = useRef(null);
 
   const resetLookup = () => {
     setLookupResult(null);
     setEmail("");
     setError("");
+    setVerificationSent(false);
+    navigate("/registration-status", { replace: true });
     window.scrollTo(0, 0);
   };
 
   useEffect(() => {
-    if (lookupEmail && !lookupResult) {
-      handleLookup(lookupEmail);
+    if (lookupEmail) {
+      setEmail(lookupEmail);
     }
-  }, [lookupEmail, lookupResult]);
+
+    if (
+      !lookupEmail ||
+      !verificationToken ||
+      attemptedToken.current === verificationToken
+    ) {
+      return;
+    }
+    attemptedToken.current = verificationToken;
+    setIsLoading(true);
+    setError("");
+
+    api
+      .verifyRegistrationStatus(lookupEmail, verificationToken)
+      .then(({ data }) => {
+        setLookupResult({
+          email: lookupEmail,
+          status: data.status,
+          reviewed_at: data.reviewed_at,
+        });
+        navigate("/registration-status", { replace: true });
+      })
+      .catch((err) => {
+        setError(
+          err.response?.data?.message ||
+            "Unable to verify this link. Please request a new verification email.",
+        );
+        navigate("/registration-status", { replace: true });
+      })
+      .finally(() => setIsLoading(false));
+  }, [lookupEmail, verificationToken, navigate]);
 
   const handleLookup = async (emailToLookup) => {
     setIsLoading(true);
     setError("");
-    setLookupResult(null);
+    setVerificationSent(false);
 
     try {
-      const response = await fetch(
-        `/api/registration-lookup?email=${encodeURIComponent(emailToLookup)}`,
-      );
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError("No registration request found for this email.");
-        } else {
-          setError("Unable to check registration status. Please try again.");
-        }
-        return;
-      }
-
-      const data = await response.json();
-
-      if (data.status) {
-        setLookupResult({
-          email: data.email,
-          status: data.status,
-          full_name: data.full_name,
-          barangay: data.barangay,
-          role: data.role,
-          reviewed_at: data.reviewed_at,
-        });
-      } else {
-        setError("No registration request found for this email.");
-      }
+      await api.requestRegistrationStatusVerification(emailToLookup);
+      setEmail(emailToLookup);
+      setVerificationSent(true);
     } catch (err) {
-      console.error(err);
-      setError("Unable to check registration status. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          "Unable to send a verification email. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -147,8 +162,8 @@ export default function RegistrationStatus() {
               Check Your Registration Status
             </h2>
             <p className="text-[13px] text-steel mb-6">
-              Enter the email address you used to sign up to check for a pending
-              or approved registration request.
+              Enter the email address you used to sign up. We’ll email a link to
+              verify ownership before showing any registration status.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -162,7 +177,10 @@ export default function RegistrationStatus() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setVerificationSent(false);
+                  }}
                   placeholder="juandelacruz@gmail.com"
                   className="w-full rounded-lg border border-line pl-10 pr-3 py-2 text-[13px] text-ink outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition"
                   required
@@ -173,11 +191,21 @@ export default function RegistrationStatus() {
                   {error}
                 </div>
               )}
+              {verificationSent && (
+                <p className="text-[12px] text-emerald-700" role="status">
+                  If a request exists for this address, verification
+                  instructions will arrive shortly. Check your inbox.
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full rounded-lg bg-blue-600 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-70">
-                {isLoading ? "Checking..." : "Check Status"}
+                {isLoading
+                  ? "Sending..."
+                  : verificationSent
+                    ? "Resend Verification Link"
+                    : "Send Verification Link"}
               </button>
             </form>
 
@@ -232,24 +260,6 @@ export default function RegistrationStatus() {
                     {lookupResult.email}
                   </p>
                 </div>
-                {lookupResult.barangay && (
-                  <div className="flex items-start gap-2 mb-3">
-                    <span className="flex-shrink-0 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Barangay
-                    </span>
-                    <p className="text-[13px] text-ink">
-                      {lookupResult.barangay}
-                    </p>
-                  </div>
-                )}
-                {lookupResult.role && (
-                  <div className="flex items-start gap-2 mb-3">
-                    <span className="flex-shrink-0 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Role
-                    </span>
-                    <p className="text-[13px] text-ink">{lookupResult.role}</p>
-                  </div>
-                )}
                 {lookupResult.reviewed_at && (
                   <div className="flex items-start gap-2 mb-0">
                     <span className="flex-shrink-0 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
