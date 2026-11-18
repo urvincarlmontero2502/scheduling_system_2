@@ -27,6 +27,22 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Keep Google's reCAPTCHA attribution visible without letting it dominate the UI. */
+.grecaptcha-badge {
+  right: 12px !important;
+  bottom: 12px !important;
+  transform: scale(0.75);
+  transform-origin: bottom right;
+}
+
+@media (max-width: 640px) {
+  .grecaptcha-badge {
+    right: 10px !important;
+    bottom: 10px !important;
+    transform: scale(0.65);
+  }
+}
+
 /* 16px inputs stop iPhones from zooming in when a field is tapped */
 @media (max-width: 640px) {
   input, select, textarea {
