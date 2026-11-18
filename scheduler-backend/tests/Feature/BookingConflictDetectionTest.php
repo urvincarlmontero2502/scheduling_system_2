@@ -633,23 +633,81 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('suggestions.0.label', 'Next available day, same time slot');
     }
 
-    public function test_pending_bookings_block_overlapping_requests_and_offer_same_day_slot(): void
+    public function test_pending_booking_overlap_requires_confirmation_and_offers_a_slot(): void
     {
         $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '12:00');
 
-        $response = $this->postJson('/api/bookings', $this->bookingPayload(
+        $payload = $this->bookingPayload(
             '2026-11-02',
             '2026-11-02',
             '12:15',
             '12:45'
-        ));
+        );
 
-        $response
+        $this->postJson('/api/bookings', $payload)
             ->assertStatus(409)
             ->assertJsonPath('conflict', true)
+            ->assertJsonPath('conflict_type', 'pending')
+            ->assertJsonPath('pending_conflicts_required', true)
+            ->assertJsonPath('pending_conflicts.0.name', $this->resource->name)
             ->assertJsonPath('suggestions.0.start_time', '2026-11-02 12:30:00')
             ->assertJsonPath('suggestions.0.end_time', '2026-11-02 13:00:00')
             ->assertJsonPath('suggestions.0.label', 'Same day, later slot');
+
+        $this->postJson('/api/bookings', array_merge($payload, [
+            'accept_pending_conflicts' => true,
+        ]))->assertCreated();
+
+        $this->assertDatabaseCount('booking_request', 2);
+    }
+
+    public function test_approved_booking_overlap_cannot_be_overridden_by_pending_conflict_confirmation(): void
+    {
+        $this->createBooking('approved', '2026-11-02', '2026-11-02', '08:00', '12:00');
+
+        $this->postJson('/api/bookings', array_merge(
+            $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '09:00'),
+            ['accept_pending_conflicts' => true]
+        ))
+            ->assertStatus(409)
+            ->assertJsonPath('conflict_type', 'approved')
+            ->assertJsonPath('pending_conflicts_required', false);
+
+        $this->assertDatabaseCount('booking_request', 1);
+    }
+
+    public function test_direct_approval_cannot_override_a_pending_booking_overlap(): void
+    {
+        $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '12:00');
+
+        $this->postJson('/api/bookings', array_merge(
+            $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '09:00'),
+            [
+                'status' => 'approved',
+                'accept_pending_conflicts' => true,
+            ]
+        ))
+            ->assertStatus(409)
+            ->assertJsonPath('conflict_type', 'pending');
+
+        $this->assertDatabaseCount('booking_request', 1);
+    }
+
+    public function test_approving_one_pending_booking_does_not_get_blocked_by_another_pending_booking(): void
+    {
+        $request = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '12:00');
+        $this->createBooking('pending', '2026-11-02', '2026-11-02', '09:00', '11:00');
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/bookings/{$request->booking_id}/status", [
+            'status' => 'approved',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('booking_request', [
+            'booking_id' => $request->booking_id,
+            'status' => 'approved',
+        ]);
     }
 
     public function test_buffer_before_an_existing_booking_is_enforced(): void
