@@ -13,20 +13,38 @@ export function isSpecialEvent(booking) {
   return /festival|alumni|habongan/i.test(purpose) || /festival|alumni|habongan/i.test(fullName);
 }
 
-const RECURRING_SPECIAL_EVENT_DATES = new Set([
-  "07-01",
-  "08-11",
-  "08-12",
-  "08-13",
-  "08-14",
-  "08-15",
-  "08-16",
-  "10-31",
-]);
-
-export function isRecurringSpecialEventDate(dateString) {
+export function isRecurringSpecialEventDate(dateString, templates = []) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString || "");
-  if (!match || Number(match[1]) < 2026) return false;
+  if (!match) return false;
 
-  return RECURRING_SPECIAL_EVENT_DATES.has(`${match[2]}-${match[3]}`);
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return false;
+  }
+  const monthDay = month * 100 + day;
+
+  return templates.some((template) => {
+    const startYear = Number(template.start_year);
+    const startMonth = Number(template.start_month);
+    const endMonth = Number(template.end_month);
+    const startDay = Math.min(
+      Number(template.start_day),
+      new Date(year, startMonth, 0).getDate(),
+    );
+    const endDay = Math.min(
+      Number(template.end_day),
+      new Date(year, endMonth, 0).getDate(),
+    );
+    const start = startMonth * 100 + startDay;
+    const end = endMonth * 100 + endDay;
+
+    return year >= startYear && monthDay >= start && monthDay <= end;
+  });
 }

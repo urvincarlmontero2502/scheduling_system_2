@@ -32,6 +32,7 @@ class BookingRequest extends Model
         'email',
         'status',
         'is_special_event',
+        'special_event_template_id',
         'attendees',
         'priority',
         'reference_id',

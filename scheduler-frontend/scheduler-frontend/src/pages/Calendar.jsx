@@ -16,6 +16,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import BookingDetailModal from "../components/BookingDetailModal";
 import CalendarBookingGroupModal from "../components/CalendarBookingGroupModal";
+import SpecialEventsEditorModal from "../components/SpecialEventsEditorModal";
 import { invalidateCache, CACHE_KEYS } from "../utils/cache";
 import {
   isRecurringSpecialEventDate,
@@ -211,6 +212,10 @@ export default function CalendarView() {
     const { user } = useAuth();
     const toast = useToast();
   const { data: bookings, loading } = useCachedData("bookings", api.fetchBookings);
+  const { data: specialEventTemplates } = useCachedData(
+    CACHE_KEYS.SPECIAL_EVENTS,
+    api.fetchSpecialEventTemplates,
+  );
     const { data: resources } = useCachedData("resources", api.fetchResources);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedBookingGroup, setSelectedBookingGroup] = useState(null);
@@ -275,6 +280,7 @@ export default function CalendarView() {
         }, [bookings]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [specialEventsEditorOpen, setSpecialEventsEditorOpen] = useState(false);
   const [isYearView, setIsYearView] = useState(false);
   const [yearViewFilter, setYearViewFilter] = useState("all");
   const scrollContainerRef = useRef(null);
@@ -625,7 +631,7 @@ export default function CalendarView() {
                                                     (yearViewFilter === "all" ||
                                                       yearViewFilter === "approved") &&
                                                     (specialEventBookings.length > 0 ||
-                                                      isRecurringSpecialEventDate(item.fullDateStr));
+                                                      isRecurringSpecialEventDate(item.fullDateStr, specialEventTemplates));
                                                   const hasVisibleIndicator =
                                                     showApprovedIndicator ||
                                                     showPendingIndicator ||
@@ -697,10 +703,10 @@ export default function CalendarView() {
                       className={`text-[11px] sm:text-[13px] font-bold mt-0.5 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full ${day.isToday ? "bg-brand text-white" : "text-ink"}`}>
                       {day.dateNum}
                     </span>
-                    {isRecurringSpecialEventDate(day.fullDateStr) && (
+                    {isRecurringSpecialEventDate(day.fullDateStr, specialEventTemplates) && (
                       <span
                         className="h-1 w-1 rounded-full bg-purple-600 mt-0.5"
-                        title="Recurring special event date; reservation not yet created"
+                        title="Recurring special event"
                       />
                     )}
                   </div>
@@ -910,7 +916,10 @@ export default function CalendarView() {
 
                               const specialEventBookings = dayBookings.filter((b) => isSpecialEvent(b));
                               const regularBookings = dayBookings.filter((b) => !isSpecialEvent(b));
-                              const hasRecurringSpecialEvent = isRecurringSpecialEventDate(item.fullDateStr);
+                              const hasRecurringSpecialEvent = isRecurringSpecialEventDate(
+                                item.fullDateStr,
+                                specialEventTemplates,
+                              );
 
                               const hasApproved = dayBookings.some((b) =>
                                 (b.status || "").toLowerCase().includes("approv"),
@@ -999,9 +1008,20 @@ export default function CalendarView() {
 
                     {/* Special Events List with Resources Used (Dynamic from Bookings) */}
                     <div className="w-full bg-purple-50/60 rounded-lg p-3 border border-purple-200/80">
-                      <h4 className="text-[11px] font-semibold text-purple-900 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                      <div className="mb-2.5 flex items-center justify-between gap-2">
+                        <h4 className="text-[11px] font-semibold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
                         <Sparkles size={13} /> Special Events & Resources
-                      </h4>
+                        </h4>
+                        {user?.role === "admin" && (
+                          <button
+                            type="button"
+                            onClick={() => setSpecialEventsEditorOpen(true)}
+                            className="rounded-md border border-purple-200 bg-white px-2 py-1 text-[10px] font-semibold text-purple-800 transition hover:bg-purple-100"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
                       {specialEventsGrouped.length === 0 ? (
                                               <p className="text-[11px] text-purple-700 text-center py-2">
                                                 No special events scheduled
@@ -1061,6 +1081,12 @@ export default function CalendarView() {
                     }
                     onDelete={handleBookingDelete}
                     onRequestRemoval={handleBookingRemovalRequest}
+        />
+      )}
+      {user?.role === "admin" && (
+        <SpecialEventsEditorModal
+          open={specialEventsEditorOpen}
+          onClose={() => setSpecialEventsEditorOpen(false)}
         />
       )}
     </div>

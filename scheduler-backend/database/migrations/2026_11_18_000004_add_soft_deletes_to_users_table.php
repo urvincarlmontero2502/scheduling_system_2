@@ -8,7 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'deleted_at')) {
+        if (! Schema::hasTable('users')) {
+            throw new RuntimeException('The users table must exist before adding user soft deletes.');
+        }
+
+        if (! Schema::hasColumn('users', 'deleted_at')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->softDeletes();
             });

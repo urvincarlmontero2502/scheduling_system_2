@@ -2,14 +2,15 @@
 
 namespace Database\Seeders;
 
+use App\Services\SpecialEventReservationSeeder;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
- * LGU Special Events & Festival Resource Reservations.
- * Seeds exact date ranges and resource assignments per official LGU calendar.
- * Safe to run many times: rows that already exist are skipped.
+ * Seeds recurring special event reservations, with a legacy fallback for
+ * installations that have not yet applied the template migrations.
  */
 class SpecialEventsSeeder extends Seeder
 {
@@ -20,6 +21,18 @@ class SpecialEventsSeeder extends Seeder
     private const PURPOSE = 'Annual Community Festival / Official Event';
 
     public function run(): void
+    {
+        if (Schema::hasTable('special_event_templates')
+            && Schema::hasColumn('booking_request', 'special_event_template_id')) {
+            app(SpecialEventReservationSeeder::class)->run();
+
+            return;
+        }
+
+        $this->seedLegacyEvents();
+    }
+
+    private function seedLegacyEvents(): void
     {
         $systemUserId = DB::table('users')->where('email', 'mayors.office@system.local')->value('user_id')
             ?? DB::table('users')->where('role', 'admin')->orderBy('user_id')->value('user_id')

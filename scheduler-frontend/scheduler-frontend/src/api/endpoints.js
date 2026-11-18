@@ -1,6 +1,10 @@
 import client from "./client";
-import { readCache, writeCache, CACHE_KEYS } from "../utils/cache";
-import { invalidateCache } from "../utils/cache";
+import {
+  readCache,
+  writeCache,
+  CACHE_KEYS,
+  invalidateCache,
+} from "../utils/cache";
 
 // Cache TTL: 2 minutes for most data
 const CACHE_TTL = 1000 * 60 * 2;
@@ -80,6 +84,27 @@ export const restoreUser = (userId) =>
   client.post(`/users/${userId}/restore`);
 export const forceDeleteUser = (userId) =>
   client.delete(`/users/${userId}/force`);
+export const fetchSpecialEventTemplates = () => client.get("/special-events");
+const invalidateSpecialEventCaches = () => {
+  invalidateCache(CACHE_KEYS.BOOKINGS, false);
+  invalidateCache(CACHE_KEYS.SPECIAL_EVENTS, false);
+  window.dispatchEvent(new Event("cacheInvalidated"));
+};
+export const createSpecialEventTemplate = async (payload) => {
+  const response = await client.post("/special-events", payload);
+  invalidateSpecialEventCaches();
+  return response;
+};
+export const updateSpecialEventTemplate = async (id, payload) => {
+  const response = await client.put(`/special-events/${id}`, payload);
+  invalidateSpecialEventCaches();
+  return response;
+};
+export const deleteSpecialEventTemplate = async (id) => {
+  const response = await client.delete(`/special-events/${id}`);
+  invalidateSpecialEventCaches();
+  return response;
+};
 
 // --- Assets / Media ---------------------------------------------------
 export const uploadAsset = (file, assetType) => {

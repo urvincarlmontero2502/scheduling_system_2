@@ -8,6 +8,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ResourceReportController;
+use App\Http\Controllers\SpecialEventTemplateController;
 use App\Http\Controllers\SystemSettingsController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\DB;
@@ -227,6 +228,14 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('admin');
 
     // Bookings
+    Route::get('/special-events', [SpecialEventTemplateController::class, 'index']);
+    Route::post('/special-events', [SpecialEventTemplateController::class, 'store'])
+        ->middleware('admin');
+    Route::put('/special-events/{specialEvent}', [SpecialEventTemplateController::class, 'update'])
+        ->middleware('admin');
+    Route::delete('/special-events/{specialEvent}', [SpecialEventTemplateController::class, 'destroy'])
+        ->middleware('admin');
+
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::get('/bookings/removed', [BookingController::class, 'removed']);
     Route::post('/bookings/{id}/restore', [BookingController::class, 'restore']);
