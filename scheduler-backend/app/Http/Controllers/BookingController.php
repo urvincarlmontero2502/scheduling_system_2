@@ -675,8 +675,6 @@ class BookingController extends Controller
 
             if ($result['conflicts'] !== []) {
                 $conflicts = $result['conflicts'];
-                $firstConflict = $conflicts[0];
-                $conflict = $firstConflict['booking'];
 
                 return response()->json([
                     'message' => count($result['resource_ids']) === 1
@@ -702,13 +700,13 @@ class BookingController extends Controller
                         ],
                         $conflicts
                     ),
-                    'suggestions' => $this->findTimeSuggestions(
-                        $firstConflict['resource_id'],
+                    'suggestions' => $this->findAvailableScheduleSuggestions(
+                        $result['resource_ids'],
+                        $conflicts,
                         Carbon::parse($booking->start_date)->toDateString(),
                         Carbon::parse($booking->end_date)->toDateString(),
                         $booking->start_time,
-                        $booking->end_time,
-                        $conflict
+                        $booking->end_time
                     ),
                 ], 422);
             }
@@ -929,6 +927,73 @@ class BookingController extends Controller
         }
 
         return $conflicts;
+    }
+
+    private function findAvailableScheduleSuggestions(
+        array $resourceIds,
+        array $conflicts,
+        $startDate,
+        $endDate,
+        $startTime,
+        $endTime
+    ): array {
+        $candidates = [];
+
+        foreach ($conflicts as $conflict) {
+            $candidates = array_merge(
+                $candidates,
+                $this->findTimeSuggestions(
+                    $conflict['resource_id'],
+                    $startDate,
+                    $endDate,
+                    $startTime,
+                    $endTime,
+                    $conflict['booking']
+                )
+            );
+        }
+
+        $suggestions = [];
+        foreach ($candidates as $candidate) {
+            $candidateStart = Carbon::parse($candidate['start_time']);
+            $candidateEnd = Carbon::parse($candidate['end_time']);
+            $candidateStartTime = $startTime ? $candidateStart->format('H:i:s') : null;
+            $candidateEndTime = $endTime ? $candidateEnd->format('H:i:s') : null;
+
+            $availableForEveryResource = true;
+            foreach ($resourceIds as $resourceId) {
+                if ($this->hasBookingConflict(
+                    $resourceId,
+                    $candidateStart->toDateString(),
+                    $candidateEnd->toDateString(),
+                    $candidateStartTime,
+                    $candidateEndTime,
+                    null,
+                    null,
+                    ['approved']
+                )) {
+                    $availableForEveryResource = false;
+                    break;
+                }
+            }
+
+            if ($availableForEveryResource) {
+                $suggestions[] = $candidate;
+            }
+        }
+
+        usort(
+            $suggestions,
+            fn ($a, $b) => strcmp($a['start_time'], $b['start_time'])
+        );
+
+        $uniqueSuggestions = [];
+        foreach ($suggestions as $suggestion) {
+            $key = $suggestion['start_time'].'|'.$suggestion['end_time'];
+            $uniqueSuggestions[$key] = $suggestion;
+        }
+
+        return array_slice(array_values($uniqueSuggestions), 0, 3);
     }
 
     private function bookingConflictResponse(

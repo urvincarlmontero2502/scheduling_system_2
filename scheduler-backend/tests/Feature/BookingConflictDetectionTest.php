@@ -417,6 +417,17 @@ class BookingConflictDetectionTest extends TestCase
             $navara->resource_id => ['price_per_hour' => null],
             $van->resource_id => ['price_per_hour' => null],
         ]);
+        BookingRequest::create([
+            'user_id' => $this->user->user_id,
+            'resource_id' => $navara->resource_id,
+            'full_name' => 'Next Day Requester',
+            'purpose' => 'Test reservation',
+            'start_date' => '2026-11-03',
+            'end_date' => '2026-11-03',
+            'start_time' => '08:00',
+            'end_time' => '12:00',
+            'status' => 'approved',
+        ]);
         $admin = $this->createAdmin();
         Sanctum::actingAs($admin);
 
@@ -429,7 +440,9 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('conflicts.0.status', 'approved')
             ->assertJsonPath('conflicts.0.start_date', '2026-11-02')
             ->assertJsonPath('conflicts.0.start_time', '08:00')
-            ->assertJsonPath('conflicts.0.buffer_minutes', 30);
+            ->assertJsonPath('conflicts.0.buffer_minutes', 30)
+            ->assertJsonPath('suggestions.0.start_time', '2026-11-02 12:30:00')
+            ->assertJsonMissing(['start_time' => '2026-11-03 08:00:00']);
     }
 
     public function test_facility_booking_details_include_the_daily_rate_at_submission_time(): void

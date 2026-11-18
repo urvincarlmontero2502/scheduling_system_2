@@ -33,7 +33,10 @@ import {
   getBookingResourceIds,
   getBookingResourceNames,
 } from "../utils/bookingResources";
-import { formatBookingConflictDetails } from "../utils/bookingConflicts";
+import {
+  formatBookingConflictDetails,
+  formatBookingConflictSuggestions,
+} from "../utils/bookingConflicts";
 import StatusBadge from "../components/StatusBadge";
 import {
   SkeletonBookingCard,
@@ -301,7 +304,10 @@ export default function Bookings() {
       // Rollback cache
       writeCache(CACHE_KEYS.BOOKINGS, prevBookings);
       const errorData = err?.response?.data;
-      const conflictDetails = formatBookingConflictDetails(errorData?.conflicts);
+      const conflictDetails = [
+        ...formatBookingConflictDetails(errorData?.conflicts),
+        ...formatBookingConflictSuggestions(errorData?.suggestions),
+      ];
       toast.error(
         errorData?.message || "Could not update the booking status.",
         conflictDetails.length > 0
