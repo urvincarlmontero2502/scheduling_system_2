@@ -252,10 +252,12 @@ class BookingConflictDetectionTest extends TestCase
         $otherBooking = collect($bookings)->firstWhere('id', $otherBookingId);
 
         $this->assertFalse($ownBooking['is_redacted']);
+        $this->assertFalse($ownBooking['is_cross_barangay']);
         $this->assertSame('Own Applicant', $ownBooking['full_name']);
         $this->assertSame('own-requester@example.test', $ownBooking['submitted_by']['email']);
 
         $this->assertTrue($otherBooking['is_redacted']);
+        $this->assertTrue($otherBooking['is_cross_barangay']);
         $this->assertSame('Poblacion', $otherBooking['barangay']);
         $this->assertSame('Poblacion request', $otherBooking['calendar_label']);
         $this->assertSame('Barangay Conference Room', $otherBooking['resource']);

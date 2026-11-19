@@ -203,6 +203,11 @@ class BookingController extends Controller
             $isSameBarangay = $viewer->isBarangayAdmin()
                 && $booking->user?->barangay !== null
                 && $booking->user->barangay === $viewer->barangay;
+            $isCrossBarangay = ! $viewer->isAdmin()
+                && ! $isSpecialEvent
+                && $viewer->barangay !== null
+                && $booking->user?->barangay !== null
+                && $booking->user->barangay !== $viewer->barangay;
             $canViewDetails = $viewer->isAdmin()
                 || $isSpecialEvent
                 || $isSameBarangay
@@ -247,6 +252,7 @@ class BookingController extends Controller
                 'barangay' => $barangay,
                 'is_special_event' => $isSpecialEvent,
                 'is_redacted' => $isRedacted,
+                'is_cross_barangay' => $isCrossBarangay,
                 'calendar_label' => $isRedacted
                     ? (($barangay ?: 'Other barangay').' request')
                     : null,
