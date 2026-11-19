@@ -8,6 +8,7 @@ import {
   UserRound,
 } from "lucide-react";
 import * as api from "../api/endpoints";
+import { useAuth } from "../context/AuthContext";
 
 const ACTIONS = [
   ["booking.requested", "Booking requested"],
@@ -143,11 +144,20 @@ function MobileEmptyState({ filtered }) {
 }
 
 export default function ActivityLogs() {
+  const { user } = useAuth();
   const [logs, setLogs] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [action, setAction] = useState("");
   const [page, setPage] = useState(1);
+  const visibleActions =
+    user?.role === "barangay_admin"
+      ? ACTIONS.filter(([value]) =>
+          ["booking.", "registration.", "user."].some((prefix) =>
+            value.startsWith(prefix),
+          ),
+        )
+      : ACTIONS;
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -270,7 +280,7 @@ export default function ActivityLogs() {
             className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:w-56">
             <option value="">All activity</option>
 
-            {ACTIONS.map(([value, label]) => (
+            {visibleActions.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

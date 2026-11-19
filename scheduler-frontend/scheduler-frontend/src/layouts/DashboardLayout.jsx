@@ -75,6 +75,7 @@ const NAV_GROUPS = [
         to: "/activity-logs",
         label: "Activity Logs",
         icon: Activity,
+        roles: ["admin", "barangay_admin"],
       },
       {
         to: "/system-settings",
@@ -692,7 +693,9 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/account-settings") &&
                 "Manage your profile and security credentials"}
               {location.pathname.startsWith("/activity-logs") &&
-                "Review system activity from the past year"}
+                (user?.role === "barangay_admin"
+                  ? "Review activity from your barangay over the past year"
+                  : "Review system activity from the past year")}
               {location.pathname.startsWith("/system-settings") &&
                 "Manage booking Email and SMS reminder settings"}
               {location.pathname.startsWith("/reports") &&

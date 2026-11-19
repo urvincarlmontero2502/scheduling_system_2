@@ -191,9 +191,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [BookingController::class, 'stats']);
     Route::get('/reports', [ResourceReportController::class, 'index']);
 
+    // Activity history is scoped by role inside the controller.
+    Route::get('/admin/activity-logs', [ActivityLogController::class, 'index']);
+
     // System-wide admin settings
-    Route::get('/admin/activity-logs', [ActivityLogController::class, 'index'])
-        ->middleware('admin');
     Route::get('/admin/storage-check', [SystemSettingsController::class, 'storageCheck'])
         ->middleware(['admin', 'throttle:5,1']);
     Route::get('/admin/settings/booking-reminder', [SystemSettingsController::class, 'showBookingReminder'])

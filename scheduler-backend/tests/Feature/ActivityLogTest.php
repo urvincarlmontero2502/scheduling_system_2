@@ -7,6 +7,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -21,6 +22,9 @@ class ActivityLogTest extends TestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('booking_removal_requests');
+        Schema::dropIfExists('booking_request');
+        Schema::dropIfExists('registration_requests');
         Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('users');
 
@@ -30,10 +34,26 @@ class ActivityLogTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->string('barangay')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->string('pending_email')->nullable();
             $table->string('email_verification_token')->nullable();
             $table->timestamp('email_verification_sent_at')->nullable();
+        });
+
+        Schema::create('booking_request', function (Blueprint $table) {
+            $table->id('booking_id');
+            $table->unsignedBigInteger('user_id');
+        });
+
+        Schema::create('booking_removal_requests', function (Blueprint $table) {
+            $table->id('removal_request_id');
+            $table->unsignedBigInteger('booking_id');
+        });
+
+        Schema::create('registration_requests', function (Blueprint $table) {
+            $table->id('request_id');
+            $table->string('barangay');
         });
 
         Schema::create('activity_logs', function (Blueprint $table) {
@@ -126,6 +146,98 @@ class ActivityLogTest extends TestCase
         Sanctum::actingAs($this->user);
 
         $this->getJson('/api/admin/activity-logs')->assertForbidden();
+    }
+
+    public function test_barangay_admins_only_see_activity_related_to_their_barangay(): void
+    {
+        $barangayAdmin = User::create([
+            'full_name' => 'Poblacion Admin',
+            'email' => 'poblacion-admin@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'barangay_admin',
+            'barangay' => 'Poblacion',
+        ]);
+        $localStaff = User::create([
+            'full_name' => 'Poblacion Staff',
+            'email' => 'poblacion-staff@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'staff',
+            'barangay' => 'Poblacion',
+        ]);
+        $otherStaff = User::create([
+            'full_name' => 'Other Barangay Staff',
+            'email' => 'other-staff@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'staff',
+            'barangay' => 'San Jose',
+        ]);
+
+        $localBookingId = DB::table('booking_request')->insertGetId([
+            'user_id' => $localStaff->user_id,
+        ]);
+        $otherBookingId = DB::table('booking_request')->insertGetId([
+            'user_id' => $otherStaff->user_id,
+        ]);
+        $localRemovalId = DB::table('booking_removal_requests')->insertGetId([
+            'booking_id' => $localBookingId,
+        ]);
+        $otherRemovalId = DB::table('booking_removal_requests')->insertGetId([
+            'booking_id' => $otherBookingId,
+        ]);
+        $localRegistrationId = DB::table('registration_requests')->insertGetId([
+            'barangay' => 'Poblacion',
+        ]);
+        $otherRegistrationId = DB::table('registration_requests')->insertGetId([
+            'barangay' => 'San Jose',
+        ]);
+
+        $record = function (
+            string $action,
+            ?string $subjectType,
+            ?string $subjectId,
+            string $description,
+            ?array $properties = null
+        ): void {
+            ActivityLog::create([
+                'actor_name' => 'System Admin',
+                'actor_role' => 'admin',
+                'action' => $action,
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'description' => $description,
+                'properties' => $properties,
+                'created_at' => now(),
+            ]);
+        };
+
+        $record('booking.approved', 'booking', (string) $localBookingId, 'Local booking approved');
+        $record('booking.approved', 'booking', (string) $otherBookingId, 'Other barangay booking approved');
+        $record('booking.removal_request_approved', 'booking_removal_request', (string) $localRemovalId, 'Local removal approved');
+        $record('booking.removal_request_approved', 'booking_removal_request', (string) $otherRemovalId, 'Other removal approved');
+        $record('registration.approved', 'registration', (string) $localRegistrationId, 'Local registration approved');
+        $record('registration.approved', 'registration', (string) $otherRegistrationId, 'Other registration approved');
+        $record('user.role_promoted', 'user', (string) $localStaff->user_id, 'Local user role updated');
+        $record('user.permanently_deleted', 'user', '9001', 'Deleted local user', ['barangay' => 'Poblacion']);
+        $record('user.permanently_deleted', 'user', '9002', 'Deleted other user', ['barangay' => 'San Jose']);
+        $record('resource.created', 'resource', '10', 'Global resource created');
+
+        Sanctum::actingAs($barangayAdmin);
+        $response = $this->getJson('/api/admin/activity-logs')->assertOk();
+
+        $this->assertEqualsCanonicalizing(
+            [
+                'Local booking approved',
+                'Local removal approved',
+                'Local registration approved',
+                'Local user role updated',
+                'Deleted local user',
+            ],
+            collect($response->json('data'))
+                ->pluck('description')
+                ->values()
+                ->all(),
+        );
+        $this->assertSame(5, $response->json('total'));
     }
 
     public function test_user_endpoint_does_not_serialize_email_verification_secrets(): void
