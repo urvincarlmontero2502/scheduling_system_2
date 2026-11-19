@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use Database\Seeders\BarangayAndAdminSeeder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -52,6 +53,7 @@ class UserRoleManagementTest extends TestCase
         DB::table('barangays')->insert([
             ['name' => 'Poblacion'],
             ['name' => 'Baleguian'],
+            ['name' => 'Santo Nino'],
         ]);
     }
 
@@ -74,6 +76,33 @@ class UserRoleManagementTest extends TestCase
             'subject_id' => (string) $staff->user_id,
         ]);
         $this->assertSame('barangay_admin', $staff->fresh()->role);
+    }
+
+    public function test_rerunning_account_seeder_does_not_revert_a_promoted_barangay_admin(): void
+    {
+        $admin = $this->createUser('System Admin', 'admin@example.test', 'admin');
+        $staff = $this->createUser(
+            'Santo Nino Representative',
+            'santonino@system.local',
+            'user',
+            'Santo Nino',
+        );
+        Sanctum::actingAs($admin);
+
+        $this->putJson("/api/users/{$staff->user_id}/role", [
+            'role' => 'barangay_admin',
+            'barangay' => 'Santo Nino',
+        ])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'barangay_admin');
+
+        (new BarangayAndAdminSeeder())->run();
+
+        $this->assertDatabaseHas('users', [
+            'user_id' => $staff->user_id,
+            'role' => 'barangay_admin',
+            'barangay' => 'Santo Nino',
+        ]);
     }
 
     public function test_barangay_admin_can_only_promote_regular_users_in_their_barangay(): void
