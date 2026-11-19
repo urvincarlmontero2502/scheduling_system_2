@@ -123,7 +123,7 @@ export default function Login() {
 
         <section
           aria-labelledby="hero-title"
-          className="relative isolate mx-auto mt-5 flex min-h-[410px] max-w-7xl items-center overflow-hidden rounded-3xl bg-slate-900 px-6 py-12 shadow-lg sm:min-h-[450px] sm:px-10 lg:px-14">
+          className="relative isolate mx-auto mt-5 flex min-h-[410px] max-w-7xl items-center justify-between gap-10 overflow-hidden rounded-3xl bg-slate-900 px-6 py-12 shadow-lg sm:min-h-[450px] sm:px-10 lg:px-14">
           <div
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-cover bg-center"
@@ -132,9 +132,9 @@ export default function Login() {
                 "linear-gradient(90deg, rgba(7, 24, 50, 0.9) 0%, rgba(7, 24, 50, 0.72) 58%, rgba(7, 24, 50, 0.42) 100%), url('/login-bg/login_img.jpg')",
             }}
           />
-          <div className="max-w-3xl text-white">
+          <div className="max-w-2xl text-white">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-blue-100 backdrop-blur sm:text-xs">
-              <ShieldCheck size={15} />
+              <ShieldCheck aria-hidden="true" size={15} />
               Municipality of Jabonga · LGU Scheduling Portal
             </div>
             <h1
@@ -148,6 +148,27 @@ export default function Login() {
               availability, booking requests, approvals, and scheduling
               management.
             </p>
+          </div>
+          <div
+            aria-hidden="true"
+            className="hidden w-full max-w-sm shrink-0 rounded-2xl border border-white/20 bg-slate-950/30 p-5 text-white shadow-xl backdrop-blur-sm lg:block">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">
+              One coordinated view
+            </p>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 p-3">
+                <Building2 className="shrink-0 text-blue-100" size={19} />
+                <span className="text-sm font-medium">Facility availability</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 p-3">
+                <Truck className="shrink-0 text-blue-100" size={19} />
+                <span className="text-sm font-medium">Utility vehicle schedules</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 p-3">
+                <CalendarCheck2 className="shrink-0 text-blue-100" size={19} />
+                <span className="text-sm font-medium">Booking requests and decisions</span>
+              </div>
+            </div>
           </div>
         </section>
 
