@@ -117,8 +117,23 @@ export default function BookingDetailModal({
       : "Facility";
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
-  const fullName =
-    booking.full_name || booking.requester || booking.user_name || booking.user?.full_name || "Unknown Requestor";
+  const isRedacted = booking.is_redacted === true;
+  const fullName = isRedacted
+    ? "Request details hidden"
+    : booking.full_name || booking.requester || booking.user_name || booking.user?.full_name || "Unknown Requestor";
+  const submittedBy = booking.submitted_by || booking.user || null;
+  const submittedByName =
+    submittedBy?.full_name ||
+    (booking.owner_user_id != null ? `User #${booking.owner_user_id}` : "Account unavailable");
+  const submittedByEmail = submittedBy?.email || "";
+  const submittedById = submittedBy?.user_id ?? booking.owner_user_id;
+  const submittedByAccount = isRedacted
+    ? "Hidden for cross-barangay privacy"
+    : submittedByEmail
+      ? `${submittedByName} (${submittedByEmail})`
+      : submittedById != null
+        ? `${submittedByName} (User ID ${submittedById})`
+        : submittedByName;
   const barangayName =
     booking.barangay || booking.user?.barangay || booking.user?.full_name || booking.user?.name || "Poblacion";
   const cellNumber = booking.cell_number || booking.contact || booking.phone || "N/A";
@@ -290,6 +305,7 @@ export default function BookingDetailModal({
           <table>
             <tbody>
               <tr><th>Client</th><td>${escapeHtml(fullName)}</td></tr>
+              <tr><th>Submitted By Account</th><td>${escapeHtml(submittedByAccount)}</td></tr>
               <tr><th>Barangay</th><td>${escapeHtml(barangayName)}</td></tr>
               <tr><th>Contact Number</th><td>${escapeHtml(cellNumber)}</td></tr>
               <tr><th>Resource</th><td>${escapeHtml(resourceName)} (${escapeHtml(resourceType)})</td></tr>
@@ -447,6 +463,15 @@ export default function BookingDetailModal({
                 <div>
                   <p className="text-xs text-slate-500">Full Name</p>
                   <p className="mt-0.5 text-sm font-medium text-slate-800">{fullName}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <User size={17} className="mt-0.5 shrink-0 text-slate-400" />
+                <div>
+                  <p className="text-xs text-slate-500">Submitted By Account</p>
+                  <p className="mt-0.5 break-all text-sm font-medium text-slate-800">
+                    {submittedByAccount}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">

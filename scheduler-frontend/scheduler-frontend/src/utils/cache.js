@@ -108,6 +108,8 @@ export async function swr(cacheKey, fetcher, onResolved, ttl = DEFAULT_TTL) {
 export const CACHE_KEYS = {
   RESOURCES: "resources",
   BOOKINGS: "bookings",
+  CALENDAR_BOOKINGS: "calendar_bookings",
+  BOOKING_STATS: "booking_stats",
   SPECIAL_EVENTS: "special_events",
   USER: "user",
   HEALTH: "health",

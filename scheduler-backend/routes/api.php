@@ -236,6 +236,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/special-events/{specialEvent}', [SpecialEventTemplateController::class, 'destroy'])
         ->middleware('admin');
 
+    Route::get('/bookings/calendar', [BookingController::class, 'calendar']);
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::get('/bookings/removed', [BookingController::class, 'removed']);
     Route::post('/bookings/{id}/restore', [BookingController::class, 'restore']);

@@ -4,7 +4,7 @@ import * as api from "../api/endpoints";
 import { SkeletonStatCard } from "../components/Skeleton";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ pending: 0, approvedWeekly: 0 });
+  const [stats, setStats] = useState({ pending: 0, approved: 0 });
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +12,7 @@ export default function Dashboard() {
     Promise.all([
       api
         .fetchDashboardStats()
-        .catch(() => ({ data: { pending: 0, approvedWeekly: 0 } })),
+        .catch(() => ({ data: { pending: 0, approved: 0 } })),
       api.fetchResources().catch(() => ({ data: [] })),
     ])
       .then(([statsRes, resourcesRes]) => {
@@ -60,11 +60,11 @@ export default function Dashboard() {
               <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-[28px] font-bold text-black">
-                    {stats.approvedWeekly || 0}
+                    {stats.approved || 0}
                   </span>
                   <CheckCircle2 size={20} className="text-steel" />
                 </div>
-                <p className="text-[13px] text-steel mt-2">Approved this week</p>
+                <p className="text-[13px] text-steel mt-2">Approved requests</p>
               </div>
 
               {/* Facilities Count */}

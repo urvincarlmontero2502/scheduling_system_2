@@ -42,6 +42,7 @@ class BookingConflictDetectionTest extends TestCase
             $table->string('email');
             $table->string('password_hash');
             $table->string('role');
+            $table->string('barangay')->nullable();
             $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('resources', function (Blueprint $table) {
@@ -156,31 +157,113 @@ class BookingConflictDetectionTest extends TestCase
 
     public function test_regular_users_only_receive_their_own_bookings(): void
     {
+        $this->user->update(['barangay' => 'Santo Nino']);
         $otherUser = User::create([
             'full_name' => 'Another User',
             'email' => 'another-user@example.test',
             'password_hash' => 'not-a-real-password',
             'role' => 'user',
+            'barangay' => 'Poblacion',
         ]);
-        foreach ([$this->user->user_id, $otherUser->user_id] as $userId) {
+        foreach ([
+            [$this->user->user_id, 'pending'],
+            [$otherUser->user_id, 'rejected'],
+        ] as [$userId, $status]) {
             DB::table('booking_request')->insert([
                 'user_id' => $userId,
                 'resource_id' => $this->resource->resource_id,
                 'start_date' => '2026-11-02',
                 'end_date' => '2026-11-02',
-                'status' => 'pending',
+                'status' => $status,
             ]);
         }
 
         $this->getJson('/api/bookings')
             ->assertOk()
             ->assertJsonCount(1)
-            ->assertJsonPath('0.owner_user_id', $this->user->user_id);
+            ->assertJsonPath('0.owner_user_id', $this->user->user_id)
+            ->assertJsonPath('0.submitted_by.user_id', $this->user->user_id)
+            ->assertJsonPath('0.submitted_by.full_name', $this->user->full_name)
+            ->assertJsonPath('0.submitted_by.email', $this->user->email)
+            ->assertJsonPath('0.submitted_by.role', $this->user->role);
 
         $this->getJson('/api/dashboard/stats')
             ->assertOk()
             ->assertJsonPath('pending', 1)
-            ->assertJsonPath('approved', 0);
+            ->assertJsonPath('approved', 0)
+            ->assertJsonPath('rejected', 1)
+            ->assertJsonPath('total', 2);
+    }
+
+    public function test_calendar_shows_cross_barangay_slots_without_requester_details(): void
+    {
+        $barangayAdmin = User::create([
+            'full_name' => 'Santo Nino Admin',
+            'email' => 'santo-nino-admin@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'barangay_admin',
+            'barangay' => 'Santo Nino',
+        ]);
+        $ownStaff = User::create([
+            'full_name' => 'Own Requester',
+            'email' => 'own-requester@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'staff',
+            'barangay' => 'Santo Nino',
+        ]);
+        $otherStaff = User::create([
+            'full_name' => 'Private Requester',
+            'email' => 'private-requester@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'staff',
+            'barangay' => 'Poblacion',
+        ]);
+
+        $ownBookingId = DB::table('booking_request')->insertGetId([
+            'user_id' => $ownStaff->user_id,
+            'resource_id' => $this->resource->resource_id,
+            'full_name' => 'Own Applicant',
+            'purpose' => 'Own purpose',
+            'email' => 'own-contact@example.test',
+            'cell_number' => '09123456789',
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-02',
+            'status' => 'pending',
+        ]);
+        $otherBookingId = DB::table('booking_request')->insertGetId([
+            'user_id' => $otherStaff->user_id,
+            'resource_id' => $this->resource->resource_id,
+            'full_name' => 'Private Applicant',
+            'purpose' => 'Private purpose',
+            'email' => 'private-contact@example.test',
+            'cell_number' => '09998887777',
+            'address' => 'Private address',
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-02',
+            'status' => 'pending',
+        ]);
+
+        Sanctum::actingAs($barangayAdmin);
+        $bookings = $this->getJson('/api/bookings/calendar')
+            ->assertOk()
+            ->json();
+
+        $ownBooking = collect($bookings)->firstWhere('id', $ownBookingId);
+        $otherBooking = collect($bookings)->firstWhere('id', $otherBookingId);
+
+        $this->assertFalse($ownBooking['is_redacted']);
+        $this->assertSame('Own Applicant', $ownBooking['full_name']);
+        $this->assertSame('own-requester@example.test', $ownBooking['submitted_by']['email']);
+
+        $this->assertTrue($otherBooking['is_redacted']);
+        $this->assertSame('Poblacion', $otherBooking['barangay']);
+        $this->assertSame('Poblacion request', $otherBooking['calendar_label']);
+        $this->assertSame('Barangay Conference Room', $otherBooking['resource']);
+        $this->assertSame('2026-11-02', $otherBooking['start_date']);
+        $this->assertSame('pending', $otherBooking['status']);
+        foreach (['full_name', 'requester', 'purpose', 'email', 'cell_number', 'address', 'submitted_by', 'owner_user_id'] as $privateField) {
+            $this->assertArrayNotHasKey($privateField, $otherBooking);
+        }
     }
 
     public function test_booking_request_allows_starting_today_in_manila(): void
@@ -210,7 +293,7 @@ class BookingConflictDetectionTest extends TestCase
                 'purpose' => 'Deliver materials',
                 'destination' => 'Barangay Hall',
                 'cell_number' => '09123456789',
-                'email' => 'booking-test@example.test',
+                'email' => 'contact@example.test',
                 'address' => '123 Main Street',
                 'attendees' => 25,
                 'priority' => 'high',
@@ -238,6 +321,8 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('0.resource_type', 'facility')
             ->assertJsonPath('0.destination', 'Barangay Hall')
             ->assertJsonPath('0.cell_number', '09123456789')
+            ->assertJsonPath('0.email', 'contact@example.test')
+            ->assertJsonPath('0.submitted_by.email', $this->user->email)
             ->assertJsonPath('0.address', '123 Main Street')
             ->assertJsonPath('0.attendees', 25)
             ->assertJsonPath('0.priority', 'high');

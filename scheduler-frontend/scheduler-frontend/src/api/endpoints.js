@@ -159,6 +159,8 @@ export const resolveImageUrl = (imagePath, fullName, email, size = 64) => {
 };
 
 // --- Bookings -----------------------------------------------------------
+export const fetchDashboardStats = () => client.get("/dashboard/stats");
+
 export const fetchBookings = (params) => {
   if (!params) {
     const cached = readCache(CACHE_KEYS.BOOKINGS, CACHE_TTL);
@@ -182,6 +184,7 @@ export const fetchBookings = (params) => {
     return res;
   });
 };
+export const fetchCalendarBookings = () => client.get("/bookings/calendar");
 export const fetchResourceReport = (params) =>
   client.get("/reports", { params });
 export const fetchRemovedBookings = () => client.get("/bookings/removed");
