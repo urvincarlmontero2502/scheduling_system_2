@@ -29,6 +29,7 @@ import * as api from "../api/endpoints";
 import BookingHistory from "./BookingHistory";
 import {
   calculateBookingHourlyEstimate,
+  calculateDailyBookingEstimate,
   formatRentalDuration,
   formatResourcePrice,
 } from "../utils/resourcePricing";
@@ -153,6 +154,19 @@ function calculateVehicleBookingEstimate(booking) {
         `Resource ${index + 1}`,
       total: estimates[index]?.total ?? null,
     })),
+  };
+}
+
+function getSubmissionAccount(booking) {
+  const account = booking?.submitted_by ?? booking?.user ?? null;
+  const userId = account?.user_id ?? booking?.owner_user_id;
+
+  return {
+    name:
+      account?.full_name ||
+      account?.name ||
+      (userId != null ? `User #${userId}` : "Account unavailable"),
+    email: account?.email || booking?.owner_user_email || "",
   };
 }
 
@@ -455,9 +469,11 @@ function BookingRequests() {
       const resource = getBookingResourceNames(b).join(", ");
       const fullName =
         b.full_name || b.requester || b.user_name || b.user?.full_name || "";
+      const submittedBy = getSubmissionAccount(b);
       const purpose = b.purpose || b.reason || b.description || "";
       const bookingId = b.id || b.booking_id || "";
-      const combined = `${resource} ${fullName} ${purpose} ${bookingId}`.toLowerCase();
+      const combined =
+        `${resource} ${fullName} ${submittedBy.name} ${submittedBy.email} ${purpose} ${bookingId}`.toLowerCase();
       if (!combined.includes(searchText)) return false;
     }
 
@@ -755,6 +771,7 @@ function BookingRequests() {
                     b.user_name ||
                     b.user?.full_name ||
                     "Unknown Requestor";
+                  const submittedBy = getSubmissionAccount(b);
                   const cellNumber =
                     b.cell_number || b.contact || b.phone || "N/A";
                   const purposeValue =
@@ -777,6 +794,14 @@ function BookingRequests() {
                     startDate && endDate && startDate !== endDate
                       ? `${startDate} to ${endDate}`
                       : startDate || "—";
+                  const dailyEstimate =
+                    String(b.resource_type || "").toLowerCase() === "facility"
+                      ? calculateDailyBookingEstimate(
+                          startDate,
+                          endDate,
+                          b.price_per_day,
+                        )
+                      : null;
 
                   let timeValue = "All Day";
                   if (b.start_time && b.end_time) {
@@ -807,7 +832,14 @@ function BookingRequests() {
                       <td className="px-4 py-3 text-[13px] font-medium text-ink min-w-[150px] whitespace-normal">
                         {resourceName}
                       </td>
-                      <td className="px-4 py-3 text-[13px]">{fullName}</td>
+                      <td className="px-4 py-3 text-[13px]">
+                        <div>{fullName}</div>
+                        <div className="mt-1 text-[11px] text-steel">
+                          <span className="font-semibold">Submitted by:</span>{" "}
+                          {submittedBy.name}
+                          {submittedBy.email ? ` · ${submittedBy.email}` : ""}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-[13px] text-steel">
                         {barangayName}
                       </td>
@@ -842,6 +874,24 @@ function BookingRequests() {
                             <p>
                               <strong>Estimated total:</strong>{" "}
                               {formatResourcePrice(hourlyEstimate.total)}
+                            </p>
+                          </div>
+                        )}
+                        {dailyEstimate && (
+                          <div className="mt-2 space-y-0.5 border-t border-line pt-2 text-xs text-blue-800">
+                            <p>
+                              <strong>Daily rate:</strong>{" "}
+                              {formatResourcePrice(dailyEstimate.dailyRate)}
+                            </p>
+                            <p>
+                              <strong>Booked days:</strong>{" "}
+                              {dailyEstimate.billableDays}
+                            </p>
+                            <p>
+                              <strong>Estimated total:</strong>{" "}
+                              {dailyEstimate.total === null
+                                ? "Rate not configured"
+                                : formatResourcePrice(dailyEstimate.total)}
                             </p>
                           </div>
                         )}
@@ -921,6 +971,7 @@ function BookingRequests() {
                 b.user_name ||
                 b.user?.full_name ||
                 "Unknown Requestor";
+              const submittedBy = getSubmissionAccount(b);
               const cellNumber =
                 b.cell_number || b.contact || b.phone || "N/A";
               const purposeValue =
@@ -950,6 +1001,14 @@ function BookingRequests() {
               } else if (startDate) {
                 dateValue = startDate;
               }
+              const dailyEstimate =
+                String(b.resource_type || "").toLowerCase() === "facility"
+                  ? calculateDailyBookingEstimate(
+                      startDate,
+                      endDate,
+                      b.price_per_day,
+                    )
+                  : null;
 
               let timeValue = "All Day";
               if (b.start_time && b.end_time) {
@@ -1136,6 +1195,35 @@ function BookingRequests() {
                       </div>
                     )}
 
+                    {dailyEstimate && (
+                      <div className="mt-2.5 rounded-xl border border-blue-100 bg-blue-50/70 p-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[9px] font-semibold uppercase tracking-wide text-blue-700">
+                              Estimated total
+                            </p>
+                            <p className="mt-0.5 text-base font-bold leading-tight text-blue-950">
+                              {dailyEstimate.total === null
+                                ? "Rate not configured"
+                                : formatResourcePrice(dailyEstimate.total)}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-blue-100 bg-white px-2 py-1 text-[9px] font-semibold text-blue-800">
+                            {dailyEstimate.billableDays}{" "}
+                            {dailyEstimate.billableDays === 1
+                              ? "booked day"
+                              : "booked days"}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-[10px] text-blue-800">
+                          <strong>Daily rate:</strong>{" "}
+                          {formatResourcePrice(dailyEstimate.dailyRate)}
+                          <span className="mx-1.5 text-blue-300">·</span>
+                          Inclusive calendar days
+                        </p>
+                      </div>
+                    )}
+
                     <div className="mt-2.5 rounded-xl border border-slate-200 bg-white p-2.5">
                       <div className="flex min-w-0 items-center gap-2 text-[10px]">
                         <User size={13} className="shrink-0 text-slate-400" />
@@ -1143,6 +1231,21 @@ function BookingRequests() {
                           <strong className="text-slate-800">{fullName}</strong>
                           <span className="mx-1 text-slate-300">·</span>
                           {barangayName}
+                        </p>
+                      </div>
+                      <div className="mt-1 flex min-w-0 items-start gap-2 text-[10px] text-slate-600">
+                        <User size={12} className="shrink-0 text-slate-400" />
+                        <p
+                          className="min-w-0 break-all"
+                          title={`${submittedBy.name}${submittedBy.email ? ` · ${submittedBy.email}` : ""}`}
+                        >
+                          <strong className="text-slate-700">Submitted by:</strong>{" "}
+                          {submittedBy.name}
+                          {submittedBy.email && (
+                            <span className="block text-[9px] text-slate-500">
+                              {submittedBy.email}
+                            </span>
+                          )}
                         </p>
                       </div>
                       <div className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1.5 text-[10px] text-slate-600 sm:grid-cols-2">

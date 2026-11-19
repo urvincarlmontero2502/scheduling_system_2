@@ -95,6 +95,12 @@ class BookingController extends Controller
                 return [
                     'id' => $b->booking_id,
                     'owner_user_id' => $b->user_id,
+                    'submitted_by' => $b->user ? [
+                        'user_id' => $b->user->user_id,
+                        'full_name' => $b->user->full_name,
+                        'email' => $b->user->email,
+                        'role' => $b->user->role,
+                    ] : null,
                     'resource_id' => $b->resource_id,
                     'resource_ids' => array_column($vehicles, 'resource_id'),
                     'resource' => $b->resource?->name ?? 'Unknown Resource',
@@ -161,6 +167,12 @@ class BookingController extends Controller
                 'id' => $booking->booking_id,
                 'booking_id' => $booking->booking_id,
                 'owner_user_id' => $booking->user_id,
+                'submitted_by' => $booking->user ? [
+                    'user_id' => $booking->user->user_id,
+                    'full_name' => $booking->user->full_name,
+                    'email' => $booking->user->email,
+                    'role' => $booking->user->role,
+                ] : null,
                 'resource_id' => $booking->resource_id,
                 'resource_ids' => array_column($vehicles, 'resource_id'),
                 'resource' => $booking->resource?->name ?? 'Unknown Resource',

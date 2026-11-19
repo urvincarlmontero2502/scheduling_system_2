@@ -175,7 +175,11 @@ class BookingConflictDetectionTest extends TestCase
         $this->getJson('/api/bookings')
             ->assertOk()
             ->assertJsonCount(1)
-            ->assertJsonPath('0.owner_user_id', $this->user->user_id);
+            ->assertJsonPath('0.owner_user_id', $this->user->user_id)
+            ->assertJsonPath('0.submitted_by.user_id', $this->user->user_id)
+            ->assertJsonPath('0.submitted_by.full_name', $this->user->full_name)
+            ->assertJsonPath('0.submitted_by.email', $this->user->email)
+            ->assertJsonPath('0.submitted_by.role', $this->user->role);
 
         $this->getJson('/api/dashboard/stats')
             ->assertOk()
@@ -210,7 +214,7 @@ class BookingConflictDetectionTest extends TestCase
                 'purpose' => 'Deliver materials',
                 'destination' => 'Barangay Hall',
                 'cell_number' => '09123456789',
-                'email' => 'booking-test@example.test',
+                'email' => 'contact@example.test',
                 'address' => '123 Main Street',
                 'attendees' => 25,
                 'priority' => 'high',
@@ -238,6 +242,8 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('0.resource_type', 'facility')
             ->assertJsonPath('0.destination', 'Barangay Hall')
             ->assertJsonPath('0.cell_number', '09123456789')
+            ->assertJsonPath('0.email', 'contact@example.test')
+            ->assertJsonPath('0.submitted_by.email', $this->user->email)
             ->assertJsonPath('0.address', '123 Main Street')
             ->assertJsonPath('0.attendees', 25)
             ->assertJsonPath('0.priority', 'high');
