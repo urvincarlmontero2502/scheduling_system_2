@@ -27,16 +27,10 @@ class BookingController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function stats(Request $request)
+    public function stats()
     {
-        $user = $request->user();
+        // Counters are global; request details remain scoped in the bookings endpoint.
         $bookings = BookingRequest::notSpecialEvent();
-
-        if ($user->isBarangayAdmin()) {
-            $bookings->whereHas('user', fn ($query) => $query->where('barangay', $user->barangay));
-        } elseif (! $user->isAdmin()) {
-            $bookings->where('user_id', $user->user_id);
-        }
 
         return response()->json([
             'pending' => (clone $bookings)
@@ -45,6 +39,10 @@ class BookingController extends Controller
             'approved' => (clone $bookings)
                 ->where('status', 'approved')
                 ->count(),
+            'rejected' => (clone $bookings)
+                ->where('status', 'rejected')
+                ->count(),
+            'total' => (clone $bookings)->count(),
             'resources' => Resource::count(),
         ]);
     }
@@ -69,9 +67,8 @@ class BookingController extends Controller
                 'vehicles',
             ]);
 
-            // Barangay admins only see requests from their barangay.
-            // Municipal special events belong to the Mayor's Office account
-            // (barangay is null), so they must stay visible on every calendar.
+            // Barangay admins only see request details from their barangay.
+            // Municipal special events remain visible in their booking view.
             if ($user->isBarangayAdmin()) {
                 $query->where(function ($q) use ($user) {
                     $q->where('is_special_event', true)
@@ -190,6 +187,98 @@ class BookingController extends Controller
                 'reference_id' => $booking->reference_id,
                 'deleted_at' => $booking->deleted_at,
             ];
+        }));
+    }
+
+    public function calendar(Request $request)
+    {
+        $viewer = $request->user();
+        $bookings = BookingRequest::with(['resource', 'user', 'vehicles'])
+            ->orderBy('start_date')
+            ->orderBy('booking_id')
+            ->get();
+
+        return response()->json($bookings->map(function ($booking) use ($viewer) {
+            $isSpecialEvent = (bool) $booking->is_special_event;
+            $isSameBarangay = $viewer->isBarangayAdmin()
+                && $booking->user?->barangay !== null
+                && $booking->user->barangay === $viewer->barangay;
+            $canViewDetails = $viewer->isAdmin()
+                || $isSpecialEvent
+                || $isSameBarangay
+                || (int) $booking->user_id === (int) $viewer->user_id;
+            $isRedacted = ! $canViewDetails;
+            $vehicles = $this->formatVehicles($booking);
+            $resourceNames = $vehicles !== []
+                ? array_column($vehicles, 'name')
+                : [$booking->resource?->name ?? 'Unknown Resource'];
+            $resourceIds = $vehicles !== []
+                ? array_column($vehicles, 'resource_id')
+                : [$booking->resource_id];
+            $barangay = $booking->user?->barangay
+                ?? ($isSpecialEvent ? 'Municipal' : null);
+
+            $formatted = [
+                'id' => $booking->booking_id,
+                'booking_id' => $booking->booking_id,
+                'resource_id' => $booking->resource_id,
+                'resource_ids' => $resourceIds,
+                'resource_names' => $resourceNames,
+                'resource' => $booking->resource?->name ?? 'Unknown Resource',
+                'resource_type' => $booking->resource?->type,
+                'vehicles' => $isRedacted
+                    ? array_map(
+                        fn ($vehicle) => [
+                            'resource_id' => $vehicle['resource_id'],
+                            'name' => $vehicle['name'],
+                            'type' => $vehicle['type'],
+                        ],
+                        $vehicles
+                    )
+                    : $vehicles,
+                'start_date' => Carbon::parse($booking->start_date)->toDateString(),
+                'end_date' => Carbon::parse($booking->end_date)->toDateString(),
+                'start_time' => $booking->start_time,
+                'end_time' => $booking->end_time,
+                'time' => ($booking->start_time && $booking->end_time)
+                    ? "{$booking->start_time} - {$booking->end_time}"
+                    : 'All Day',
+                'status' => $booking->status,
+                'barangay' => $barangay,
+                'is_special_event' => $isSpecialEvent,
+                'is_redacted' => $isRedacted,
+                'calendar_label' => $isRedacted
+                    ? (($barangay ?: 'Other barangay').' request')
+                    : null,
+            ];
+
+            if (! $isRedacted) {
+                $displayName = $booking->full_name
+                    ?: ($booking->user?->full_name ?: '—');
+                $formatted += [
+                    'owner_user_id' => $isSpecialEvent ? null : $booking->user_id,
+                    'full_name' => $displayName,
+                    'requester' => $displayName,
+                    'purpose' => $booking->purpose,
+                    'destination' => $booking->destination,
+                    'cell_number' => $isSpecialEvent ? null : $booking->cell_number,
+                    'address' => $isSpecialEvent ? null : $booking->address,
+                    'email' => $isSpecialEvent ? null : ($booking->email ?? $booking->user?->email),
+                    'attendees' => $booking->attendees,
+                    'priority' => $booking->priority ?? 'normal',
+                    'reference_id' => $booking->reference_id,
+                    'price_per_day' => $booking->price_per_day ?? $booking->resource?->price_per_day,
+                    'price_per_hour' => $booking->price_per_hour ?? $booking->resource?->price_per_hour,
+                    'submitted_by' => ! $isSpecialEvent && $booking->user ? [
+                        'user_id' => $booking->user->user_id,
+                        'full_name' => $booking->user->full_name,
+                        'email' => $booking->user->email,
+                        'role' => $booking->user->role,
+                    ] : null,
+                ];
+            }
+
+            return $formatted;
         }));
     }
 

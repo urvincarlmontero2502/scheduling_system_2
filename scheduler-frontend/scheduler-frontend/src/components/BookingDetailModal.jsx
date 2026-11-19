@@ -117,19 +117,23 @@ export default function BookingDetailModal({
       : "Facility";
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
-  const fullName =
-    booking.full_name || booking.requester || booking.user_name || booking.user?.full_name || "Unknown Requestor";
+  const isRedacted = booking.is_redacted === true;
+  const fullName = isRedacted
+    ? "Request details hidden"
+    : booking.full_name || booking.requester || booking.user_name || booking.user?.full_name || "Unknown Requestor";
   const submittedBy = booking.submitted_by || booking.user || null;
   const submittedByName =
     submittedBy?.full_name ||
     (booking.owner_user_id != null ? `User #${booking.owner_user_id}` : "Account unavailable");
   const submittedByEmail = submittedBy?.email || "";
   const submittedById = submittedBy?.user_id ?? booking.owner_user_id;
-  const submittedByAccount = submittedByEmail
-    ? `${submittedByName} (${submittedByEmail})`
-    : submittedById != null
-      ? `${submittedByName} (User ID ${submittedById})`
-      : submittedByName;
+  const submittedByAccount = isRedacted
+    ? "Hidden for cross-barangay privacy"
+    : submittedByEmail
+      ? `${submittedByName} (${submittedByEmail})`
+      : submittedById != null
+        ? `${submittedByName} (User ID ${submittedById})`
+        : submittedByName;
   const barangayName =
     booking.barangay || booking.user?.barangay || booking.user?.full_name || booking.user?.name || "Poblacion";
   const cellNumber = booking.cell_number || booking.contact || booking.phone || "N/A";

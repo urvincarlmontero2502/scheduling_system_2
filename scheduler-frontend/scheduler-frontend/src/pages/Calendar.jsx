@@ -211,7 +211,10 @@ export default function CalendarView() {
   // Cached data hooks — data persists across page switches
     const { user } = useAuth();
     const toast = useToast();
-  const { data: bookings, loading } = useCachedData("bookings", api.fetchBookings);
+  const { data: bookings, loading } = useCachedData(
+    CACHE_KEYS.CALENDAR_BOOKINGS,
+    api.fetchCalendarBookings,
+  );
   const { data: specialEventTemplates } = useCachedData(
     CACHE_KEYS.SPECIAL_EVENTS,
     api.fetchSpecialEventTemplates,
@@ -772,6 +775,8 @@ export default function CalendarView() {
                                               const requesterName =
                                                 group.bookings.length > 1
                                                   ? `${group.bookings.length} related booking requests`
+                                                  : b.calendar_label
+                                                    ? `${b.calendar_label} · ${b.status || "Reserved"}`
                                                   : b.requester ||
                                                     b.full_name ||
                                                     b.name ||
@@ -796,7 +801,7 @@ export default function CalendarView() {
                                               return (
                                                 <div
                                                   key={group.key}
-                                                  title={`${eventName} - ${resourceName}${group.bookings.length > 1 ? ` - ${group.bookings.length} related booking requests` : ""} - ${b.status || ""}${isSpecial ? " ⭐ Special Event" : ""}`}
+                                                  title={`${eventName} - ${resourceName}${group.bookings.length > 1 ? ` - ${group.bookings.length} related booking requests` : ""} - ${b.status || ""}${b.is_redacted && b.barangay ? ` - ${b.barangay}` : ""}${isSpecial ? " ⭐ Special Event" : ""}`}
                                                   role="button"
                                                   tabIndex={0}
                                                   aria-label={`View ${eventName}, ${group.resourceNames.length} ${group.resourceNames.length === 1 ? "resource" : "resources"}${group.bookings.length > 1 ? ` across ${group.bookings.length} related booking requests` : ""}, ${b.status || "booking"}`}

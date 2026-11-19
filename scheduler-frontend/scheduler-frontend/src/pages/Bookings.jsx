@@ -170,6 +170,47 @@ function getSubmissionAccount(booking) {
   };
 }
 
+function calculateFacilityBookingEstimate(booking, resources = []) {
+  const resourceId = booking?.resource_id ?? booking?.resource?.resource_id;
+  const resourceName =
+    booking?.resource_name ||
+    booking?.resource?.name ||
+    (typeof booking?.resource === "string" ? booking.resource : "") ||
+    "";
+  const resource = resources.find(
+    (item) =>
+      (resourceId != null &&
+        String(item.resource_id ?? item.id) === String(resourceId)) ||
+      (resourceName &&
+        String(item.name || item.resource_name || "").toLowerCase() ===
+          resourceName.toLowerCase()),
+  );
+  const resourceType = String(
+    booking?.resource_type ||
+      booking?.resource?.type ||
+      booking?.type ||
+      booking?.item_type ||
+      resource?.type ||
+      "",
+  ).toLowerCase();
+  if (resourceType !== "facility") return null;
+
+  const dateRange = String(booking?.date || "").split(/\s+to\s+/i);
+  const startDate = booking?.start_date || dateRange[0];
+  const endDate = booking?.end_date || dateRange[1] || startDate;
+  const dailyRate =
+    booking?.price_per_day ??
+    booking?.resource?.price_per_day ??
+    resource?.price_per_day;
+
+  return calculateDailyBookingEstimate(startDate, endDate, dailyRate);
+}
+
+async function fetchGlobalBookingStats() {
+  const response = await api.fetchDashboardStats();
+  return { data: [response.data] };
+}
+
 // Helper function to convert 24hr time (e.g., "17:00") to 12hr AM/PM format (e.g., "5:00 PM")
 function formatTimeTo12Hour(timeStr) {
   if (!timeStr) return "";
@@ -307,6 +348,11 @@ function BookingRequests() {
   const toast = useToast();
   const { data: bookings, loading, refetch: refetchBookings } = useCachedData("bookings", api.fetchBookings);
   const { data: resources } = useCachedData("resources", api.fetchResources);
+  const { data: statsRecords, loading: statsLoading } = useCachedData(
+    CACHE_KEYS.BOOKING_STATS,
+    fetchGlobalBookingStats,
+  );
+  const bookingStats = statsRecords[0] || {};
 
   // URL-synchronized tab + view mode
   const [activeTab, setActiveTab] = useTabUrlSync("tab", "pending");
@@ -429,16 +475,9 @@ function BookingRequests() {
   // Real requests only: special events are never counted, listed or bulk-deleted
   const requests = bookings.filter((b) => !isSpecialEvent(b));
 
-  // Count metrics for tabs
-  const pendingCount = requests.filter(
-    (b) => (b.status || "").toLowerCase() === "pending",
-  ).length;
-  const approvedCount = requests.filter(
-    (b) => (b.status || "").toLowerCase() === "approved",
-  ).length;
-  const rejectedCount = requests.filter(
-    (b) => (b.status || "").toLowerCase() === "rejected",
-  ).length;
+  const pendingCount = bookingStats.pending ?? 0;
+  const approvedCount = bookingStats.approved ?? 0;
+  const rejectedCount = bookingStats.rejected ?? 0;
 
   // Helper to normalize the rejection handler — accepts (id, status) or (id, status, reason)
   const safeReject = async (id, reason) => {
@@ -524,10 +563,10 @@ function BookingRequests() {
       {/* KPI Summary Cards Row — clickable to toggle filters */}
       <div className="grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4">
           {[
-            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading, tab: "pending", color: "text-orange-500" },
-            { label: "Approved Requests", value: approvedCount, Icon: Check, loading, tab: "approved", color: "text-green-600" },
-            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading, tab: "rejected", color: "text-red-500" },
-            { label: "Total Requests", value: requests.length, Icon: FileText, loading, tab: "all" },
+            { label: "Pending Requests", value: pendingCount, Icon: Clock, loading: statsLoading, tab: "pending", color: "text-orange-500" },
+            { label: "Approved Requests", value: approvedCount, Icon: Check, loading: statsLoading, tab: "approved", color: "text-green-600" },
+            { label: "Rejected Requests", value: rejectedCount, Icon: X, loading: statsLoading, tab: "rejected", color: "text-red-500" },
+            { label: "Total Requests", value: bookingStats.total ?? 0, Icon: FileText, loading: statsLoading, tab: "all" },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -550,6 +589,11 @@ function BookingRequests() {
             </div>
           ))}
         </div>
+        {user?.role !== "admin" && (
+          <p className="-mt-4 text-xs text-slate-500">
+            Counts include all barangays. Request details remain scoped to your account or barangay; the calendar shows other requests without requester contact details.
+          </p>
+        )}
 
         {/* Consolidated Toolbar — matches Overview.jsx layout */ }
         {activeTab === "approved" && (
@@ -794,14 +838,10 @@ function BookingRequests() {
                     startDate && endDate && startDate !== endDate
                       ? `${startDate} to ${endDate}`
                       : startDate || "—";
-                  const dailyEstimate =
-                    String(b.resource_type || "").toLowerCase() === "facility"
-                      ? calculateDailyBookingEstimate(
-                          startDate,
-                          endDate,
-                          b.price_per_day,
-                        )
-                      : null;
+                  const dailyEstimate = calculateFacilityBookingEstimate(
+                    b,
+                    resources,
+                  );
 
                   let timeValue = "All Day";
                   if (b.start_time && b.end_time) {
@@ -1001,14 +1041,10 @@ function BookingRequests() {
               } else if (startDate) {
                 dateValue = startDate;
               }
-              const dailyEstimate =
-                String(b.resource_type || "").toLowerCase() === "facility"
-                  ? calculateDailyBookingEstimate(
-                      startDate,
-                      endDate,
-                      b.price_per_day,
-                    )
-                  : null;
+              const dailyEstimate = calculateFacilityBookingEstimate(
+                b,
+                resources,
+              );
 
               let timeValue = "All Day";
               if (b.start_time && b.end_time) {

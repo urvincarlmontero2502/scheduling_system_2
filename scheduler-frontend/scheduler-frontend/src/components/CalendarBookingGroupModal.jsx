@@ -119,6 +119,7 @@ export default function CalendarBookingGroupModal({
             const resources = getBookingResourceNames(booking);
             const bookingId = booking.id ?? booking.booking_id ?? index;
             const requester =
+              booking.calendar_label ||
               booking.requester ||
               booking.full_name ||
               booking.user_name ||
