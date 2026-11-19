@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
+import { Search, Trash2, UserRound, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
@@ -139,21 +139,6 @@ export default function UserRoles() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <header className="mb-6">
-        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-          <ShieldCheck size={14} />
-          Administration
-        </div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-          Manage user roles
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          {isSuperAdmin
-            ? "Promote eligible accounts or move users to the Trash Bin."
-            : `Promote eligible users to Barangay Admin for ${user?.barangay || "your barangay"}.`}
-        </p>
-      </header>
-
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
