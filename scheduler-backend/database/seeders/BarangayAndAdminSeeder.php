@@ -13,7 +13,7 @@ class BarangayAndAdminSeeder extends Seeder
         $tempPassword = Hash::make('Password123!');
 
         // 1. Create Mayor's Office Admin Account
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['email' => 'mayors.office@system.local'],
             [
                 'full_name' => "Mayor's Office",
@@ -52,7 +52,9 @@ class BarangayAndAdminSeeder extends Seeder
             // Poblacion gets barangay_admin role so it can manage registration requests
             $role = ($brgy === 'Poblacion') ? 'barangay_admin' : 'user';
 
-            User::updateOrCreate(
+            // Seed initial accounts only; rerunning the seeder must not undo
+            // administrator role changes made through the application.
+            User::firstOrCreate(
                 ['email' => "{$slug}@system.local"],
                 [
                     'full_name' => "{$brgy} Representative",
