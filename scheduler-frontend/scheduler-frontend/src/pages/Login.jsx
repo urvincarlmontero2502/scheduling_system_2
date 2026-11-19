@@ -135,12 +135,12 @@ export default function Login() {
           <div className="max-w-3xl text-white">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-blue-100 backdrop-blur sm:text-xs">
               <ShieldCheck size={15} />
-              MUNICIPALITY OF JABONGA · LGU SCHEDULING PORTAL
+              Municipality of Jabonga · LGU Scheduling Portal
             </div>
             <h1
               className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
               id="hero-title">
-              Scheduling System for Facility and Utility Vehicle Coordination
+              Facility and Utility Vehicle Scheduling
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-blue-50 sm:text-base sm:leading-7">
               An online scheduling platform for coordinating municipal
