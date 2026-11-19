@@ -346,7 +346,12 @@ export default function Bookings() {
 function BookingRequests() {
   const { user } = useAuth();
   const toast = useToast();
-  const { data: bookings, loading, refetch: refetchBookings } = useCachedData("bookings", api.fetchBookings);
+  const { data: bookings, loading: bookingsLoading, refetch: refetchBookings } = useCachedData("bookings", api.fetchBookings);
+  const {
+    data: calendarBookings,
+    loading: calendarLoading,
+  } = useCachedData(CACHE_KEYS.CALENDAR_BOOKINGS, api.fetchCalendarBookings);
+  const loading = bookingsLoading || calendarLoading;
   const { data: resources } = useCachedData("resources", api.fetchResources);
   const { data: statsRecords, loading: statsLoading } = useCachedData(
     CACHE_KEYS.BOOKING_STATS,
@@ -474,6 +479,16 @@ function BookingRequests() {
 
   // Real requests only: special events are never counted, listed or bulk-deleted
   const requests = bookings.filter((b) => !isSpecialEvent(b));
+  const requestIds = new Set(
+    requests.map((booking) => String(booking.id || booking.booking_id)),
+  );
+  const sharedRequests = calendarBookings.filter(
+    (booking) =>
+      booking.is_cross_barangay &&
+      !isSpecialEvent(booking) &&
+      !requestIds.has(String(booking.id || booking.booking_id)),
+  );
+  const visibleRequests = [...requests, ...sharedRequests];
 
   const pendingCount = bookingStats.pending ?? 0;
   const approvedCount = bookingStats.approved ?? 0;
@@ -485,7 +500,7 @@ function BookingRequests() {
   };
 
   // Apply tab + search + barangay filtering
-  const filteredBookings = requests.filter((b) => {
+  const filteredBookings = visibleRequests.filter((b) => {
     const status = (b.status || "").toLowerCase();
     if (activeTab === "all") {
       /* show all */
@@ -507,12 +522,16 @@ function BookingRequests() {
     if (searchText) {
       const resource = getBookingResourceNames(b).join(", ");
       const fullName =
-        b.full_name || b.requester || b.user_name || b.user?.full_name || "";
+        b.is_cross_barangay
+          ? b.calendar_label || `${b.barangay || "Other barangay"} request`
+          : b.full_name || b.requester || b.user_name || b.user?.full_name || "";
       const submittedBy = getSubmissionAccount(b);
-      const purpose = b.purpose || b.reason || b.description || "";
+      const purpose = b.is_cross_barangay
+        ? ""
+        : b.purpose || b.reason || b.description || "";
       const bookingId = b.id || b.booking_id || "";
       const combined =
-        `${resource} ${fullName} ${submittedBy.name} ${submittedBy.email} ${purpose} ${bookingId}`.toLowerCase();
+        `${resource} ${fullName} ${submittedBy.name} ${submittedBy.email} ${b.barangay || ""} ${purpose} ${bookingId}`.toLowerCase();
       if (!combined.includes(searchText)) return false;
     }
 
@@ -533,7 +552,7 @@ function BookingRequests() {
   // Distinct barangay list for filter dropdown
   const barangayOptions = Array.from(
     new Set(
-      requests.map(
+      visibleRequests.map(
         (b) =>
           b.barangay ||
           b.user?.barangay ||
@@ -591,7 +610,7 @@ function BookingRequests() {
         </div>
         {user?.role !== "admin" && (
           <p className="-mt-4 text-xs text-slate-500">
-            Counts include all barangays. Request details remain scoped to your account or barangay; the calendar shows other requests without requester contact details.
+            Counts include all barangays. Your requests show full details; other barangays’ requests show only resource, date/time, status, and barangay.
           </p>
         )}
 
@@ -801,6 +820,7 @@ function BookingRequests() {
               <tbody className="divide-y divide-line">
                 {filteredBookings.map((b) => {
                   const bookingId = b.id || b.booking_id;
+                  const isCrossBarangay = b.is_cross_barangay === true;
                   const resourceName = getBookingResourceNames(b).join(", ");
                   const barangayName =
                     b.barangay ||
@@ -809,25 +829,32 @@ function BookingRequests() {
                     b.user?.name ||
                     b.name ||
                     "Poblacion";
-                  const fullName =
-                    b.full_name ||
-                    b.requester ||
-                    b.user_name ||
-                    b.user?.full_name ||
-                    "Unknown Requestor";
+                  const fullName = isCrossBarangay
+                    ? `${barangayName} request`
+                    : b.full_name ||
+                      b.requester ||
+                      b.user_name ||
+                      b.user?.full_name ||
+                      "Unknown Requestor";
                   const submittedBy = getSubmissionAccount(b);
                   const cellNumber =
-                    b.cell_number || b.contact || b.phone || "N/A";
-                  const purposeValue =
-                    b.purpose ||
-                    b.reason ||
-                    b.description ||
-                    b.details ||
-                    "No purpose provided";
-                  const destination = b.destination || b.travel_destination || "";
+                    isCrossBarangay
+                      ? "—"
+                      : b.cell_number || b.contact || b.phone || "N/A";
+                  const purposeValue = isCrossBarangay
+                    ? "—"
+                    : b.purpose ||
+                      b.reason ||
+                      b.description ||
+                      b.details ||
+                      "No purpose provided";
+                  const destination = isCrossBarangay
+                    ? ""
+                    : b.destination || b.travel_destination || "";
                   const attendees = b.attendees;
                   const priority = b.priority || "normal";
                   const hourlyEstimate =
+                    !isCrossBarangay &&
                     String(b.resource_type || "").toLowerCase() === "vehicle"
                       ? calculateVehicleBookingEstimate(b)
                       : null;
@@ -838,10 +865,9 @@ function BookingRequests() {
                     startDate && endDate && startDate !== endDate
                       ? `${startDate} to ${endDate}`
                       : startDate || "—";
-                  const dailyEstimate = calculateFacilityBookingEstimate(
-                    b,
-                    resources,
-                  );
+                  const dailyEstimate = isCrossBarangay
+                    ? null
+                    : calculateFacilityBookingEstimate(b, resources);
 
                   let timeValue = "All Day";
                   if (b.start_time && b.end_time) {
@@ -874,11 +900,13 @@ function BookingRequests() {
                       </td>
                       <td className="px-4 py-3 text-[13px]">
                         <div>{fullName}</div>
-                        <div className="mt-1 text-[11px] text-steel">
-                          <span className="font-semibold">Submitted by:</span>{" "}
-                          {submittedBy.name}
-                          {submittedBy.email ? ` · ${submittedBy.email}` : ""}
-                        </div>
+                        {!isCrossBarangay && (
+                          <div className="mt-1 text-[11px] text-steel">
+                            <span className="font-semibold">Submitted by:</span>{" "}
+                            {submittedBy.name}
+                            {submittedBy.email ? ` · ${submittedBy.email}` : ""}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-[13px] text-steel">
                         {barangayName}
@@ -996,6 +1024,7 @@ function BookingRequests() {
           // Card View
           <div className="grid grid-cols-1 gap-4 w-full max-w-full sm:grid-cols-2 lg:grid-cols-4">{filteredBookings.map((b) => {
               const bookingId = b.id || b.booking_id;
+              const isCrossBarangay = b.is_cross_barangay === true;
               const resourceNames = getBookingResourceNames(b);
               const resourceName = resourceNames.join(", ");
               const barangayName =
@@ -1005,30 +1034,37 @@ function BookingRequests() {
                 b.user?.name ||
                 b.name ||
                 "Poblacion";
-              const fullName =
-                b.full_name ||
-                b.requester ||
-                b.user_name ||
-                b.user?.full_name ||
-                "Unknown Requestor";
+              const fullName = isCrossBarangay
+                ? `${barangayName} request`
+                : b.full_name ||
+                  b.requester ||
+                  b.user_name ||
+                  b.user?.full_name ||
+                  "Unknown Requestor";
               const submittedBy = getSubmissionAccount(b);
               const cellNumber =
-                b.cell_number || b.contact || b.phone || "N/A";
-              const purposeValue =
-                b.purpose ||
-                b.reason ||
-                b.description ||
-                b.details ||
-                "No purpose provided";
+                isCrossBarangay
+                  ? "—"
+                  : b.cell_number || b.contact || b.phone || "N/A";
+              const purposeValue = isCrossBarangay
+                ? "—"
+                : b.purpose ||
+                  b.reason ||
+                  b.description ||
+                  b.details ||
+                  "No purpose provided";
               const purposeDisplay = ["n/a", "na", "none"].includes(
                 String(purposeValue).trim().toLowerCase(),
               )
                 ? "Not provided"
                 : purposeValue;
-              const destination = b.destination || b.travel_destination || "";
-              const attendees = b.attendees;
+              const destination = isCrossBarangay
+                ? ""
+                : b.destination || b.travel_destination || "";
+              const attendees = isCrossBarangay ? null : b.attendees;
               const priority = b.priority || "normal";
               const hourlyEstimate =
+                !isCrossBarangay &&
                 String(b.resource_type || "").toLowerCase() === "vehicle"
                   ? calculateVehicleBookingEstimate(b)
                   : null;
@@ -1041,10 +1077,9 @@ function BookingRequests() {
               } else if (startDate) {
                 dateValue = startDate;
               }
-              const dailyEstimate = calculateFacilityBookingEstimate(
-                b,
-                resources,
-              );
+              const dailyEstimate = isCrossBarangay
+                ? null
+                : calculateFacilityBookingEstimate(b, resources);
 
               let timeValue = "All Day";
               if (b.start_time && b.end_time) {
@@ -1163,15 +1198,17 @@ function BookingRequests() {
                           {resourceName}
                         </h3>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${
-                          priority === "high"
-                            ? "bg-rose-50 text-rose-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {priority === "high" ? "High priority" : "Normal"}
-                      </span>
+                      {!isCrossBarangay && (
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                            priority === "high"
+                              ? "bg-rose-50 text-rose-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {priority === "high" ? "High priority" : "Normal"}
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-medium text-slate-600">
@@ -1260,6 +1297,17 @@ function BookingRequests() {
                       </div>
                     )}
 
+                    {isCrossBarangay ? (
+                      <div className="mt-2.5 rounded-xl border border-slate-200 bg-white p-2.5">
+                        <div className="flex items-center gap-2 text-[10px] text-slate-600">
+                          <Building2 size={13} className="shrink-0 text-slate-400" />
+                          <p>
+                            <strong className="text-slate-700">Barangay:</strong>{" "}
+                            {barangayName}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
                     <div className="mt-2.5 rounded-xl border border-slate-200 bg-white p-2.5">
                       <div className="flex min-w-0 items-center gap-2 text-[10px]">
                         <User size={13} className="shrink-0 text-slate-400" />
@@ -1313,6 +1361,7 @@ function BookingRequests() {
                         )}
                       </div>
                     </div>
+                    )}
 
                   {canModerate && isPendingItem && (
                     <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
