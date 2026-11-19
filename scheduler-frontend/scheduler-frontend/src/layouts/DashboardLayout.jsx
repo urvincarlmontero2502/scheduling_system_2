@@ -673,6 +673,8 @@ export default function DashboardLayout() {
               {location.pathname.startsWith("/requests") && "Requests"}
               {location.pathname.startsWith("/account-settings") &&
                 "Account Settings"}
+              {location.pathname.startsWith("/users") &&
+                "Manage user roles"}
               {location.pathname.startsWith("/activity-logs") &&
                 "Activity Logs"}
               {location.pathname.startsWith("/system-settings") &&
@@ -692,6 +694,10 @@ export default function DashboardLayout() {
                 "Review account registrations and booking removal requests"}
               {location.pathname.startsWith("/account-settings") &&
                 "Manage your profile and security credentials"}
+              {location.pathname.startsWith("/users") &&
+                (user?.role === "admin"
+                  ? "Promote eligible accounts or move users to the Trash Bin."
+                  : `Promote eligible users to Barangay Admin for ${user?.barangay || "your barangay"}.`)}
               {location.pathname.startsWith("/activity-logs") &&
                 (user?.role === "barangay_admin"
                   ? "Review activity from your barangay over the past year"
