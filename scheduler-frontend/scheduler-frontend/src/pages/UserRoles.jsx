@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Trash2, UserRound, Users } from "lucide-react";
+import { Search, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
@@ -25,6 +25,7 @@ export default function UserRoles() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [savingUserId, setSavingUserId] = useState(null);
+  const [promotionCandidate, setPromotionCandidate] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
 
@@ -79,7 +80,7 @@ export default function UserRoles() {
     }));
   };
 
-  const promote = async (candidate) => {
+  const requestPromotion = (candidate) => {
     const defaults = isSuperAdmin && candidate.role === "barangay_admin"
       ? "admin"
       : "barangay_admin";
@@ -91,11 +92,20 @@ export default function UserRoles() {
       return;
     }
 
-    const confirmMessage = role === "admin"
-      ? `Promote ${candidate.full_name} to Super Admin?`
-      : `Promote ${candidate.full_name} to Barangay Admin${isSuperAdmin ? ` for ${barangay}` : ` for ${user.barangay}`}?`;
-    if (!window.confirm(confirmMessage)) return;
+    setPromotionCandidate({
+      candidate,
+      role,
+      barangay: role === "barangay_admin"
+        ? isSuperAdmin
+          ? barangay
+          : user.barangay
+        : null,
+    });
+  };
 
+  const confirmPromotion = async () => {
+    if (!promotionCandidate) return;
+    const { candidate, role, barangay } = promotionCandidate;
     setSavingUserId(candidate.user_id);
     try {
       const response = await api.promoteUser(candidate.user_id, {
@@ -114,6 +124,7 @@ export default function UserRoles() {
       );
     } finally {
       setSavingUserId(null);
+      setPromotionCandidate(null);
     }
   };
 
@@ -259,8 +270,11 @@ export default function UserRoles() {
 
                     <button
                       type="button"
-                      disabled={savingUserId === candidate.user_id}
-                      onClick={() => promote(candidate)}
+                      disabled={
+                        savingUserId === candidate.user_id ||
+                        Boolean(promotionCandidate)
+                      }
+                      onClick={() => requestPromotion(candidate)}
                       className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingUserId === candidate.user_id
@@ -286,6 +300,37 @@ export default function UserRoles() {
           </div>
         )}
       </section>
+      <ConfirmModal
+        open={Boolean(promotionCandidate)}
+        onClose={() => setPromotionCandidate(null)}
+        onConfirm={confirmPromotion}
+        title="Confirm role promotion"
+        message={
+          promotionCandidate?.role === "admin" ? (
+            <>
+              Promote{" "}
+              <strong>{promotionCandidate.candidate.full_name}</strong> to{" "}
+              <strong>Super Admin</strong>? This grants system-wide administrative
+              access.
+            </>
+          ) : promotionCandidate ? (
+            <>
+              Promote{" "}
+              <strong>{promotionCandidate.candidate.full_name}</strong> to{" "}
+              <strong>Barangay Admin</strong> for{" "}
+              <strong>{promotionCandidate.barangay}</strong>? This grants access
+              to manage requests for that barangay.
+            </>
+          ) : (
+            ""
+          )
+        }
+        confirmText="Promote account"
+        icon={ShieldCheck}
+        iconBg="bg-blue-50"
+        iconColor="text-blue-700"
+        confirmButtonClass="bg-blue-700 hover:bg-blue-800"
+      />
       <ConfirmModal
         open={Boolean(deleteCandidate)}
         onClose={() => setDeleteCandidate(null)}
