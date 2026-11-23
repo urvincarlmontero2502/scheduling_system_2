@@ -486,6 +486,16 @@ class BookingController extends Controller
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
+            if (
+                isset($validated['status']) &&
+                $validated['status'] !== 'pending' &&
+                ! $user->isAdmin()
+            ) {
+                return response()->json([
+                    'message' => 'Only a system administrator can set a booking status during creation.',
+                ], 403);
+            }
+
             /*
             |--------------------------------------------------------------------------
             | Determine Resource ID
@@ -733,6 +743,10 @@ class BookingController extends Controller
             $user = $request->user();
             if (! $user) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            if (! $user->isAdmin()) {
+                return response()->json(['message' => 'Forbidden.'], 403);
             }
 
             $validated = $request->validate([
