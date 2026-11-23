@@ -176,7 +176,12 @@ class AuthController extends Controller
         $user = $request->user('sanctum');
 
         return $user
-            ? response()->json($user)
+            ? response()->json(array_merge(
+                $user->toArray(),
+                [
+                    'can_set_password_without_current' => $this->canSetPasswordWithoutCurrentPassword($request, $user),
+                ]
+            ))
             : response('null', 200, ['Content-Type' => 'application/json']);
     }
 
@@ -439,17 +444,18 @@ class AuthController extends Controller
     public function updatePassword(Request $request)
     {
         $user = $request->user();
+        $canSetWithoutCurrentPassword = $this->canSetPasswordWithoutCurrentPassword($request, $user);
 
         $rules = [
             'password' => ['required', 'string', 'confirmed', 'min:8'],
         ];
-        if (! $user->password_setup_required) {
+        if (! $canSetWithoutCurrentPassword) {
             $rules['current_password'] = ['required', 'string'];
         }
         $validated = $request->validate($rules);
 
         if (
-            ! $user->password_setup_required &&
+            ! $canSetWithoutCurrentPassword &&
             ! Hash::check($validated['current_password'], $user->password_hash)
         ) {
             return response()->json([
@@ -460,10 +466,30 @@ class AuthController extends Controller
         $user->password_hash = Hash::make($validated['password']);
         $user->password_setup_required = false;
         $user->save();
+        if ($request->hasSession()) {
+            $request->session()->forget('google_password_reset_authorization');
+        }
 
         return response()->json([
             'message' => 'Password updated successfully.',
         ]);
+    }
+
+    private function canSetPasswordWithoutCurrentPassword(Request $request, User $user): bool
+    {
+        if ($user->password_setup_required) {
+            return true;
+        }
+
+        if (! $request->hasSession()) {
+            return false;
+        }
+
+        $authorization = $request->session()->get('google_password_reset_authorization');
+
+        return is_array($authorization)
+            && (int) ($authorization['user_id'] ?? 0) === (int) $user->user_id
+            && (int) ($authorization['expires_at'] ?? 0) >= now()->timestamp;
     }
 
     /**
@@ -634,6 +660,10 @@ class AuthController extends Controller
                 $guard->setRememberDuration(43200);
                 $guard->login($user, true);
                 $request->session()->regenerate();
+                $request->session()->put('google_password_reset_authorization', [
+                    'user_id' => (int) $user->user_id,
+                    'expires_at' => now()->addMinutes(10)->timestamp,
+                ]);
 
                 return response()->json([
                     'user' => $user,
