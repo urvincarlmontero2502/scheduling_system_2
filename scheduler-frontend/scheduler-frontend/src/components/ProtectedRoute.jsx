@@ -14,5 +14,13 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  const isPasswordSetupPage = location.pathname === "/set-password"
+  if (user.password_setup_required && !isPasswordSetupPage) {
+    return <Navigate to="/set-password" replace />
+  }
+  if (!user.password_setup_required && isPasswordSetupPage) {
+    return <Navigate to="/" replace />
+  }
+
   return children
 }

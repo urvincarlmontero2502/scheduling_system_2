@@ -439,18 +439,25 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
+        $rules = [
             'password' => ['required', 'string', 'confirmed', 'min:8'],
-        ]);
+        ];
+        if (! $user->password_setup_required) {
+            $rules['current_password'] = ['required', 'string'];
+        }
+        $validated = $request->validate($rules);
 
-        if (!Hash::check($validated['current_password'], $user->password_hash)) {
+        if (
+            ! $user->password_setup_required &&
+            ! Hash::check($validated['current_password'], $user->password_hash)
+        ) {
             return response()->json([
                 'message' => 'The provided password is incorrect.',
             ], 422);
         }
 
         $user->password_hash = Hash::make($validated['password']);
+        $user->password_setup_required = false;
         $user->save();
 
         return response()->json([
@@ -682,6 +689,8 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'barangay' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
         ]);
         if (! $request->hasSession()) {
             return response()->json([
@@ -789,7 +798,8 @@ class AuthController extends Controller
             $regData = [
                 'full_name'      => $tempRecord->full_name,
                 'email'          => $tempRecord->email,
-                'password_hash'  => Hash::make(Str::random(24)),
+                'password_hash'  => Hash::make($validated['password']),
+                'password_setup_required' => false,
                 'barangay'       => $validated['barangay'],
                 'role'           => 'staff',
                 'status'         => 'pending',
@@ -865,7 +875,8 @@ class AuthController extends Controller
                 $newUserData = [
                     'full_name' => $tempRecord->full_name,
                     'email' => $tempRecord->email,
-                    'password_hash' => Hash::make(Str::random(24)),
+                    'password_hash' => Hash::make($validated['password']),
+                    'password_setup_required' => false,
                     'role' => 'staff',
                     'barangay' => $validated['barangay'],
                 ];

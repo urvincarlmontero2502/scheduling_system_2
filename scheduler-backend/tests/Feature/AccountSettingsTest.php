@@ -24,6 +24,7 @@ class AccountSettingsTest extends TestCase
             $table->string('full_name');
             $table->string('email')->unique();
             $table->string('password_hash');
+            $table->boolean('password_setup_required')->default(false);
             $table->string('role')->default('staff');
             $table->timestamp('deleted_at')->nullable();
             $table->string('barangay')->nullable();
@@ -34,6 +35,7 @@ class AccountSettingsTest extends TestCase
             'full_name' => 'Original Name',
             'email' => 'account@example.test',
             'password_hash' => Hash::make('old-password'),
+            'password_setup_required' => false,
             'role' => 'barangay_admin',
             'barangay' => 'Poblacion',
             'department' => 'Operations',
@@ -93,6 +95,38 @@ class AccountSettingsTest extends TestCase
             'new-password-123',
             $this->user->fresh()->password_hash
         ));
+    }
+
+    public function test_google_account_can_set_its_initial_password_without_a_current_password(): void
+    {
+        $this->user->update(['password_setup_required' => true]);
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('password_setup_required', true);
+
+        $this->putJson('/api/user/password', [
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertOk()
+            ->assertJsonPath('message', 'Password updated successfully.');
+
+        $this->assertTrue(Hash::check(
+            'new-password-123',
+            $this->user->fresh()->password_hash
+        ));
+        $this->assertFalse($this->user->fresh()->password_setup_required);
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('password_setup_required', false);
+    }
+
+    public function test_local_password_change_still_requires_the_current_password(): void
+    {
+        $this->putJson('/api/user/password', [
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['current_password']);
     }
 
     public function test_password_change_rejects_an_incorrect_current_password(): void

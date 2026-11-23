@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class GoogleRegistrationSqliteTest extends TestCase
@@ -20,6 +23,7 @@ class GoogleRegistrationSqliteTest extends TestCase
         Schema::dropIfExists('google_oauth_temp_tokens');
         Schema::dropIfExists('registration_requests');
         Schema::dropIfExists('notifications');
+        Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('barangays');
         Schema::dropIfExists('users');
 
@@ -28,7 +32,13 @@ class GoogleRegistrationSqliteTest extends TestCase
             $table->string('full_name');
             $table->string('email');
             $table->string('password_hash');
+            $table->boolean('password_setup_required')->default(false);
+            $table->string('google_id')->nullable();
             $table->string('role');
+            $table->string('barangay')->nullable();
+            $table->string('department')->nullable();
+            $table->string('avatar')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('deleted_at')->nullable();
         });
 
@@ -37,6 +47,7 @@ class GoogleRegistrationSqliteTest extends TestCase
             $table->string('full_name');
             $table->string('email')->unique();
             $table->string('password_hash');
+            $table->boolean('password_setup_required')->default(false);
             $table->string('google_id')->nullable();
             $table->string('avatar')->nullable();
             $table->string('barangay');
@@ -88,6 +99,8 @@ class GoogleRegistrationSqliteTest extends TestCase
             'Referer' => 'http://localhost:5173/',
         ])->postJson('/api/auth/google/complete-registration', [
             'barangay' => 'Poblacion',
+            'password' => 'GoogleFallbackPass123!',
+            'password_confirmation' => 'GoogleFallbackPass123!',
         ])
             ->assertCreated()
             ->assertJsonMissingPath('temporary_token')
@@ -98,7 +111,112 @@ class GoogleRegistrationSqliteTest extends TestCase
             'barangay' => 'Poblacion',
             'status' => 'pending',
         ]);
+        $registration = DB::table('registration_requests')
+            ->where('email', 'new-user@example.test')
+            ->first();
+        $this->assertTrue(Hash::check('GoogleFallbackPass123!', $registration->password_hash));
+        $this->assertFalse((bool) $registration->password_setup_required);
         $this->assertNull(Session::get('google_registration_token'));
+    }
+
+    public function test_google_registration_requires_a_password_and_confirmation(): void
+    {
+        $this->postJson('/api/auth/google/complete-registration', [
+            'barangay' => 'Poblacion',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['password', 'password_confirmation']);
+    }
+
+    public function test_password_setup_migration_marks_existing_google_accounts(): void
+    {
+        DB::table('users')->insert([
+            'full_name' => 'Existing Google User',
+            'email' => 'existing-google@example.test',
+            'password_hash' => Hash::make('unavailable-random-password'),
+            'password_setup_required' => false,
+            'google_id' => 'existing-google-id',
+            'role' => 'staff',
+        ]);
+        DB::table('registration_requests')->insert([
+            'full_name' => 'Pending Google User',
+            'email' => 'pending-google@example.test',
+            'password_hash' => Hash::make('unavailable-random-password'),
+            'password_setup_required' => false,
+            'google_id' => 'pending-google-id',
+            'barangay' => 'Poblacion',
+            'role' => 'staff',
+            'status' => 'pending',
+        ]);
+
+        $migration = require database_path(
+            'migrations/2026_11_23_000001_add_password_setup_required_columns.php'
+        );
+        $migration->up();
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'existing-google@example.test',
+            'password_setup_required' => true,
+        ]);
+        $this->assertDatabaseHas('registration_requests', [
+            'email' => 'pending-google@example.test',
+            'password_setup_required' => true,
+        ]);
+    }
+
+    public function test_approved_google_registration_keeps_the_user_created_password(): void
+    {
+        $this->withSession([
+            'google_registration_token' => 'sqlite-google-registration-token',
+        ])->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/auth/google/complete-registration', [
+            'barangay' => 'Poblacion',
+            'password' => 'GoogleFallbackPass123!',
+            'password_confirmation' => 'GoogleFallbackPass123!',
+        ])->assertCreated();
+
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->id('notif_id');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('booking_id')->nullable();
+            $table->text('message');
+            $table->string('type');
+            $table->string('title');
+            $table->boolean('is_read')->default(false);
+            $table->timestamp('created_at')->nullable();
+        });
+        Schema::create('activity_logs', function (Blueprint $table) {
+            $table->bigIncrements('activity_log_id');
+            $table->unsignedBigInteger('actor_id')->nullable();
+            $table->string('actor_name');
+            $table->string('actor_role');
+            $table->string('action');
+            $table->string('subject_type')->nullable();
+            $table->string('subject_id')->nullable();
+            $table->text('description');
+            $table->json('properties')->nullable();
+            $table->timestamp('created_at');
+        });
+        $admin = User::create([
+            'full_name' => 'System Admin',
+            'email' => 'admin@example.test',
+            'password_hash' => Hash::make('admin-password'),
+            'role' => 'admin',
+        ]);
+        $registrationRequest = DB::table('registration_requests')
+            ->where('email', 'new-user@example.test')
+            ->first();
+        Sanctum::actingAs($admin);
+        Mail::fake();
+
+        $this->postJson("/api/registration-requests/{$registrationRequest->request_id}/approve")
+            ->assertOk();
+
+        $newUser = User::where('email', 'new-user@example.test')->firstOrFail();
+        $this->assertTrue(Hash::check('GoogleFallbackPass123!', $newUser->password_hash));
+        $this->assertFalse($newUser->password_setup_required);
     }
 
     public function test_google_registration_token_is_kept_in_the_server_session(): void

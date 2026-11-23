@@ -347,6 +347,7 @@ class RegistrationController extends Controller
                 'full_name' => $registrationRequest->full_name,
                 'email' => $registrationRequest->email,
                 'password_hash' => $registrationRequest->password_hash,
+                'password_setup_required' => (bool) $registrationRequest->password_setup_required,
                 'role' => $registrationRequest->role,
                 'barangay' => $registrationRequest->barangay,
                 'department' => $registrationRequest->department,

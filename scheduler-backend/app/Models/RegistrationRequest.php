@@ -17,6 +17,7 @@ class RegistrationRequest extends Model
         'full_name',
         'email',
         'password_hash',
+        'password_setup_required',
         'google_id',
         'avatar',
         'barangay',
@@ -31,6 +32,7 @@ class RegistrationRequest extends Model
     protected $hidden = ['password_hash'];
 
     protected $casts = [
+        'password_setup_required' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'reviewed_at' => 'datetime',

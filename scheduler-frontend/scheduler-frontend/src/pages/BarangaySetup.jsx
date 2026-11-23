@@ -29,6 +29,8 @@ export default function BarangaySetup() {
   const { refreshUser, user, loading: authLoading } = useAuth();
   const [barangays, setBarangays] = useState(FALLBACK_BARANGAYS);
   const [selectedBarangay, setSelectedBarangay] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [barangayMenuOpen, setBarangayMenuOpen] = useState(false);
@@ -88,6 +90,14 @@ export default function BarangaySetup() {
       setError("Please select a barangay.");
       return;
     }
+    if (registrationPending && password.length < 8) {
+      setError("Create a password with at least 8 characters.");
+      return;
+    }
+    if (registrationPending && password !== passwordConfirmation) {
+      setError("The password and confirmation do not match.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -95,7 +105,10 @@ export default function BarangaySetup() {
     try {
       if (registrationPending) {
         // New user completing registration — creates a PENDING registration request
-        await api.completeGoogleRegistration(selectedBarangay);
+        await api.completeGoogleRegistration(selectedBarangay, {
+          password,
+          password_confirmation: passwordConfirmation,
+        });
 
         // Redirect to registration status page (thank you / pending approval)
         navigate("/registration-status?status=pending");
@@ -231,6 +244,57 @@ export default function BarangaySetup() {
             )}
           </div>
         </div>
+
+        {registrationPending && (
+          <div className="mt-5 space-y-4">
+            <p className="text-left text-[13px] leading-5 text-steel">
+              Create a password so you can also sign in with your email if
+              Google sign-in is unavailable. Use at least 8 characters.
+            </p>
+            <div>
+              <label
+                className="mb-1.5 block text-left text-[13px] font-medium text-ink"
+                htmlFor="google-registration-password"
+              >
+                Create password
+              </label>
+              <input
+                autoComplete="new-password"
+                className="w-full rounded-lg border border-line px-3.5 py-3 text-[14px] focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10"
+                id="google-registration-password"
+                minLength={8}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setError("");
+                }}
+                required
+                type="password"
+                value={password}
+              />
+            </div>
+            <div>
+              <label
+                className="mb-1.5 block text-left text-[13px] font-medium text-ink"
+                htmlFor="google-registration-password-confirmation"
+              >
+                Confirm password
+              </label>
+              <input
+                autoComplete="new-password"
+                className="w-full rounded-lg border border-line px-3.5 py-3 text-[14px] focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/10"
+                id="google-registration-password-confirmation"
+                minLength={8}
+                onChange={(event) => {
+                  setPasswordConfirmation(event.target.value);
+                  setError("");
+                }}
+                required
+                type="password"
+                value={passwordConfirmation}
+              />
+            </div>
+          </div>
+        )}
 
         {error && (
           <div
