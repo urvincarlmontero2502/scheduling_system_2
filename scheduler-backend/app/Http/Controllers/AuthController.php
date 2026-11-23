@@ -205,6 +205,17 @@ class AuthController extends Controller
         $user->password_hash = Hash::make($validated['password']);
         $user->password_setup_required = false;
         $user->save();
+        $user->refresh();
+
+        if (! Hash::check($validated['password'], $user->getAuthPassword())) {
+            Log::error('Reset password hash did not verify after persistence.', [
+                'user_id' => $user->getAuthIdentifier(),
+            ]);
+
+            return response()->json([
+                'message' => 'Password reset could not be verified. Please try again.',
+            ], 500);
+        }
 
         DB::table('password_resets')
             ->where('email', $user->email)
@@ -526,6 +537,18 @@ class AuthController extends Controller
         $user->password_hash = Hash::make($validated['password']);
         $user->password_setup_required = false;
         $user->save();
+        $user->refresh();
+
+        if (! Hash::check($validated['password'], $user->getAuthPassword())) {
+            Log::error('Updated password hash did not verify after persistence.', [
+                'user_id' => $user->getAuthIdentifier(),
+            ]);
+
+            return response()->json([
+                'message' => 'Password update could not be verified. Please try again.',
+            ], 500);
+        }
+
         if ($request->hasSession()) {
             $request->session()->forget('google_password_reset_authorization');
         }
