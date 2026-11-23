@@ -57,6 +57,8 @@ export default function AccountSettings() {
   // Resolve the current profile image URL
   const profileImageUrl =
     user?.profile_image_url || user?.image || user?.profile_image || null;
+  const canSetPasswordWithoutCurrent =
+    Boolean(user?.password_setup_required || user?.can_set_password_without_current);
 
   // Change Email state
   const [emailForm, setEmailForm] = useState({
@@ -197,7 +199,12 @@ export default function AccountSettings() {
 
     setPasswordLoading(true);
     try {
-      const response = await api.updatePassword(passwordForm);
+      const payload = { ...passwordForm };
+      if (canSetPasswordWithoutCurrent) {
+        delete payload.current_password;
+      }
+      const response = await api.updatePassword(payload);
+      await refreshUser();
       setPasswordForm({
         current_password: "",
         password: "",
@@ -592,7 +599,14 @@ export default function AccountSettings() {
               <form
                 onSubmit={handlePasswordSubmit}
                 className="space-y-4 rounded-xl border border-slate-200 p-4">
-                <div>
+                {canSetPasswordWithoutCurrent && !user?.password_setup_required && (
+                  <p className="text-sm text-slate-600">
+                    Google sign-in was recently verified. Set a new password
+                    here to restore email-and-password sign-in.
+                  </p>
+                )}
+                {!canSetPasswordWithoutCurrent && (
+                  <div>
                   <label
                     className="mb-1.5 block text-sm font-medium text-slate-700"
                     htmlFor="current-password">
@@ -612,7 +626,8 @@ export default function AccountSettings() {
                     required
                     className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
-                </div>
+                  </div>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label

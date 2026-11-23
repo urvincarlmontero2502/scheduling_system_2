@@ -190,5 +190,20 @@ class SessionAuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($this->user);
         $this->assertNotNull($this->user->fresh()->getRememberToken());
         $this->assertNotEmpty($response->headers->get('Set-Cookie'));
+
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('can_set_password_without_current', true);
+        $this->putJson('/api/user/password', [
+            'password' => 'GoogleFallbackPass123!',
+            'password_confirmation' => 'GoogleFallbackPass123!',
+        ])->assertOk();
+        $this->assertTrue(Hash::check(
+            'GoogleFallbackPass123!',
+            $this->user->fresh()->password_hash
+        ));
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('can_set_password_without_current', false);
     }
 }
