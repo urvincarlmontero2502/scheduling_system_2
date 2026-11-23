@@ -360,7 +360,8 @@ class GoogleRegistrationSqliteTest extends TestCase
 
         $this->getJson('/api/health')
             ->assertOk()
-            ->assertJsonStructure(['api', 'database'])
+            ->assertJsonStructure(['api', 'database', 'database_driver'])
+            ->assertJsonPath('database_driver', 'sqlite')
             ->assertJsonMissingPath('user_columns')
             ->assertJsonMissingPath('missing_columns')
             ->assertJsonMissingPath('personal_access_tokens_table');

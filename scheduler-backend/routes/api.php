@@ -17,9 +17,13 @@ use Illuminate\Support\Str;
 
 // Public Health Check Endpoint
 Route::get('/health', function () {
+    $databaseDriver = null;
+
     try {
-        DB::connection()->getPdo();
+        $connection = DB::connection();
+        $connection->getPdo();
         $dbConnected = true;
+        $databaseDriver = $connection->getDriverName();
     } catch (Exception $e) {
         $dbConnected = false;
     }
@@ -27,6 +31,7 @@ Route::get('/health', function () {
     return response()->json([
         'api' => true,
         'database' => $dbConnected,
+        'database_driver' => $databaseDriver,
     ]);
 });
 
