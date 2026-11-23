@@ -78,6 +78,7 @@ class AuthController extends Controller
         }
 
         unset($credentials['recaptcha_token']);
+        $credentials['email'] = strtolower(trim($credentials['email']));
         $rememberMe = $credentials['remember_me'] ?? false;
         unset($credentials['remember_me']);
 
@@ -766,8 +767,16 @@ class AuthController extends Controller
             ->first();
 
         if ($existingRequest) {
-            // If it's still pending, return it - user should wait for approval
+            // A Google-authenticated applicant may choose or replace their
+            // local password while an earlier registration request is pending.
             if ($existingRequest->status === 'pending') {
+                DB::table('registration_requests')
+                    ->where('request_id', $existingRequest->request_id)
+                    ->update([
+                        'password_hash' => Hash::make($validated['password']),
+                        'password_setup_required' => false,
+                        'updated_at' => now(),
+                    ]);
                 DB::table('google_oauth_temp_tokens')
                     ->where('token', $temporaryToken)
                     ->delete();

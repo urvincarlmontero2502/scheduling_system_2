@@ -128,6 +128,41 @@ class GoogleRegistrationSqliteTest extends TestCase
             ->assertJsonValidationErrors(['password', 'password_confirmation']);
     }
 
+    public function test_existing_pending_google_registration_saves_the_chosen_password(): void
+    {
+        DB::table('registration_requests')->insert([
+            'full_name' => 'New Google User',
+            'email' => 'new-user@example.test',
+            'password_hash' => Hash::make('old-random-password'),
+            'password_setup_required' => true,
+            'google_id' => 'google-user-id',
+            'avatar' => null,
+            'barangay' => 'Poblacion',
+            'department' => null,
+            'role' => 'staff',
+            'status' => 'pending',
+        ]);
+
+        $this->withSession([
+            'google_registration_token' => 'sqlite-google-registration-token',
+        ])->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/auth/google/complete-registration', [
+            'barangay' => 'Poblacion',
+            'password' => 'GoogleFallbackPass123!',
+            'password_confirmation' => 'GoogleFallbackPass123!',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'pending');
+
+        $registration = DB::table('registration_requests')
+            ->where('email', 'new-user@example.test')
+            ->first();
+        $this->assertTrue(Hash::check('GoogleFallbackPass123!', $registration->password_hash));
+        $this->assertFalse((bool) $registration->password_setup_required);
+    }
+
     public function test_password_setup_migration_marks_existing_google_accounts(): void
     {
         DB::table('users')->insert([
