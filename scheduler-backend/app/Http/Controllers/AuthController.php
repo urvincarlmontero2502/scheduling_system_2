@@ -78,25 +78,32 @@ class AuthController extends Controller
         }
 
         unset($credentials['recaptcha_token']);
-        $credentials['email'] = strtolower(trim($credentials['email']));
+        $normalizedEmail = strtolower(trim($credentials['email']));
         $rememberMe = $credentials['remember_me'] ?? false;
         unset($credentials['remember_me']);
 
-        if ($rememberMe) {
-            Auth::guard('web')->setRememberDuration(43200);
-        }
-
-        if (!Auth::attempt($credentials, $rememberMe)) {
+        $matchingUser = User::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
+            ->get()
+            ->first(fn (User $candidate) => Hash::check(
+                $credentials['password'],
+                $candidate->getAuthPassword()
+            ));
+        if (! $matchingUser) {
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
         }
 
+        $guard = Auth::guard('web');
+        if ($rememberMe) {
+            $guard->setRememberDuration(43200);
+        }
+
+        $guard->login($matchingUser, $rememberMe);
         $request->session()->regenerate();
-        $user = Auth::user();
 
         return response()->json([
-            'user' => $user,
+            'user' => $guard->user(),
         ]);
     }
 
