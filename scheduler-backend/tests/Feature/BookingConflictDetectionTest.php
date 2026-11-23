@@ -815,6 +815,8 @@ class BookingConflictDetectionTest extends TestCase
     public function test_direct_approval_cannot_override_a_pending_booking_overlap(): void
     {
         $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '12:00');
+        $admin = $this->createAdmin();
+        Sanctum::actingAs($admin);
 
         $this->postJson('/api/bookings', array_merge(
             $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '09:00'),
@@ -827,6 +829,97 @@ class BookingConflictDetectionTest extends TestCase
             ->assertJsonPath('conflict_type', 'pending');
 
         $this->assertDatabaseCount('booking_request', 1);
+    }
+
+    public function test_non_admins_cannot_set_booking_status_during_creation(): void
+    {
+        foreach (['user', 'staff', 'barangay_admin'] as $role) {
+            $user = User::create([
+                'full_name' => ucfirst($role).' User',
+                'email' => $role.'-booking@example.test',
+                'password_hash' => 'not-a-real-password',
+                'role' => $role,
+                'barangay' => 'Santo Nino',
+            ]);
+
+            Sanctum::actingAs($user);
+
+            foreach (['approved', 'rejected'] as $status) {
+                $this->postJson('/api/bookings', array_merge(
+                    $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '09:00'),
+                    ['status' => $status]
+                ))
+                    ->assertForbidden();
+            }
+        }
+
+        $this->assertDatabaseCount('booking_request', 0);
+    }
+
+    public function test_system_admin_can_create_a_booking_with_an_explicit_status(): void
+    {
+        Sanctum::actingAs($this->createAdmin());
+
+        $this->postJson('/api/bookings', array_merge(
+            $this->bookingPayload('2026-11-02', '2026-11-02', '08:00', '09:00'),
+            ['status' => 'approved']
+        ))
+            ->assertCreated()
+            ->assertJsonPath('status', 'approved');
+
+        $this->assertDatabaseHas('booking_request', ['status' => 'approved']);
+    }
+
+    public function test_barangay_admin_cannot_approve_or_reject_bookings_even_in_their_barangay(): void
+    {
+        $this->user->update(['barangay' => 'Santo Nino']);
+        $approvedBooking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '09:00');
+        $rejectedBooking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '10:00', '11:00');
+        $barangayAdmin = User::create([
+            'full_name' => 'Santo Nino Admin',
+            'email' => 'santo-nino-reviewer@example.test',
+            'password_hash' => 'not-a-real-password',
+            'role' => 'barangay_admin',
+            'barangay' => 'Santo Nino',
+        ]);
+        Sanctum::actingAs($barangayAdmin);
+
+        $this->patchJson("/api/bookings/{$approvedBooking->booking_id}/status", [
+            'status' => 'approved',
+        ])->assertForbidden();
+        $this->patchJson("/api/bookings/{$rejectedBooking->booking_id}/status", [
+            'status' => 'rejected',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('booking_request', [
+            'booking_id' => $approvedBooking->booking_id,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseHas('booking_request', [
+            'booking_id' => $rejectedBooking->booking_id,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_regular_users_and_staff_cannot_review_booking_status(): void
+    {
+        foreach (['user', 'staff'] as $role) {
+            $user = User::create([
+                'full_name' => ucfirst($role).' User',
+                'email' => $role.'-reviewer@example.test',
+                'password_hash' => 'not-a-real-password',
+                'role' => $role,
+                'barangay' => 'Santo Nino',
+            ]);
+            $booking = $this->createBooking('pending', '2026-11-02', '2026-11-02', '08:00', '09:00');
+            Sanctum::actingAs($user);
+
+            $this->patchJson("/api/bookings/{$booking->booking_id}/status", [
+                'status' => 'approved',
+            ])->assertForbidden();
+
+            $this->assertSame('pending', $booking->fresh()->status);
+        }
     }
 
     public function test_approving_one_pending_booking_does_not_get_blocked_by_another_pending_booking(): void
