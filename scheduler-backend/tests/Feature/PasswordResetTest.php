@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -25,6 +26,7 @@ class PasswordResetTest extends TestCase
             $table->boolean('password_setup_required')->default(false);
             $table->string('role')->default('staff');
             $table->string('google_id')->nullable();
+            $table->string('remember_token')->nullable();
             $table->timestamp('deleted_at')->nullable();
         });
         Schema::create('password_resets', function (Blueprint $table) {
@@ -33,6 +35,23 @@ class PasswordResetTest extends TestCase
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
+    }
+
+    public function test_password_reset_schema_migration_creates_the_expected_table(): void
+    {
+        Schema::dropIfExists('password_resets');
+
+        $migration = require database_path(
+            'migrations/2026_11_23_000002_ensure_password_resets_table.php'
+        );
+        $migration->up();
+
+        $this->assertTrue(Schema::hasColumns('password_resets', [
+            'id',
+            'email',
+            'token',
+            'created_at',
+        ]));
     }
 
     public function test_reset_code_can_set_a_password_for_a_case_insensitive_email(): void
@@ -65,6 +84,29 @@ class PasswordResetTest extends TestCase
         ));
         $this->assertFalse($user->fresh()->password_setup_required);
         $this->assertDatabaseMissing('password_resets', ['email' => $user->email]);
+
+        config([
+            'recaptcha.secret' => 'test-secret',
+            'recaptcha.allowed_hostnames' => ['localhost'],
+        ]);
+        Http::fake([
+            'www.google.com/recaptcha/api/siteverify' => Http::response([
+                'success' => true,
+                'score' => 0.9,
+                'action' => 'login',
+                'hostname' => 'localhost',
+            ]),
+        ]);
+
+        $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/login', [
+            'email' => 'account.owner@example.test',
+            'password' => 'RecoveredPassword123!',
+            'recaptcha_token' => 'valid-recaptcha-token',
+        ])->assertOk()
+            ->assertJsonPath('user.email', $user->email);
     }
 
     public function test_expired_or_invalid_reset_codes_are_rejected_without_changing_password(): void
