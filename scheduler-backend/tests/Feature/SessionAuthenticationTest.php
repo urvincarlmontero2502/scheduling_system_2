@@ -26,6 +26,7 @@ class SessionAuthenticationTest extends TestCase
             $table->string('full_name');
             $table->string('email')->unique();
             $table->string('password_hash');
+            $table->boolean('password_setup_required')->default(false);
             $table->string('role')->default('staff');
             $table->string('google_id')->nullable();
             $table->string('remember_token')->nullable();
@@ -120,6 +121,37 @@ class SessionAuthenticationTest extends TestCase
             now()->addDays(29)->getTimestamp(),
             $rememberCookie->getExpiresTime()
         );
+    }
+
+    public function test_google_password_setup_can_be_used_to_log_in_with_email_case_insensitively(): void
+    {
+        $this->user->password_hash = Hash::make('random-google-password');
+        $this->user->password_setup_required = true;
+        $this->user->save();
+        Auth::guard('web')->login($this->user);
+
+        $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->putJson('/api/user/password', [
+            'password' => 'GoogleFallbackPass123!',
+            'password_confirmation' => 'GoogleFallbackPass123!',
+        ])->assertOk();
+
+        Auth::guard('web')->logout();
+        Auth::forgetGuards();
+        Auth::shouldUse('web');
+
+        $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/login', [
+            'email' => 'APPLICANT@EXAMPLE.TEST',
+            'password' => 'GoogleFallbackPass123!',
+            'remember_me' => false,
+            'recaptcha_token' => 'valid-recaptcha-token',
+        ])->assertOk()
+            ->assertJsonPath('user.email', 'applicant@example.test');
     }
 
     public function test_google_login_establishes_a_cookie_session_without_returning_a_token(): void
