@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Barangay;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -82,9 +83,10 @@ class AuthController extends Controller
         $rememberMe = $credentials['remember_me'] ?? false;
         unset($credentials['remember_me']);
 
-        $matchingUser = User::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
+        $userModel = $this->authUserModel();
+        $matchingUser = $userModel::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
             ->get()
-            ->first(fn (User $candidate) => Hash::check(
+            ->first(fn ($candidate) => Hash::check(
                 $credentials['password'],
                 $candidate->getAuthPassword()
             ));
@@ -114,7 +116,8 @@ class AuthController extends Controller
         ]);
         $email = strtolower(trim($validated['email']));
 
-        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
+        $userModel = $this->authUserModel();
+        $user = $userModel::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
 
         if (!$user) {
             // Don't reveal whether the email exists
@@ -172,7 +175,8 @@ class AuthController extends Controller
             'password_confirmation' => ['required', 'string'],
         ]);
         $normalizedEmail = strtolower(trim($validated['email']));
-        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])->first();
+        $userModel = $this->authUserModel();
+        $user = $userModel::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])->first();
         $reset = DB::table('password_resets')
             ->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
             ->first();
@@ -499,7 +503,7 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user('sanctum');
         $canSetWithoutCurrentPassword = $this->canSetPasswordWithoutCurrentPassword($request, $user);
 
         $rules = [
@@ -531,7 +535,10 @@ class AuthController extends Controller
         ]);
     }
 
-    private function canSetPasswordWithoutCurrentPassword(Request $request, User $user): bool
+    private function canSetPasswordWithoutCurrentPassword(
+        Request $request,
+        Authenticatable $user
+    ): bool
     {
         if ($user->password_setup_required) {
             return true;
@@ -546,6 +553,13 @@ class AuthController extends Controller
         return is_array($authorization)
             && (int) ($authorization['user_id'] ?? 0) === (int) $user->user_id
             && (int) ($authorization['expires_at'] ?? 0) >= now()->timestamp;
+    }
+
+    private function authUserModel(): string
+    {
+        $provider = config('auth.guards.web.provider', 'users');
+
+        return config("auth.providers.{$provider}.model", User::class);
     }
 
     /**
