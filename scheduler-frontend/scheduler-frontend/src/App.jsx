@@ -26,6 +26,7 @@ import GoogleCallback from "./pages/GoogleCallback";
 import BarangaySetup from "./pages/BarangaySetup";
 import RegistrationStatus from "./pages/RegistrationStatus";
 import UserRoles from "./pages/UserRoles";
+import SetPassword from "./pages/SetPassword";
 import { useAuth } from "./context/AuthContext";
 
 function LandingOrDashboard() {
@@ -51,6 +52,14 @@ export default function App() {
           <ToastProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/set-password"
+                element={
+                  <ProtectedRoute>
+                    <SetPassword />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/" element={<LandingOrDashboard />}>
                 <Route index element={<Overview />} />
                 <Route path="calendar" element={<Calendar />} />

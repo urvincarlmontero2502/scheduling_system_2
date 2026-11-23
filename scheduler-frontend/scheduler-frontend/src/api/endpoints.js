@@ -16,9 +16,10 @@ export const forgotPassword = (email) =>
 export const getGoogleRedirect = () => client.get("/auth/google");
 export const googleCallback = (code, state) =>
   client.post("/auth/google/callback", { code, state });
-export const completeGoogleRegistration = (barangay) =>
+export const completeGoogleRegistration = (barangay, credentials) =>
   client.post("/auth/google/complete-registration", {
     barangay,
+    ...credentials,
   });
 export const registerStaff = (payload) =>
   client.post("/registration-requests", payload);
