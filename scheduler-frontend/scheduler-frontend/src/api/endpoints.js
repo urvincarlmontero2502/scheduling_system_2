@@ -13,6 +13,7 @@ const CACHE_TTL = 1000 * 60 * 2;
 export const login = (credentials) => client.post("/login", credentials);
 export const forgotPassword = (email) =>
   client.post("/forgot-password", { email });
+export const resetPassword = (payload) => client.post("/reset-password", payload);
 export const getGoogleRedirect = () => client.get("/auth/google");
 export const googleCallback = (code, state) =>
   client.post("/auth/google/callback", { code, state });

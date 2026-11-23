@@ -112,8 +112,9 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email'],
         ]);
+        $email = strtolower(trim($validated['email']));
 
-        $user = User::where('email', $validated['email'])->first();
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
 
         if (!$user) {
             // Don't reveal whether the email exists
@@ -127,10 +128,10 @@ class AuthController extends Controller
 
         // Store in password_resets table (Laravel's built-in broker uses this)
         DB::table('password_resets')->updateOrInsert(
-            ['email' => $validated['email']],
+            ['email' => $user->email],
             [
-                'email' => $validated['email'],
-                'token' => $code,
+                'email' => $user->email,
+                'token' => Hash::make($code),
                 'created_at' => now(),
             ]
         );
@@ -148,8 +149,8 @@ class AuthController extends Controller
 
 " .
                 "If you did not request this, you can safely ignore this email.",
-                function ($message) use ($validated) {
-                    $message->to($validated['email'])
+                function ($message) use ($user) {
+                    $message->to($user->email)
                         ->subject('Your Password Reset Code');
                 }
             );
@@ -159,6 +160,54 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'If an account with that email exists, a password reset link has been sent.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'digits:6'],
+            'password' => ['required', 'string', 'confirmed', 'min:8'],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+        $normalizedEmail = strtolower(trim($validated['email']));
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])->first();
+        $reset = DB::table('password_resets')
+            ->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
+            ->first();
+
+        $codeMatches = false;
+        if ($reset) {
+            $storedToken = (string) $reset->token;
+            $isHashedToken = str_starts_with($storedToken, '$2y$')
+                || str_starts_with($storedToken, '$argon2');
+            $codeMatches = $isHashedToken
+                ? Hash::check($validated['code'], $storedToken)
+                : hash_equals($storedToken, $validated['code']);
+        }
+
+        if (
+            ! $user
+            || ! $reset
+            || \Carbon\Carbon::parse($reset->created_at)->addMinutes(15)->isPast()
+            || ! $codeMatches
+        ) {
+            return response()->json([
+                'message' => 'The password reset code is invalid or expired.',
+            ], 422);
+        }
+
+        $user->password_hash = Hash::make($validated['password']);
+        $user->password_setup_required = false;
+        $user->save();
+
+        DB::table('password_resets')
+            ->where('email', $user->email)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Password reset successfully. You can now sign in.',
         ]);
     }
 
