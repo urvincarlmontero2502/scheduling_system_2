@@ -56,6 +56,8 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_code_can_set_a_password_for_a_case_insensitive_email(): void
     {
+        $this->assertSame('password_resets', config('auth.passwords.users.table'));
+
         $user = User::create([
             'full_name' => 'Google Account',
             'email' => 'Account.Owner@example.test',
