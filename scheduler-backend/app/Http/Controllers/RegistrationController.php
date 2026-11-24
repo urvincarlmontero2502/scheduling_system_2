@@ -24,37 +24,68 @@ class RegistrationController extends Controller
      */
     public function store(Request $request)
     {
+        $email = mb_strtolower(trim((string) $request->input('email', '')));
+        $cellNumber = $this->normalizePhilippineCellNumber(
+            (string) $request->input('cell_number', '')
+        );
         $request->merge([
-            'email' => mb_strtolower(trim((string) $request->input('email'))),
+            'email' => $email !== '' ? $email : null,
+            'cell_number' => $cellNumber !== '' ? $cellNumber : null,
         ]);
 
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'middle_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['nullable', 'required_without:cell_number', 'email', 'max:255'],
+            'cell_number' => [
+                'nullable',
+                'required_without:email',
+                'regex:/^09\d{9}$/',
+            ],
             'password' => ['required', 'string', 'min:8', 'max:128', 'confirmed'],
             'barangay' => ['required', 'string', 'max:255', 'exists:barangays,name'],
         ]);
 
-        $email = $validated['email'];
+        $email = $validated['email'] ?? null;
+        $cellNumber = $validated['cell_number'] ?? null;
         $existingUser = User::withTrashed()
-            ->whereRaw('LOWER(email) = ?', [$email])
+            ->where(function ($query) use ($email, $cellNumber) {
+                if ($email) {
+                    $query->whereRaw('LOWER(email) = ?', [$email]);
+                }
+                if ($cellNumber) {
+                    $query->orWhere('cell_number', $cellNumber);
+                }
+            })
             ->first();
         if ($existingUser) {
             return response()->json([
                 'message' => $existingUser->trashed()
-                    ? 'This email belongs to a removed account. Contact a Super Admin to restore access.'
-                    : 'An account with this email already exists. Please sign in instead.',
+                    ? 'This email or cell number belongs to a removed account. Contact a Super Admin to restore access.'
+                    : 'An account with this email or cell number already exists. Please sign in instead.',
             ], 409);
         }
 
-        $existingRequest = RegistrationRequest::whereRaw('LOWER(email) = ?', [$email])->first();
+        $existingRequest = RegistrationRequest::query()
+            ->where(function ($query) use ($email, $cellNumber) {
+                if ($email) {
+                    $query->whereRaw('LOWER(email) = ?', [$email]);
+                }
+                if ($cellNumber) {
+                    $query->orWhere('cell_number', $cellNumber);
+                }
+            })
+            ->first();
         if ($existingRequest && $existingRequest->status !== 'rejected') {
             return response()->json([
                 'message' => $existingRequest->status === 'pending'
-                    ? 'A registration request for this email is already pending approval.'
-                    : 'A registration request for this email has already been approved.',
+                    ? ($existingRequest->email
+                        ? 'A registration request for this email is already pending approval.'
+                        : 'A registration request for this cell number is already pending approval.')
+                    : ($existingRequest->email
+                        ? 'A registration request for this email has already been approved.'
+                        : 'A registration request for this cell number has already been approved.'),
             ], 409);
         }
 
@@ -65,10 +96,11 @@ class RegistrationController extends Controller
         ]), fn ($part) => $part !== ''));
 
         try {
-            $registrationRequest = DB::transaction(function () use ($validated, $email, $fullName, $existingRequest) {
+            $registrationRequest = DB::transaction(function () use ($validated, $email, $cellNumber, $fullName, $existingRequest) {
                 $data = [
                     'full_name' => $fullName,
                     'email' => $email,
+                    'cell_number' => $cellNumber,
                     'password_hash' => Hash::make($validated['password']),
                     'google_id' => null,
                     'avatar' => null,
@@ -86,7 +118,8 @@ class RegistrationController extends Controller
                 $registrationRequest->save();
 
                 if (Schema::hasTable('notifications')) {
-                    $message = "New registration request from {$fullName} ({$email}) for Brgy. {$validated['barangay']}.";
+                    $contact = $email ?: $cellNumber;
+                    $message = "New registration request from {$fullName} ({$contact}) for Brgy. {$validated['barangay']}.";
                     $adminEmail = RegistrationRequest::getAdminEmail($validated['barangay']);
                     $barangayAdmin = $adminEmail
                         ? User::where('email', $adminEmail)
@@ -125,7 +158,7 @@ class RegistrationController extends Controller
         } catch (QueryException $e) {
             if (in_array((string) $e->getCode(), ['23000', '23505'], true)) {
                 return response()->json([
-                    'message' => 'A registration request for this email already exists.',
+                    'message' => 'A registration request for this email or cell number already exists.',
                 ], 409);
             }
 
@@ -140,7 +173,7 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Send a one-time email link before disclosing registration status.
+     * Send a one-time email link before disclosing email registration status.
      */
     public function lookup(Request $request)
     {
@@ -266,6 +299,60 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Verify a cell-number registration status using the password chosen at sign-up.
+     */
+    public function verifyCellNumberLookup(Request $request)
+    {
+        $cellNumber = $this->normalizePhilippineCellNumber(
+            (string) $request->input('cell_number', '')
+        );
+        $request->merge(['cell_number' => $cellNumber]);
+
+        $validated = $request->validate([
+            'cell_number' => ['required', 'regex:/^09\d{9}$/'],
+            'password' => ['required', 'string', 'max:128'],
+        ]);
+        $rateLimitKey = 'registration-status-cell:'.hash(
+            'sha256',
+            $validated['cell_number'].'|'.$request->ip()
+        );
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+            return response()->json([
+                'message' => 'Too many verification attempts. Please try again later.',
+            ], 429);
+        }
+        RateLimiter::hit($rateLimitKey, 900);
+
+        $registration = RegistrationRequest::where(
+            'cell_number',
+            $validated['cell_number']
+        )->first();
+
+        if (! $registration || ! Hash::check($validated['password'], $registration->password_hash)) {
+            return response()->json([
+                'message' => 'The cell number or password is incorrect.',
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => $registration->status,
+            'reviewed_at' => $registration->reviewed_at,
+        ]);
+    }
+
+    private function normalizePhilippineCellNumber(string $cellNumber): string
+    {
+        $digits = preg_replace('/\D+/', '', $cellNumber) ?? '';
+
+        if (str_starts_with($digits, '63') && strlen($digits) === 12) {
+            return '0'.substr($digits, 2);
+        }
+
+        return $digits;
+    }
+
+    /**
      * Get all pending registration requests.
      * Admin sees all; barangay_admin sees only their barangay.
      */
@@ -328,17 +415,24 @@ class RegistrationController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check if user already exists with this email
+            // Check whether either registration identifier already belongs to a user.
             $existing = User::withTrashed()
-                ->where('email', $registrationRequest->email)
+                ->where(function ($query) use ($registrationRequest) {
+                    if ($registrationRequest->email) {
+                        $query->where('email', $registrationRequest->email);
+                    }
+                    if ($registrationRequest->cell_number) {
+                        $query->orWhere('cell_number', $registrationRequest->cell_number);
+                    }
+                })
                 ->first();
             if ($existing) {
                 DB::rollBack();
 
                 return response()->json([
                     'message' => $existing->trashed()
-                        ? 'This email belongs to a removed account. Restore it from the Trash Bin instead of creating a new account.'
-                        : 'A user with this email already exists.',
+                        ? 'This email or cell number belongs to a removed account. Restore it from the Trash Bin instead of creating a new account.'
+                        : 'A user with this email or cell number already exists.',
                 ], 422);
             }
 
@@ -346,6 +440,7 @@ class RegistrationController extends Controller
             $newUser = User::create([
                 'full_name' => $registrationRequest->full_name,
                 'email' => $registrationRequest->email,
+                'cell_number' => $registrationRequest->cell_number,
                 'password_hash' => $registrationRequest->password_hash,
                 'password_setup_required' => (bool) $registrationRequest->password_setup_required,
                 'role' => $registrationRequest->role,
@@ -353,7 +448,7 @@ class RegistrationController extends Controller
                 'department' => $registrationRequest->department,
                 'google_id' => $registrationRequest->google_id,
                 'avatar' => $registrationRequest->avatar,
-                'email_verified_at' => now(),
+                'email_verified_at' => $registrationRequest->email ? now() : null,
             ]);
 
             // Mark registration request as approved
@@ -373,13 +468,15 @@ class RegistrationController extends Controller
                 'created_at' => now(),
             ]);
 
-            // Send approval email to the user
-            try {
-                Mail::to($newUser->email)
-                    ->cc($user->email)
-                    ->send(new RegistrationApproved($registrationRequest, $newUser, $user));
-            } catch (\Exception $mailErr) {
-                \Log::warning('Registration approval email failed: '.$mailErr->getMessage());
+            // Email is optional for staff accounts registered with a cell number.
+            if ($newUser->email) {
+                try {
+                    Mail::to($newUser->email)
+                        ->cc($user->email)
+                        ->send(new RegistrationApproved($registrationRequest, $newUser, $user));
+                } catch (\Exception $mailErr) {
+                    \Log::warning('Registration approval email failed: '.$mailErr->getMessage());
+                }
             }
 
             app(ActivityLogger::class)->record(
@@ -456,13 +553,15 @@ class RegistrationController extends Controller
             ]
         );
 
-        // Send rejection email to the applicant (no user account exists yet)
-        try {
-            Mail::to($registrationRequest->email)
-                ->cc($user->email)
-                ->send(new RegistrationRejected($registrationRequest, $user));
-        } catch (\Exception $mailErr) {
-            \Log::warning('Registration rejection email failed: '.$mailErr->getMessage());
+        // Email is optional for staff accounts registered with a cell number.
+        if ($registrationRequest->email) {
+            try {
+                Mail::to($registrationRequest->email)
+                    ->cc($user->email)
+                    ->send(new RegistrationRejected($registrationRequest, $user));
+            } catch (\Exception $mailErr) {
+                \Log::warning('Registration rejection email failed: '.$mailErr->getMessage());
+            }
         }
 
         return response()->json([

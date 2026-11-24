@@ -28,6 +28,8 @@ export const requestRegistrationStatusVerification = (email) =>
   client.post("/registration-lookup", { email });
 export const verifyRegistrationStatus = (email, token) =>
   client.post("/registration-lookup/verify", { email, token });
+export const verifyRegistrationStatusByCellNumber = (cell_number, password) =>
+  client.post("/registration-lookup/cell-number", { cell_number, password });
 
 // --- System Settings (admin only) ------------------------------------
 export const fetchBookingReminderSettings = () =>

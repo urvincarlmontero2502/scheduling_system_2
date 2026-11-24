@@ -183,6 +183,8 @@ Route::post('/registration-lookup', [RegistrationController::class, 'lookup'])
     ->middleware('throttle:3,1');
 Route::post('/registration-lookup/verify', [RegistrationController::class, 'verifyLookup'])
     ->middleware('throttle:10,1');
+Route::post('/registration-lookup/cell-number', [RegistrationController::class, 'verifyCellNumberLookup'])
+    ->middleware('throttle:10,1');
 
 Route::middleware('auth:sanctum')->group(function () {
 

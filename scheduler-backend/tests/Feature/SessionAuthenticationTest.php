@@ -24,7 +24,8 @@ class SessionAuthenticationTest extends TestCase
         Schema::create('users', function (Blueprint $table) {
             $table->id('user_id');
             $table->string('full_name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
+            $table->string('cell_number')->nullable()->unique();
             $table->string('password_hash');
             $table->boolean('password_setup_required')->default(false);
             $table->string('role')->default('staff');
@@ -98,6 +99,25 @@ class SessionAuthenticationTest extends TestCase
         $this->getJson('/api/user')
             ->assertOk()
             ->assertContent('null');
+    }
+
+    public function test_login_accepts_a_normalized_cell_number_identifier(): void
+    {
+        $this->user->cell_number = '09171234567';
+        $this->user->email = null;
+        $this->user->save();
+
+        $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/',
+        ])->postJson('/api/login', [
+            'identifier' => '+63 917-123-4567',
+            'password' => 'correct-password',
+            'remember_me' => false,
+            'recaptcha_token' => 'valid-recaptcha-token',
+        ])->assertOk()
+            ->assertJsonPath('user.cell_number', '09171234567')
+            ->assertJsonPath('user.email', null);
     }
 
     public function test_remember_me_uses_a_limited_remember_cookie(): void
