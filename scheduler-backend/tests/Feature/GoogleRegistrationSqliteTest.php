@@ -30,7 +30,8 @@ class GoogleRegistrationSqliteTest extends TestCase
         Schema::create('users', function (Blueprint $table) {
             $table->id('user_id');
             $table->string('full_name');
-            $table->string('email');
+            $table->string('email')->nullable()->unique();
+            $table->string('cell_number')->nullable()->unique();
             $table->string('password_hash');
             $table->boolean('password_setup_required')->default(false);
             $table->string('google_id')->nullable();
@@ -45,7 +46,8 @@ class GoogleRegistrationSqliteTest extends TestCase
         Schema::create('registration_requests', function (Blueprint $table) {
             $table->id('request_id');
             $table->string('full_name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
+            $table->string('cell_number')->nullable()->unique();
             $table->string('password_hash');
             $table->boolean('password_setup_required')->default(false);
             $table->string('google_id')->nullable();
@@ -316,6 +318,107 @@ class GoogleRegistrationSqliteTest extends TestCase
         $this->assertSame('pending', $registration->status);
         $this->assertTrue(Hash::check('StrongPassword123!', $registration->password_hash));
         $this->assertNotSame('StrongPassword123!', $registration->password_hash);
+    }
+
+    public function test_cell_number_registration_creates_a_hashed_pending_staff_request(): void
+    {
+        $this->postJson('/api/registration-requests', [
+            'first_name' => 'Alex',
+            'last_name' => 'Rivers',
+            'cell_number' => '+63 917-123-4567',
+            'password' => 'StrongPassword123!',
+            'password_confirmation' => 'StrongPassword123!',
+            'barangay' => 'Poblacion',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('status', 'pending');
+
+        $registration = DB::table('registration_requests')
+            ->where('cell_number', '09171234567')
+            ->first();
+
+        $this->assertNotNull($registration);
+        $this->assertNull($registration->email);
+        $this->assertTrue(Hash::check('StrongPassword123!', $registration->password_hash));
+    }
+
+    public function test_cell_number_registration_rejects_duplicate_requests(): void
+    {
+        $payload = [
+            'first_name' => 'Alex',
+            'last_name' => 'Rivers',
+            'cell_number' => '09171234567',
+            'password' => 'StrongPassword123!',
+            'password_confirmation' => 'StrongPassword123!',
+            'barangay' => 'Poblacion',
+        ];
+
+        $this->postJson('/api/registration-requests', $payload)->assertCreated();
+        $this->postJson('/api/registration-requests', $payload)
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'message',
+                'A registration request for this cell number is already pending approval.'
+            );
+    }
+
+    public function test_cell_number_registration_can_be_approved_without_an_email(): void
+    {
+        $this->postJson('/api/registration-requests', [
+            'first_name' => 'Alex',
+            'last_name' => 'Rivers',
+            'cell_number' => '09171234567',
+            'password' => 'StrongPassword123!',
+            'password_confirmation' => 'StrongPassword123!',
+            'barangay' => 'Poblacion',
+        ])->assertCreated();
+
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->id('notif_id');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('booking_id')->nullable();
+            $table->text('message');
+            $table->string('type');
+            $table->string('title');
+            $table->boolean('is_read')->default(false);
+            $table->timestamp('created_at')->nullable();
+        });
+        Schema::create('activity_logs', function (Blueprint $table) {
+            $table->bigIncrements('activity_log_id');
+            $table->unsignedBigInteger('actor_id')->nullable();
+            $table->string('actor_name');
+            $table->string('actor_role');
+            $table->string('action');
+            $table->string('subject_type')->nullable();
+            $table->string('subject_id')->nullable();
+            $table->text('description');
+            $table->json('properties')->nullable();
+            $table->timestamp('created_at');
+        });
+
+        $admin = User::create([
+            'full_name' => 'System Admin',
+            'email' => 'admin@example.test',
+            'password_hash' => Hash::make('admin-password'),
+            'role' => 'admin',
+        ]);
+        $registration = DB::table('registration_requests')
+            ->where('cell_number', '09171234567')
+            ->first();
+
+        Sanctum::actingAs($admin);
+        Mail::fake();
+        $this->postJson("/api/registration-requests/{$registration->request_id}/approve")
+            ->assertOk();
+
+        $newUser = User::where('cell_number', '09171234567')->firstOrFail();
+        $this->assertNull($newUser->email);
+        $this->assertTrue(Hash::check('StrongPassword123!', $newUser->password_hash));
+        $this->assertDatabaseHas('registration_requests', [
+            'request_id' => $registration->request_id,
+            'status' => 'approved',
+        ]);
+        Mail::assertNothingOutgoing();
     }
 
     public function test_password_registration_rejects_duplicate_pending_requests(): void

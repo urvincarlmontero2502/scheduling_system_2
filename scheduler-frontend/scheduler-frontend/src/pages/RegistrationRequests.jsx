@@ -5,7 +5,6 @@ import {
   XCircle,
   User,
   Calendar,
-  Mail,
   MapPin,
   Building,
   FileText,
@@ -105,7 +104,7 @@ export default function RegistrationRequests({ embedded = false }) {
   const isAdmin = user?.role === "admin" || user?.role === "barangay_admin";
   const isBarangayAdmin = user?.role === "barangay_admin";
   const filteredRequests = requests.filter((request) =>
-    `${request.full_name || ""} ${request.email || ""} ${request.barangay || ""} ${request.department || ""}`
+    `${request.full_name || ""} ${request.email || ""} ${request.cell_number || ""} ${request.barangay || ""} ${request.department || ""}`
       .toLowerCase()
       .includes(search.trim().toLowerCase()),
   );
@@ -194,7 +193,7 @@ export default function RegistrationRequests({ embedded = false }) {
           </p>
           <p className="mt-1 text-sm text-slate-500">
             {search.trim()
-              ? "Try another name, email, barangay, or department."
+              ? "Try another name, email, cell number, barangay, or department."
               : "New requests will appear here when submitted."}
           </p>
         </div>
@@ -215,7 +214,9 @@ export default function RegistrationRequests({ embedded = false }) {
                       <h3 className="font-semibold text-ink">
                         {request.full_name}
                       </h3>
-                      <p className="text-sm text-steel">{request.email}</p>
+                      <p className="text-sm text-steel">
+                        {request.email || request.cell_number}
+                      </p>
                     </div>
                   </div>
 
@@ -385,8 +386,12 @@ export default function RegistrationRequests({ embedded = false }) {
                 <span className="text-ink">{viewModal.request.full_name}</span>
               </div>
               <div>
-                <span className="font-medium text-steel">Email:</span>{" "}
-                <span className="text-ink">{viewModal.request.email}</span>
+                <span className="font-medium text-steel">
+                  {viewModal.request.email ? "Email:" : "Cell Number:"}
+                </span>{" "}
+                <span className="text-ink">
+                  {viewModal.request.email || viewModal.request.cell_number}
+                </span>
               </div>
               <div>
                 <span className="font-medium text-steel">Role:</span>{" "}

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -18,7 +19,9 @@ class RegistrationStatusVerificationTest extends TestCase
         Schema::dropIfExists('registration_requests');
         Schema::create('registration_requests', function (Blueprint $table) {
             $table->id('request_id');
-            $table->string('email');
+            $table->string('email')->nullable();
+            $table->string('cell_number')->nullable();
+            $table->string('password_hash')->nullable();
             $table->string('status');
             $table->timestamp('reviewed_at')->nullable();
         });
@@ -100,6 +103,33 @@ class RegistrationStatusVerificationTest extends TestCase
                 'message',
                 'This verification link is invalid, expired, or already used. Request a new link.'
             );
+    }
+
+    public function test_cell_number_and_registration_password_can_verify_status(): void
+    {
+            DB::table('registration_requests')->insert([
+                'email' => null,
+                'cell_number' => '09171234567',
+                'password_hash' => Hash::make('StrongPassword123!'),
+                'status' => 'approved',
+                'reviewed_at' => now(),
+            ]);
+
+            $this->postJson('/api/registration-lookup/cell-number', [
+                'cell_number' => '+63 917-123-4567',
+                'password' => 'StrongPassword123!',
+            ])
+                ->assertOk()
+                ->assertJsonPath('status', 'approved')
+                ->assertJsonMissingPath('email')
+                ->assertJsonMissingPath('password_hash');
+
+            $this->postJson('/api/registration-lookup/cell-number', [
+                'cell_number' => '09171234567',
+                'password' => 'wrong-password',
+            ])
+                ->assertUnprocessable()
+                ->assertJsonPath('message', 'The cell number or password is incorrect.');
     }
 
     public function test_invalid_and_expired_tokens_do_not_reveal_registration_status(): void

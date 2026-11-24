@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { ArrowRight, Mail, Search, Clock, CheckCircle } from "lucide-react";
+import { ArrowRight, Mail, Phone, Search, Clock, CheckCircle } from "lucide-react";
 import * as api from "../api/endpoints";
 
 const STATUS_CONFIG = {
@@ -58,6 +58,9 @@ export default function RegistrationStatus() {
   const storedStatus = localStorage.getItem("registration_submitted");
 
   const [email, setEmail] = useState("");
+  const [cellNumber, setCellNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [lookupMethod, setLookupMethod] = useState("email");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [verificationSent, setVerificationSent] = useState(false);
@@ -67,6 +70,8 @@ export default function RegistrationStatus() {
   const resetLookup = () => {
     setLookupResult(null);
     setEmail("");
+    setCellNumber("");
+    setPassword("");
     setError("");
     setVerificationSent(false);
     navigate("/registration-status", { replace: true });
@@ -130,11 +135,36 @@ export default function RegistrationStatus() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (lookupMethod === "cell") {
+      if (!/^09\d{9}$/.test(cellNumber.replace(/\D/g, ""))) {
+        setError("Enter a valid 11-digit Philippine cell number.");
+        return;
+      }
+      setIsLoading(true);
+      setError("");
+      api
+        .verifyRegistrationStatusByCellNumber(cellNumber, password)
+        .then(({ data }) => {
+          setLookupResult({
+            cell_number: cellNumber,
+            status: data.status,
+            reviewed_at: data.reviewed_at,
+          });
+        })
+        .catch((err) => {
+          setError(
+            err.response?.data?.message ||
+              "Could not verify this cell number and password.",
+          );
+        })
+        .finally(() => setIsLoading(false));
+      return;
+    }
+
     if (!email || !email.includes("@")) {
       setError("Please enter a valid email.");
       return;
     }
-
     handleLookup(email);
   };
 
@@ -162,30 +192,79 @@ export default function RegistrationStatus() {
               Check Your Registration Status
             </h2>
             <p className="text-[13px] text-steel mb-6">
-              Enter the email address you used to sign up. We’ll email a link to
-              verify ownership before showing any registration status.
+              Check with your email address or, if you registered without
+              email, your cell number and password.
             </p>
+
+            <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+              <button
+                className={`rounded-md px-3 py-2 text-sm font-medium ${lookupMethod === "email" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
+                onClick={() => {
+                  setLookupMethod("email");
+                  setError("");
+                  setVerificationSent(false);
+                }}
+                type="button">
+                Email
+              </button>
+              <button
+                className={`rounded-md px-3 py-2 text-sm font-medium ${lookupMethod === "cell" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
+                onClick={() => {
+                  setLookupMethod("cell");
+                  setError("");
+                }}
+                type="button">
+                Cell number
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <label className="block text-left text-sm font-medium text-slate-700 mb-1.5">
-                Email Address
+                {lookupMethod === "email" ? "Email Address" : "Cell Number"}
               </label>
               <div className="relative mb-2">
                 <div className="absolute inset-y-0 left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                  <Mail size={16} />
+                  {lookupMethod === "email" ? <Mail size={16} /> : <Phone size={16} />}
                 </div>
                 <input
-                  type="email"
-                  value={email}
+                  type={lookupMethod === "email" ? "email" : "tel"}
+                  inputMode={lookupMethod === "email" ? "email" : "tel"}
+                  value={lookupMethod === "email" ? email : cellNumber}
                   onChange={(e) => {
-                    setEmail(e.target.value);
+                    if (lookupMethod === "email") {
+                      setEmail(e.target.value);
+                    } else {
+                      setCellNumber(e.target.value);
+                    }
                     setVerificationSent(false);
                   }}
-                  placeholder="juandelacruz@gmail.com"
+                  placeholder={
+                    lookupMethod === "email"
+                      ? "juandelacruz@gmail.com"
+                      : "09XXXXXXXXX"
+                  }
                   className="w-full rounded-lg border border-line pl-10 pr-3 py-2 text-[13px] text-ink outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition"
                   required
                 />
               </div>
+              {lookupMethod === "cell" && (
+                <div className="text-left">
+                  <label
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                    htmlFor="registration-status-password">
+                    Password used when you registered
+                  </label>
+                  <input
+                    autoComplete="current-password"
+                    className="w-full rounded-lg border border-line px-3 py-2 text-[13px] text-ink outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition"
+                    id="registration-status-password"
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    type="password"
+                    value={password}
+                  />
+                </div>
+              )}
               {error && (
                 <div className="text-[12px] text-red-600 text-center mb-2">
                   {error}
@@ -199,13 +278,17 @@ export default function RegistrationStatus() {
               )}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || (lookupMethod === "cell" && !password)}
                 className="w-full rounded-lg bg-blue-600 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-70">
                 {isLoading
-                  ? "Sending..."
-                  : verificationSent
-                    ? "Resend Verification Link"
-                    : "Send Verification Link"}
+                  ? lookupMethod === "email"
+                    ? "Sending..."
+                    : "Checking..."
+                  : lookupMethod === "email"
+                    ? verificationSent
+                      ? "Resend Verification Link"
+                      : "Send Verification Link"
+                    : "Check Status"}
               </button>
             </form>
 
@@ -254,10 +337,10 @@ export default function RegistrationStatus() {
               <div className="mb-6 rounded-lg border border-slate-100 bg-slate-50 p-4 text-left">
                 <div className="flex items-start gap-2 mb-3">
                   <span className="flex-shrink-0 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Email
+                    {lookupResult.email ? "Email" : "Cell Number"}
                   </span>
                   <p className="text-[13px] text-ink break-all">
-                    {lookupResult.email}
+                    {lookupResult.email || lookupResult.cell_number}
                   </p>
                 </div>
                 {lookupResult.reviewed_at && (
@@ -274,7 +357,11 @@ export default function RegistrationStatus() {
             )}
 
             <p className="text-[13px] text-steel mb-6">{config.message}</p>
-            <p className="text-[12px] text-slate-500 mb-6">{config.detail}</p>
+            <p className="text-[12px] text-slate-500 mb-6">
+              {lookupResult?.cell_number
+                ? "Use the same cell number and password to check your status again."
+                : config.detail}
+            </p>
 
             <div className="space-y-3">
               {config.actionRoute && (
@@ -287,7 +374,7 @@ export default function RegistrationStatus() {
               <button
                 onClick={resetLookup}
                 className="w-full rounded-lg border border-line py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition">
-                Check another email
+                Check another request
               </button>
             </div>
 

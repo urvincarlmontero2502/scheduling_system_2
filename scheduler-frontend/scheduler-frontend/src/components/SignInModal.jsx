@@ -48,7 +48,7 @@ export default function SignInModal({
   const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -79,7 +79,7 @@ export default function SignInModal({
     try {
       const recaptchaToken = await executeLoginRecaptcha();
       await signIn({
-        email,
+        identifier,
         password,
         remember_me: rememberMe,
         recaptcha_token: recaptchaToken,
@@ -153,18 +153,18 @@ export default function SignInModal({
           <form onSubmit={handleSubmit}>
             <label
               className="mb-2 block text-sm font-semibold text-slate-700"
-              htmlFor="sign-in-email">
-              Email
+              htmlFor="sign-in-identifier">
+              Email or cell number
             </label>
             <input
-              autoComplete="email"
+              autoComplete="username"
               className="mb-5 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-              id="sign-in-email"
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="name@organization.gov"
+              id="sign-in-identifier"
+              onChange={(event) => setIdentifier(event.target.value)}
+              placeholder="Email or 09XXXXXXXXX"
               required
-              type="email"
-              value={email}
+              type="text"
+              value={identifier}
             />
 
             <label
@@ -204,7 +204,15 @@ export default function SignInModal({
               </label>
               <button
                 className="text-sm font-semibold text-blue-700 transition hover:text-blue-900 hover:underline"
-                onClick={() => setShowForgotModal(true)}
+                onClick={() => {
+                  if (identifier.trim() && !identifier.includes("@")) {
+                    setError(
+                      "Cell-number accounts must contact their barangay administrator to reset a forgotten password.",
+                    );
+                    return;
+                  }
+                  setShowForgotModal(true);
+                }}
                 type="button">
                 Forgot password?
               </button>

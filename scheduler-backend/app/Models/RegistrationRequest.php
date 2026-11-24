@@ -16,6 +16,7 @@ class RegistrationRequest extends Model
     protected $fillable = [
         'full_name',
         'email',
+        'cell_number',
         'password_hash',
         'password_setup_required',
         'google_id',

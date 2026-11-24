@@ -26,7 +26,8 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'identifier' => ['nullable', 'string', 'max:255', 'required_without:email'],
+            'email' => ['nullable', 'string', 'max:255', 'required_without:identifier'],
             'password' => ['required'],
             'remember_me' => ['nullable', 'boolean'],
             'recaptcha_token' => ['required', 'string', 'max:4096'],
@@ -79,12 +80,23 @@ class AuthController extends Controller
         }
 
         unset($credentials['recaptcha_token']);
-        $normalizedEmail = strtolower(trim($credentials['email']));
+        $identifier = trim($credentials['identifier'] ?? $credentials['email']);
         $rememberMe = $credentials['remember_me'] ?? false;
         unset($credentials['remember_me']);
 
         $userModel = $this->authUserModel();
-        $matchingUser = $userModel::whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $userQuery = $userModel::whereRaw('LOWER(TRIM(email)) = ?', [
+                strtolower($identifier),
+            ]);
+        } else {
+            $cellNumber = $this->normalizePhilippineCellNumber($identifier);
+            $userQuery = preg_match('/^09\d{9}$/', $cellNumber)
+                ? $userModel::where('cell_number', $cellNumber)
+                : $userModel::whereRaw('1 = 0');
+        }
+
+        $matchingUser = $userQuery
             ->get()
             ->first(fn ($candidate) => Hash::check(
                 $credentials['password'],
@@ -92,7 +104,9 @@ class AuthController extends Controller
             ));
         if (! $matchingUser) {
             throw ValidationException::withMessages([
-                'email' => ['These credentials do not match our records.'],
+                ($request->filled('identifier') ? 'identifier' : 'email') => [
+                    'These credentials do not match our records.',
+                ],
             ]);
         }
 
@@ -107,6 +121,17 @@ class AuthController extends Controller
         return response()->json([
             'user' => $guard->user(),
         ]);
+    }
+
+    private function normalizePhilippineCellNumber(string $cellNumber): string
+    {
+        $digits = preg_replace('/\D+/', '', $cellNumber) ?? '';
+
+        if (str_starts_with($digits, '63') && strlen($digits) === 12) {
+            return '0'.substr($digits, 2);
+        }
+
+        return $digits;
     }
 
     public function forgotPassword(Request $request)

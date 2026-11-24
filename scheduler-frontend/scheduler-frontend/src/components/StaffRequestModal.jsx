@@ -40,7 +40,7 @@ export default function StaffRequestModal({
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [cellNumber, setCellNumber] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [barangay, setBarangay] = useState("");
@@ -58,7 +58,7 @@ export default function StaffRequestModal({
     setFirstName("");
     setMiddleName("");
     setLastName("");
-    setEmail("");
+    setCellNumber("");
     setPassword("");
     setPasswordConfirmation("");
     setBarangay("");
@@ -107,7 +107,7 @@ export default function StaffRequestModal({
         first_name: firstName.trim(),
         middle_name: middleName.trim() || null,
         last_name: lastName.trim(),
-        email: email.trim(),
+        cell_number: cellNumber.trim(),
         password,
         password_confirmation: passwordConfirmation,
         barangay,
@@ -180,8 +180,8 @@ export default function StaffRequestModal({
           <div>
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
               Your staff registration request has been submitted for approval.
-              You can sign in once a barangay administrator approves your
-              account.
+              After approval, sign in with your cell number and password. You
+              can check your request status using the same credentials.
             </div>
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
               <Link
@@ -293,18 +293,25 @@ export default function StaffRequestModal({
               <div>
                 <label
                   className="mb-1.5 block text-sm font-semibold text-slate-700"
-                  htmlFor="signup-email">
-                  Email
+                  htmlFor="signup-cell-number">
+                  Cell Number
                 </label>
                 <input
-                  autoComplete="email"
+                  autoComplete="tel"
                   className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-                  id="signup-email"
-                  onChange={(event) => setEmail(event.target.value)}
+                  id="signup-cell-number"
+                  inputMode="tel"
+                  maxLength={16}
+                  onChange={(event) => setCellNumber(event.target.value)}
+                  placeholder="09XXXXXXXXX"
                   required
-                  type="email"
-                  value={email}
+                  type="tel"
+                  value={cellNumber}
                 />
+                <p className="mt-1 text-xs text-slate-500">
+                  Use your active Philippine mobile number. It will be your
+                  sign-in ID.
+                </p>
               </div>
               <div>
                 <label
